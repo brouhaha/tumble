@@ -4,8 +4,8 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.19 2002/08/25 22:02:31 eric Exp $
- * Copyright 2001 Eric Smith <eric@brouhaha.com>
+ * $Id: t2p.c,v 1.20 2003/01/21 10:30:49 eric Exp $
+ * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -23,6 +23,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA */
 
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -41,6 +42,8 @@
 #include "t2p.h"
 
 
+#define MAX_INPUT_FILES 5000
+
 #define POINTS_PER_INCH 72
 
 /* page size limited by Acrobat Reader to 45 inches on a side */
@@ -56,11 +59,54 @@ typedef struct output_file_t
 } output_file_t;
 
 
+int verbose;
+
+
 char *in_filename;
 TIFF *in;
 output_file_t *output_files;
 output_file_t *out;
 /* panda_pdf *out; */
+
+
+char *progname;
+
+
+bool close_tiff_input_file (void);
+bool close_pdf_output_files (void);
+
+
+void usage (void)
+{
+  fprintf (stderr, "usage:\n");
+  fprintf (stderr, "    %s [options] -s spec\n", progname);
+  fprintf (stderr, "    %s [options] <input.tif>... -o <output.pdf>\n", progname);
+  fprintf (stderr, "options:\n");
+  fprintf (stderr, "    -v   verbose\n");
+}
+
+
+/* generate fatal error message to stderr, doesn't return */
+void fatal (int ret, char *format, ...)
+{
+  va_list ap;
+
+  fprintf (stderr, "fatal error");
+  if (format)
+    {
+      fprintf (stderr, ": ");
+      va_start (ap, format);
+      vfprintf (stderr, format, ap);
+      va_end (ap);
+    }
+  else
+    fprintf (stderr, "\n");
+  if (ret == 1)
+    usage ();
+  close_tiff_input_file ();
+  close_pdf_output_files ();
+  exit (ret);
+}
 
 
 bool close_tiff_input_file (void)
@@ -74,6 +120,7 @@ bool close_tiff_input_file (void)
   in_filename = NULL;
   return (1);
 }
+
 
 bool open_tiff_input_file (char *name)
 {
@@ -225,6 +272,13 @@ static void rotate_bitmap (Bitmap *src,
 
 
 #define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
+
+
+bool last_tiff_page (void)
+{
+  return (TIFFLastDirectory (in));
+}
+
 
 bool process_page (int image,  /* range 1 .. n */
 		   input_attributes_t input_attributes,
@@ -473,33 +527,111 @@ bool process_page (int image,  /* range 1 .. n */
 }
 
 
+void main_args (char *out_fn, int inf_count, char **in_fn)
+{
+  int i, ip;
+  input_attributes_t input_attributes;
+  pdf_file_attributes_t output_attributes;
+
+  memset (& input_attributes, 0, sizeof (input_attributes));
+  memset (& output_attributes, 0, sizeof (output_attributes));
+
+  if (! open_pdf_output_file (out_fn, & output_attributes))
+    fatal (3, "error opening output file \"%s\"\n", out_fn);
+  for (i = 0; i < inf_count; i++)
+    {
+      if (! open_tiff_input_file (in_fn [i]))
+	fatal (3, "error opening input file \"%s\"\n", in_fn [i]);
+      for (ip = 1;; ip++)
+	{
+	  if (! process_page (ip, input_attributes, NULL))
+	    fatal (3, "error processing page %d of input file \"%s\"\n", ip, in_fn [i]);
+	  if (last_tiff_page ())
+	    break;
+	}
+      if (verbose)
+	fprintf (stderr, "processed %d pages of input file \"%s\"\n", ip, in_fn [i]);
+      if (! close_tiff_input_file ())
+	fatal (3, "error closing input file \"%s\"\n", in_fn [i]);
+    }
+  if (! close_pdf_output_files ())
+    fatal (3, "error closing output file \"%s\"\n", out_fn);
+}
+
+
+void main_spec (char *spec_fn)
+{
+  if (! parse_spec_file (spec_fn))
+    fatal (2, "error parsing spec file\n");
+  if (! process_specs ())
+    fatal (3, "error processing spec file\n");
+}
+
+
 int main (int argc, char *argv[])
 {
-  int result = 0;
+  char *spec_fn = NULL;
+  char *out_fn = NULL;
+  int inf_count = 0;
+  char *in_fn [MAX_INPUT_FILES];
+
+  progname = argv [0];
 
   panda_init ();
 
-  if (argc != 2)
+  while (--argc)
     {
-      fprintf (stderr, "usage: %s spec\n", argv [0]);
-      result = 1;
-      goto fail;
+      if (argv [1][0] == '-')
+	{
+	  if (strcmp (argv [1], "-v") == 0)
+	    verbose++;
+	  else if (strcmp (argv [1], "-o") == 0)
+	    {
+	      if (argc)
+		{
+		  argc--;
+		  argv++;
+		  out_fn = argv [1];
+		}
+	      else
+		fatal (1, "missing filename after \"-o\" option\n");
+	    }
+	  else if (strcmp (argv [1], "-s") == 0)
+	    {
+	      if (argc)
+		{
+		  argc--;
+		  argv++;
+		  spec_fn = argv [1];
+		}
+	      else
+		fatal (1, "missing filename after \"-s\" option\n");
+	    }
+	  else
+	    fatal (1, "unrecognized option \"%s\"\n", argv [1]);
+	}
+      else if (inf_count < MAX_INPUT_FILES)
+	in_fn [inf_count++] = argv [1];
+      else
+	fatal (1, "exceeded maximum of %d input files\n", MAX_INPUT_FILES);
+      argv++;
     }
 
-  if (! parse_spec_file (argv [1]))
-    {
-      result = 2;
-      goto fail;
-    }
+  if (! ((! out_fn) ^ (! spec_fn)))
+    fatal (1, "either a spec file or an output file (but not both) must be specified\n");
 
-  if (! process_specs ())
-    {
-      result = 3;
-      goto fail;
-    }
+  if (out_fn && ! inf_count)
+    fatal (1, "no input files specified\n");
+
+  if (spec_fn && inf_count)
+    fatal (1, "if spec file is provided, input files can't be specified as arguments\n");
+
+  if (spec_fn)
+    main_spec (spec_fn);
+  else
+    main_args (out_fn, inf_count, in_fn);
   
- fail:
   close_tiff_input_file ();
   close_pdf_output_files ();
-  return (result);
+  exit (0);
 }

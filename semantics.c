@@ -1,3 +1,28 @@
+/*
+ * t2p: Create a PDF file from the contents of one or more TIFF
+ *      bilevel image files.  The images in the resulting PDF file
+ *      will be compressed using ITU-T T.6 (G4) fax encoding.
+ *
+ * Semantic routines for spec file parser
+ * $Id: semantics.c,v 1.16 2003/01/21 10:30:49 eric Exp $
+ * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.  Note that permission is
+ * not granted to redistribute this program under the terms of any
+ * other version of the General Public License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA */
+
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -674,9 +699,10 @@ bool process_specs (void)
 							    parity,
 							    & input_attributes.page_size);
 
-      process_page (image->range.first + i,
-		    input_attributes,
-		    page->bookmark_list);
+      if (! process_page (image->range.first + i,
+			  input_attributes,
+			  page->bookmark_list))
+	return (0);
       i++;
       p++;
       page_index++;
