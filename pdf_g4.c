@@ -1,10 +1,8 @@
 /*
- * t2p: Create a PDF file from the contents of one or more TIFF
- *      bilevel image files.  The images in the resulting PDF file
- *      will be compressed using ITU-T T.6 (G4) fax encoding.
+ * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_g4.c,v 1.14 2003/03/12 23:59:35 eric Exp $
+ * $Id: pdf_g4.c,v 1.15 2003/03/13 00:57:05 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify

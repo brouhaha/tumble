@@ -1,10 +1,8 @@
 /*
- * t2p: Create a PDF file from the contents of one or more TIFF
- *      bilevel image files.  The images in the resulting PDF file
- *      will be compressed using ITU-T T.6 (G4) fax encoding.
+ * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.31 2003/03/12 23:59:10 eric Exp $
+ * $Id: tumble.c,v 1.32 2003/03/13 00:57:05 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -38,7 +36,7 @@
 #include "bitblt.h"
 #include "semantics.h"
 #include "parser.tab.h"
-#include "t2p.h"
+#include "tumble.h"
 #include "pdf.h"
 
 
@@ -78,8 +76,8 @@ bool close_pdf_output_files (void);
 void usage (void)
 {
   fprintf (stderr, "\n");
-  fprintf (stderr, "t2p - Copyright 2001-2003 Eric Smith <eric@brouhaha.com>\n");
-  fprintf (stderr, "http://www.brouhaha.com/~eric/software/t2p/\n");
+  fprintf (stderr, "tumble - Copyright 2001-2003 Eric Smith <eric@brouhaha.com>\n");
+  fprintf (stderr, "http://www.brouhaha.com/~eric/software/tumble/\n");
   fprintf (stderr, "\n");
   fprintf (stderr, "usage:\n");
   fprintf (stderr, "    %s [options] -s spec\n", progname);

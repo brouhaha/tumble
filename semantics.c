@@ -1,10 +1,8 @@
 /*
- * t2p: Create a PDF file from the contents of one or more TIFF
- *      bilevel image files.  The images in the resulting PDF file
- *      will be compressed using ITU-T T.6 (G4) fax encoding.
+ * tumble: build a PDF file from image files
  *
  * Semantic routines for spec file parser
- * $Id: semantics.c,v 1.18 2003/03/12 00:38:04 eric Exp $
+ * $Id: semantics.c,v 1.19 2003/03/13 00:57:05 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -32,7 +30,7 @@
 
 #include "semantics.h"
 #include "parser.tab.h"
-#include "t2p.h"
+#include "tumble.h"
 
 
 typedef struct
