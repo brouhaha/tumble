@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * bitblt routines
- * $Id: bitblt.h,v 1.13 2003/03/10 01:49:50 eric Exp $
+ * $Id: bitblt.h,v 1.14 2003/03/10 05:08:25 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -47,9 +47,12 @@ static inline int32_t rect_height (Rect *r)
 }
 
 
+/* word_type should be the largest native type that can be handled
+   efficiently, so it shouldn't be a 64-bit type on a processor that
+   doesn't have native 64-bit operations. */
 typedef uint32_t word_type;
 #define BITS_PER_WORD (8 * sizeof (word_type))
-#define ALL_ONES (~ 0U)
+#define ALL_ONES (~ 0UL)
 
 
 typedef struct Bitmap

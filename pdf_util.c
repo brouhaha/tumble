@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_util.c,v 1.4 2003/02/21 02:49:11 eric Exp $
+ * $Id: pdf_util.c,v 1.5 2003/03/10 05:08:25 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -32,7 +32,6 @@
 #include <string.h>
 
 #include "bitblt.h"
-#include "pdf.h"
 #include "pdf_util.h"
 
 

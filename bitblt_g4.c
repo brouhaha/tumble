@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * G4 compression
- * $Id: bitblt_g4.c,v 1.9 2003/03/10 01:49:50 eric Exp $
+ * $Id: bitblt_g4.c,v 1.10 2003/03/10 05:08:25 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -32,6 +32,7 @@
 
 
 #include "bitblt.h"
+#include "pdf_util.h"
 
 
 #include "g4_tables.h"
@@ -134,13 +135,24 @@ static void g4_encode_horizontal_run (struct bit_buffer *buf,
 }
 
 
-static uint32_t find_transition (uint8_t *data,
-				 uint32_t pos,
-				 uint32_t width)
+static inline int g4_get_pixel (uint8_t *buf, uint32_t x)
 {
-  if (! data)
-    return (width);
-  return (0);  /* $$$ */
+  return ((buf [x >> 3] >> (x & 7)) & 1);
+}
+
+
+static uint32_t g4_find_pixel (uint8_t *buf,
+			       uint32_t pos,
+			       uint32_t width,
+			       bool color)
+{
+  while (pos < width)
+    {
+      if (g4_get_pixel (buf, pos) == color)
+	return (pos);
+      pos++;
+    }
+  return (width);
 }
 
 
@@ -149,22 +161,19 @@ static void g4_encode_row (struct bit_buffer *buf,
 			   uint8_t *ref,
 			   uint8_t *row)
 {
-  int a0, a1, a2;
-  int b1, b2;
+  uint32_t a0, a1, a2;
+  uint32_t b1, b2;
+  bool a0_c;
 
-  a0 = -1;
+  a0 = 0;
+  a0_c = 0;
+
+  a1 = g4_find_pixel (row, 0, width, 1);
+  b1 = g4_find_pixel (ref, 0, width, 1);
   
   while (a0 < width)
     {
-      /* find a1, a2 */
-      a1 = find_transition (row, a0, width);
-      a2 = find_transition (row, a1, width);
-
-      /* find b1, b2 */
-      b1 = find_transition (ref, a0, width);
-      if (0) /* $$$ b1 color = a0 color */
-	b1 = find_transition (ref, b1, width);
-      b2 = find_transition (ref, b2, width);
+      b2 = g4_find_pixel (ref, b1 + 1, width, g4_get_pixel (ref, b1));
 
       if (b2 < a1)
 	{
@@ -183,22 +192,41 @@ static void g4_encode_row (struct bit_buffer *buf,
       else
 	{
 	  /* horizontal mode - 001 */
+	  a2 = g4_find_pixel (row, a1, width, a0_c);
 	  write_bits (buf, 3, 0x1);
-	  g4_encode_horizontal_run (buf, 0 /* $$$ color (a0) */, a1 - a0);
-	  g4_encode_horizontal_run (buf, 1 /* $$$ color (a1) */, a2 - a1);
+	  g4_encode_horizontal_run (buf,   a0_c, a1 - a0);
+	  g4_encode_horizontal_run (buf, ! a0_c, a2 - a1);
 	  a0 = a2;
 	}
+
+      if (a0 >= width)
+	break;;
+
+      a0_c = g4_get_pixel (row, a0);
+
+      a1 = g4_find_pixel (row, a0 + 1, width, ! a0_c);
+      b1 = g4_find_pixel (ref, a0 + 1, width, a0_c);
+      b1 = g4_find_pixel (ref, b1 + 1, width, ! a0_c);
     }
 }
 
 
 void bitblt_write_g4 (Bitmap *bitmap, FILE *f)
 {
+  uint32_t width = (bitmap->rect.max.x - bitmap->rect.min.x) + 1;
   uint32_t row;
   struct bit_buffer bb;
 
-  word_type *ref_line = NULL;  /* reference (previous) row */
-  word_type *line = bitmap->bits;
+  word_type *temp_buffer;
+
+  word_type *cur_line;
+  word_type *ref_line;  /* reference (previous) row */
+
+  temp_buffer = pdf_calloc ((width + BITS_PER_WORD - 1) / BITS_PER_WORD,
+			    sizeof (word_type));
+
+  cur_line = bitmap->bits;
+  ref_line = temp_buffer;
 
   memset (& bb, 0, sizeof (bb));
 
@@ -209,11 +237,11 @@ void bitblt_write_g4 (Bitmap *bitmap, FILE *f)
        row++)
     {
       g4_encode_row (& bb,
-		     (bitmap->rect.max.x - bitmap->rect.min.x) + 1,
+		     width,
 		     (uint8_t *) ref_line,
-		     (uint8_t *) line);
-      ref_line = line;
-      line += bitmap->row_words;
+		     (uint8_t *) cur_line);
+      ref_line = cur_line;
+      cur_line += bitmap->row_words;
     }
 
   
@@ -221,6 +249,8 @@ void bitblt_write_g4 (Bitmap *bitmap, FILE *f)
   write_bits (& bb, 24, 0x001001);
 
   flush_bits (& bb);
+
+  free (temp_buffer);
 }
 
 

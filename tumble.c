@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: tumble.c,v 1.27 2003/03/10 01:58:09 eric Exp $
+ * $Id: tumble.c,v 1.28 2003/03/10 05:08:25 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -304,7 +304,7 @@ bool process_page (int image,  /* range 1 .. n */
   uint16_t planar_config;
 
   uint16_t resolution_unit;
-  double x_resolution, y_resolution;
+  float x_resolution, y_resolution;
   double dest_x_resolution, dest_y_resolution;
 
   double width_points, height_points;  /* really 1/72 inch units rather than
@@ -439,19 +439,16 @@ bool process_page (int image,  /* range 1 .. n */
 		image_length * bitmap->row_words * sizeof (word_type));
 #endif /* TIFF_REVERSE_BITS */
 
+#if 0
   if (input_attributes.has_page_size)
     bitmap = resize_bitmap (bitmap,
 			    x_resolution,
 			    y_resolution,
 			    input_attributes);
+#endif
 
   rotate_bitmap (bitmap,
 		 input_attributes);
-
-#ifdef TIFF_REVERSE_BITS
-  reverse_bits ((uint8_t *) bitmap->bits,
-		image_length * bitmap->row_words * sizeof (word_type));
-#endif /* TIFF_REVERSE_BITS */
 
   width_points = (rect_width (& bitmap->rect) / dest_x_resolution) * POINTS_PER_INCH;
   height_points = (rect_height (& bitmap->rect) / dest_y_resolution) * POINTS_PER_INCH;
@@ -464,7 +461,6 @@ bool process_page (int image,  /* range 1 .. n */
 
   page = pdf_new_page (out->pdf, width_points, height_points);
 
-#if 0
   pdf_write_g4_fax_image (page,
 			  0, 0,  /* x, y */
 			  width_points, height_points,
@@ -472,7 +468,6 @@ bool process_page (int image,  /* range 1 .. n */
 			  0, /* ImageMask */
 			  0, 0, 0,  /* r, g, b */
 			  0); /* BlackIs1 */
-#endif
 
   while (bookmarks)
     {
