@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_name_tree.c,v 1.2 2003/03/07 03:28:45 eric Exp $
+ * $Id: pdf_name_tree.c,v 1.3 2003/03/07 03:35:36 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -112,6 +112,8 @@ static void pdf_split_name_tree_node (struct pdf_name_tree *tree,
   new_node = pdf_calloc (1, sizeof (struct pdf_name_tree_node));
   new_node->parent = node->parent;
   new_node->leaf = node->leaf;
+
+  /* $$$ insert new node in parent's kids array */
 }
 
 
@@ -140,7 +142,26 @@ static void pdf_add_tree_element (struct pdf_name_tree *tree,
       return;
     }
 
-  /* $$$ figure out in which slot to insert it */
+  /* figure out in which slot to insert it */
+  for (i = 0; i < node->count; i++)
+    if (pdf_compare_obj (key, node->keys [i] < 0))
+      break;
+
+  /* move other entries right one position */
+  if (i != node->count)
+    {
+      memmove (& node->keys [i+1],
+	       & node->keys [i],
+	       (node->count - i) * sizeof (struct pdf_obj *));
+      memmove (& node->values [i+1],
+	       & node->values [i],
+	       (node->count - i) * sizeof (struct pdf_obj *));
+    }
+
+  node->keys [i] = key;
+  node->values [i] = val;
+
+  node->count++;
 
   /* update limits, recursing upwards if necessary */
   if (i == 0)
@@ -161,7 +182,6 @@ static void pdf_add_tree_element (struct pdf_name_tree *tree,
 	  node->max_key = key;
 	}
     }
-    
 }
 
 
