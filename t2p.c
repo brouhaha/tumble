@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.30 2003/03/12 19:38:59 eric Exp $
+ * $Id: t2p.c,v 1.31 2003/03/12 23:59:10 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -198,7 +198,9 @@ bool open_pdf_output_file (char *name,
       return (0);
     }
 
-  o->pdf = pdf_create (name, PDF_PAGE_MODE_USE_OUTLINES);
+  o->pdf = pdf_create (name, (attributes->has_bookmarks ?
+			      PDF_PAGE_MODE_USE_OUTLINES :
+			      PDF_PAGE_MODE_USE_NONE));
   if (! o->pdf)
     {
       fprintf (stderr, "can't open output file '%s'\n", name);
@@ -461,6 +463,9 @@ bool process_tiff_page (int image,  /* range 1 .. n */
 
   page = pdf_new_page (out->pdf, width_points, height_points);
 
+#if 0
+  pdf_write_text (page);
+#else
   pdf_write_g4_fax_image (page,
 			  0, 0,  /* x, y */
 			  width_points, height_points,
@@ -468,6 +473,7 @@ bool process_tiff_page (int image,  /* range 1 .. n */
 			  0, /* ImageMask */
 			  0, 0, 0,  /* r, g, b */
 			  0); /* BlackIs1 */
+#endif
 
   while (bookmarks)
     {
@@ -603,6 +609,8 @@ void main_args (char *out_fn,
 
   memset (& input_attributes, 0, sizeof (input_attributes));
   memset (& output_attributes, 0, sizeof (output_attributes));
+
+  output_attributes.has_bookmarks = (bookmark_fmt != NULL);
 
   if (! open_pdf_output_file (out_fn, & output_attributes))
     fatal (3, "error opening output file \"%s\"\n", out_fn);

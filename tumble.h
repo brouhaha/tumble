@@ -3,7 +3,7 @@
  *      bilevel image files.  The images in the resulting PDF file
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
- * $Id: tumble.h,v 1.11 2003/01/21 10:30:49 eric Exp $
+ * $Id: tumble.h,v 1.12 2003/03/12 23:59:10 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -52,6 +52,7 @@ typedef struct
   char *title;
   char *subject;
   char *keywords;
+  bool has_bookmarks;
 } pdf_file_attributes_t;
 
 bool open_pdf_output_file (char *name,
