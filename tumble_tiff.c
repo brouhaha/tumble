@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_tiff.c,v 1.4 2003/03/20 06:55:28 eric Exp $
+ * $Id: tumble_tiff.c,v 1.5 2003/03/20 07:22:23 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,6 +28,12 @@
 #include <strings.h>  /* strcasecmp() is a BSDism */
 
 #include <tiffio.h>
+/*
+ * On the x86, libtiff defaults to bit-endian bit order for no good reason.
+ * In theory, the '-L' (and maybe '-H') should give us little-endian bit
+ * order, but it doesn't seem to work.  Thus we reverse the bits ourselves
+ * after we read in the file.
+ */
 #define TIFF_REVERSE_BITS
 
 
@@ -69,7 +75,8 @@ static bool open_tiff_input_file (FILE *f, char *name)
 
   rewind (f);
 
-  if ((buf [0] != 0x49) || (buf [1] != 0x49))
+  if (! (((buf [0] == 0x49) && (buf [1] == 0x49)) ||
+	 ((buf [0] == 0x4d) && (buf [1] == 0x4d))))
     return (0);
 
   tiff_in = TIFFFdOpen (fileno (f), name, "r");
