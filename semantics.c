@@ -42,13 +42,6 @@ typedef struct input_image_t
 } input_image_t;
 
 
-typedef struct bookmark_t
-{
-  struct bookmark_t *next;
-  char *name;
-} bookmark_t;
-
-
 typedef struct output_context_t
 {
   struct output_context_t *parent;
@@ -84,6 +77,7 @@ typedef struct output_page_t
 FILE *yyin;
 int line;  /* line number in spec file */
 
+int bookmark_level;
 
 input_context_t *first_input_context;
 input_context_t *last_input_context;
@@ -309,6 +303,7 @@ void output_set_bookmark (char *name)
       return;
     }
 
+  new_bookmark->level = bookmark_level;
   new_bookmark->name = name;
   if (last_output_context->first_bookmark)
     last_output_context->last_bookmark->next = new_bookmark;
@@ -452,8 +447,7 @@ void dump_output_tree (void)
       if (page->bookmark_list)
 	{
 	  for (bookmark = page->bookmark_list; bookmark; bookmark = bookmark->next)
-	    printf ("bookmark '%s' ", bookmark->name);
-	  printf ("\n");
+	    printf ("bookmark %d '%s'\n", bookmark->level, bookmark->name);
 	}
       for (i = page->range.first; i <= page->range.last; i++)
 	{

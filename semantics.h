@@ -28,7 +28,16 @@ typedef enum
 } input_modifier_type_t;
 
 
+typedef struct bookmark_t
+{
+  struct bookmark_t *next;
+  int level;  /* 1 is outermost */
+  char *name;
+} bookmark_t;
+
+
 extern int line;  /* line number in spec file */
+extern int bookmark_level;
 
 
 boolean parse_spec_file (char *fn);
@@ -43,6 +52,8 @@ void input_set_rotation (int rotation);
 void input_images (range_t range);
 
 /* semantic routines for output statements */
+void output_push_context (void);
+void output_pop_context (void);
 void output_set_file (char *name);
 void output_set_bookmark (char *name);
 void output_set_page_number_format (char *format);
