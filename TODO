@@ -1,5 +1,5 @@
 t2p TODO list
-$Id: TODO,v 1.14 2003/03/12 01:52:09 eric Exp $
+$Id: TODO,v 1.15 2003/03/12 02:59:37 eric Exp $
 
 No particular order.
 
@@ -52,7 +52,7 @@ t2p:
 
 bitblt routines:
 
-* optimize G4 fax encoding
+* fix rotate 180
 
 * finish optimized bitblt code
 
@@ -63,6 +63,12 @@ bitblt routines:
     * rle table
     * g4_get_pixel()
     * g4_find_pixel()
+
+* g4_find_pixel should use native instructions where available
+    * 386:  BSF  bit scan forward
+    * PowerPC:  CLTLZ, CNTLZW  count leasing zeros  (CNTLZD 64-bit)
+    * MC68020:  BFFFO  bit field find first one
+    * Alpha 21264A:  CTTZ  count trailing zeros
 
 -----------------------------------------------------------------------------
 
