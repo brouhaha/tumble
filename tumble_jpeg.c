@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_jpeg.c,v 1.2 2003/03/19 23:53:09 eric Exp $
+ * $Id: tumble_jpeg.c,v 1.3 2003/03/20 00:32:16 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -169,7 +169,7 @@ bool process_jpeg_image (int image,  /* range 1 .. n */
 			image_info->height_samples,
 			jpeg_f);
 
-  return (page);
+  return (1);
 }
 
 
