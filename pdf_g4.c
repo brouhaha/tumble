@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_g4.c,v 1.8 2003/03/05 12:44:33 eric Exp $
+ * $Id: pdf_g4.c,v 1.9 2003/03/10 01:49:50 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,9 +36,6 @@
 #include "pdf_util.h"
 #include "pdf_prim.h"
 #include "pdf_private.h"
-
-
-#include "pdf_g4_tables.h"
 
 
 #define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
@@ -95,130 +92,13 @@ void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
 }
 
 
-static void pdf_g4_encode_horizontal_run (pdf_file_handle pdf_file,
-					  struct pdf_obj *stream,
-					  bool black,
-					  uint32_t run_length)
-{
-  uint32_t i;
-
-  while (run_length >= 2560)
-    {
-      pdf_stream_write_bits (pdf_file, stream, 12, 0x01f);
-      run_length -= 2560;
-    }
-
-  if (run_length >= 1792)
-    {
-      i = (run_length - 1792) >> 6;
-      pdf_stream_write_bits (pdf_file, stream,
-			     g4_long_makeup_code [i].count,
-			     g4_long_makeup_code [i].bits);
-      run_length -= (1792 + (i << 6));
-    }
-  else if (run_length >= 64)
-    {
-      i = (run_length >> 6) - 1;
-      pdf_stream_write_bits (pdf_file, stream,
-			     g4_makeup_code [black] [i].count,
-			     g4_makeup_code [black] [i].bits);
-      run_length -= (i + 1) << 6;
-    }
-
-  pdf_stream_write_bits (pdf_file, stream,
-			 g4_h_code [black] [run_length].count,
-			 g4_h_code [black] [run_length].bits);
-}
-
-
-uint32_t find_transition (uint8_t *data,
-			  uint32_t pos,
-			  uint32_t width)
-{
-  if (! data)
-    return (width);
-  return (0);  /* $$$ */
-}
-
-
-static void pdf_g4_encode_row (pdf_file_handle pdf_file,
-			       struct pdf_obj *stream,
-			       uint32_t width,
-			       uint8_t *ref,
-			       uint8_t *row)
-{
-  int a0, a1, a2;
-  int b1, b2;
-
-  a0 = -1;
-  
-  while (a0 < width)
-    {
-      /* find a1, a2 */
-      a1 = find_transition (row, a0, width);
-      a2 = find_transition (row, a1, width);
-
-      /* find b1, b2 */
-      b1 = find_transition (ref, a0, width);
-      if (0) /* $$$ b1 color = a0 color */
-	b1 = find_transition (ref, b1, width);
-      b2 = find_transition (ref, b2, width);
-
-      if (b2 < a1)
-	{
-	  /* pass mode - 0001 */
-	  pdf_stream_write_bits (pdf_file, stream, 4, 0x1);
-	  a0 = b2;
-	}
-      else if (abs (a1 - b1) <= 3)
-	{
-	  /* vertical mode */
-	  pdf_stream_write_bits (pdf_file, stream,
-				 g4_vert_code [3 + a1 - b1].count,
-				 g4_vert_code [3 + a1 - b1].bits);
-	  a0 = a1;
-	}
-      else
-	{
-	  /* horizontal mode - 001 */
-	  pdf_stream_write_bits (pdf_file, stream, 3, 0x1);
-	  pdf_g4_encode_horizontal_run (pdf_file, stream,
-					0 /* $$$ color (a0) */, a1 - a0);
-	  pdf_g4_encode_horizontal_run (pdf_file, stream,
-					1 /* $$$ color (a1) */, a2 - a1);
-	  a0 = a2;
-	}
-    }
-}
-
-
 void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
 				      struct pdf_obj *stream,
 				      void *app_data)
 {
   struct pdf_g4_image *image = app_data;
 
-  uint32_t row;
-
-  word_type *ref_line = NULL;  /* reference (previous) row */
-  word_type *line = image->bitmap->bits;
-
-  for (row = image->bitmap->rect.min.y;
-       row < image->bitmap->rect.max.y;
-       row++)
-    {
-      pdf_g4_encode_row (pdf_file, stream, image->Columns,
-			 (uint8_t *) ref_line,
-			 (uint8_t *) line);
-      ref_line = line;
-      line += image->bitmap->row_words;
-    }
-
-  
-  /* write EOFB code */
-  pdf_stream_write_bits (pdf_file, stream, 24, 0x001001);
-
-  pdf_stream_flush_bits (pdf_file, stream);
+  bitblt_write_g4 (image->bitmap, pdf_file->f);
 }
 
 

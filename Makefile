@@ -1,6 +1,6 @@
 # t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.20 2003/03/08 02:02:13 eric Exp $
+# $Id: Makefile,v 1.21 2003/03/10 01:49:49 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -62,9 +62,8 @@ PACKAGE = t2p
 TARGETS = t2p
 
 CSRCS = t2p.c semantics.c \
-	bitblt.c bitblt_table_gen.c \
-	pdf_g4.c pdf_g4_table_gen.c \
-	pdf.c pdf_util.c pdf_prim.c pdf_bookmark.c pdf_name_tree.c
+	bitblt.c bitblt_table_gen.c bitblt_g4.c g4_table_gen.c \
+	pdf.c pdf_util.c pdf_prim.c pdf_bookmark.c pdf_name_tree.c pdf_g4.c
 OSRCS = scanner.l parser.y
 HDRS = t2p.h semantics.h bitblt.h \
 	pdf.h pdf_private.h pdf_util.h pdf_prim.h pdf_name_tree.h
@@ -75,7 +74,7 @@ DISTNAME = $(PACKAGE)-$(VERSION)
 
 
 AUTO_CSRCS = scanner.c parser.tab.c
-AUTO_HDRS = parser.tab.h bitblt_tables.h pdf_g4_tables.h
+AUTO_HDRS = parser.tab.h bitblt_tables.h g4_tables.h
 AUTO_MISC = parser.output
 
 
@@ -85,9 +84,9 @@ AUTO_MISC = parser.output
 all: $(TARGETS) $(TEST_TARGETS)
 
 
-t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o \
-		pdf_g4.o \
-		pdf.o pdf_util.o pdf_prim.o pdf_bookmark.o pdf_name_tree.o
+t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o bitblt_g4.o \
+		pdf.o pdf_util.o pdf_prim.o pdf_bookmark.o pdf_name_tree.o \
+		pdf_g4.o
 	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
 ifndef DEBUG
 	strip $@
@@ -99,10 +98,10 @@ bitblt_tables.h: bitblt_table_gen
 
 bitblt_table_gen: bitblt_table_gen.o
 
-pdf_g4_tables.h: pdf_g4_table_gen
-	./pdf_g4_table_gen >pdf_g4_tables.h
+g4_tables.h: g4_table_gen
+	./g4_table_gen >g4_tables.h
 
-pdf_g4_table_gen: pdf_g4_table_gen.o
+g4_table_gen: g4_table_gen.o
 
 
 dist: $(DISTFILES)

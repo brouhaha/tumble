@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * bitblt routines
- * $Id: bitblt.h,v 1.12 2003/02/23 09:40:41 eric Exp $
+ * $Id: bitblt.h,v 1.13 2003/03/10 01:49:50 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -128,3 +128,6 @@ int32_t get_row_run_lengths (Bitmap *src,
 			     int32_t min_x, int32_t max_x,
 			     int32_t max_runs,
 			     run_t *runs);
+
+
+void bitblt_write_g4 (Bitmap *bitmap, FILE *f);

@@ -3,8 +3,8 @@
  *      bilevel image files.  The images in the resulting PDF file
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
- * PDF routines
- * $Id: bitblt_g4.c,v 1.8 2003/03/05 12:44:33 eric Exp $
+ * G4 compression
+ * $Id: bitblt_g4.c,v 1.9 2003/03/10 01:49:50 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -32,108 +32,111 @@
 
 
 #include "bitblt.h"
-#include "pdf.h"
-#include "pdf_util.h"
-#include "pdf_prim.h"
-#include "pdf_private.h"
 
 
-#include "pdf_g4_tables.h"
+#include "g4_tables.h"
 
 
-#define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
+#define BIT_BUF_SIZE 4096
 
-
-struct pdf_g4_image
+struct bit_buffer
 {
-  double width, height;
-  double x, y;
-  double r, g, b;  /* fill color, only for ImageMask */
-  unsigned long Columns;
-  unsigned long Rows;
-  bool ImageMask;
-  bool BlackIs1;
-  Bitmap *bitmap;
-  char XObject_name [4];
+  FILE *f;
+  uint32_t byte_idx;  /* index to next byte position in data buffer */
+  uint32_t bit_idx;   /* index to next bit position in data buffer,
+			 0 = MSB, 7 = LSB */
+  uint8_t data [BIT_BUF_SIZE];
 };
 
 
-char pdf_new_XObject (pdf_page_handle pdf_page, struct pdf_obj *ind_ref)
+static void flush_bits (struct bit_buffer *buf)
 {
-  char XObject_name [4] = "Im ";
-
-  XObject_name [2] = ++pdf_page->last_XObject_name;
-  
-  if (! pdf_page->XObject_dict)
+  size_t s;
+  if (buf->bit_idx)
     {
-      pdf_page->XObject_dict = pdf_new_obj (PT_DICTIONARY);
-      pdf_set_dict_entry (pdf_page->resources, "XObject", pdf_page->XObject_dict);
+      /* zero remaining bits in last byte */
+      buf->data [buf->byte_idx] &= ~ ((1 << (8 - buf->bit_idx)) - 1);
+      buf->byte_idx++;
+      buf->bit_idx = 0;
     }
-
-  pdf_set_dict_entry (pdf_page->XObject_dict, & XObject_name [0], ind_ref);
-
-  return (pdf_page->last_XObject_name);
+  s = fwrite (& buf->data [0], 1, buf->byte_idx, buf->f);
+  /* $$$ should check result */
+  buf->byte_idx = 0;
 }
 
 
-void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
-				    struct pdf_obj *stream,
-				    void *app_data)
+static void advance_byte (struct bit_buffer *buf)
 {
-  struct pdf_g4_image *image = app_data;
-
-  /* transformation matrix is: width 0 0 height x y cm */
-  pdf_stream_printf (pdf_file, stream, "q %g 0 0 %g %g %g cm ",
-		     image->width, image->height,
-		     image->x, image->y);
-  if (image->ImageMask)
-    pdf_stream_printf (pdf_file, stream, "%g %g %g rg ",
-		       image->r, image->g, image->b);
-
-  pdf_stream_printf (pdf_file, stream, "/%s Do Q\r\n",
-		     image->XObject_name);
+  buf->byte_idx++;
+  buf->bit_idx = 0;
+  if (buf->byte_idx == BIT_BUF_SIZE)
+    flush_bits (buf);
 }
 
 
-static void pdf_g4_encode_horizontal_run (pdf_file_handle pdf_file,
-					  struct pdf_obj *stream,
-					  bool black,
-					  uint32_t run_length)
+static void write_bits (struct bit_buffer *buf,
+			uint32_t count,
+			uint32_t bits)
+{
+  uint32_t b2;  /* how many bits will fit in byte in data buffer */
+  uint32_t c2;  /* how many bits to transfer on this iteration */
+  uint32_t d2;  /* bits to transfer on this iteration */
+
+  while (count)
+    {
+      b2 = 8 - buf->bit_idx;
+      if (b2 >= count)
+	c2 = count;
+      else
+	c2 = b2;
+      d2 = bits >> (count - c2);
+      buf->data [buf->byte_idx] |= (d2 << (b2 + c2));
+      buf->bit_idx += c2;
+      if (buf->bit_idx > 7)
+	advance_byte (buf);
+      count -= c2;
+    }
+}
+
+
+static void g4_encode_horizontal_run (struct bit_buffer *buf,
+				      bool black,
+				      uint32_t run_length)
 {
   uint32_t i;
 
   while (run_length >= 2560)
     {
-      pdf_stream_write_bits (pdf_file, stream, 12, 0x01f);
+      write_bits (buf, 12, 0x01f);
       run_length -= 2560;
     }
 
   if (run_length >= 1792)
     {
       i = (run_length - 1792) >> 6;
-      pdf_stream_write_bits (pdf_file, stream,
-			     g4_long_makeup_code [i].count,
-			     g4_long_makeup_code [i].bits);
+      write_bits (buf,
+		  g4_long_makeup_code [i].count,
+		  g4_long_makeup_code [i].bits);
       run_length -= (1792 + (i << 6));
     }
   else if (run_length >= 64)
     {
       i = (run_length >> 6) - 1;
-      pdf_stream_write_bits (pdf_file, stream,
-			     g4_makeup_code [black] [i].count,
-			     g4_makeup_code [black] [i].bits);
+      write_bits (buf,
+		  g4_makeup_code [black] [i].count,
+		  g4_makeup_code [black] [i].bits);
       run_length -= (i + 1) << 6;
     }
 
-  pdf_stream_write_bits (pdf_file, stream,
-			 g4_h_code [black] [run_length].count,
-			 g4_h_code [black] [run_length].bits);
+  write_bits (buf,
+	      g4_h_code [black] [run_length].count,
+	      g4_h_code [black] [run_length].bits);
 }
 
 
-uint32_t find_transition (uint8_t *data,
-			  uint32_t pos,
-			  uint32_t width)
+static uint32_t find_transition (uint8_t *data,
+				 uint32_t pos,
+				 uint32_t width)
 {
   if (! data)
     return (width);
@@ -141,11 +144,10 @@ uint32_t find_transition (uint8_t *data,
 }
 
 
-static void pdf_g4_encode_row (pdf_file_handle pdf_file,
-			       struct pdf_obj *stream,
-			       uint32_t width,
-			       uint8_t *ref,
-			       uint8_t *row)
+static void g4_encode_row (struct bit_buffer *buf,
+			   uint32_t width,
+			   uint8_t *ref,
+			   uint8_t *row)
 {
   int a0, a1, a2;
   int b1, b2;
@@ -167,152 +169,58 @@ static void pdf_g4_encode_row (pdf_file_handle pdf_file,
       if (b2 < a1)
 	{
 	  /* pass mode - 0001 */
-	  pdf_stream_write_bits (pdf_file, stream, 4, 0x1);
+	  write_bits (buf, 4, 0x1);
 	  a0 = b2;
 	}
       else if (abs (a1 - b1) <= 3)
 	{
 	  /* vertical mode */
-	  pdf_stream_write_bits (pdf_file, stream,
-				 g4_vert_code [3 + a1 - b1].count,
-				 g4_vert_code [3 + a1 - b1].bits);
+	  write_bits (buf,
+		      g4_vert_code [3 + a1 - b1].count,
+		      g4_vert_code [3 + a1 - b1].bits);
 	  a0 = a1;
 	}
       else
 	{
 	  /* horizontal mode - 001 */
-	  pdf_stream_write_bits (pdf_file, stream, 3, 0x1);
-	  pdf_g4_encode_horizontal_run (pdf_file, stream,
-					0 /* $$$ color (a0) */, a1 - a0);
-	  pdf_g4_encode_horizontal_run (pdf_file, stream,
-					1 /* $$$ color (a1) */, a2 - a1);
+	  write_bits (buf, 3, 0x1);
+	  g4_encode_horizontal_run (buf, 0 /* $$$ color (a0) */, a1 - a0);
+	  g4_encode_horizontal_run (buf, 1 /* $$$ color (a1) */, a2 - a1);
 	  a0 = a2;
 	}
     }
 }
 
 
-void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
-				      struct pdf_obj *stream,
-				      void *app_data)
+void bitblt_write_g4 (Bitmap *bitmap, FILE *f)
 {
-  struct pdf_g4_image *image = app_data;
-
   uint32_t row;
+  struct bit_buffer bb;
 
   word_type *ref_line = NULL;  /* reference (previous) row */
-  word_type *line = image->bitmap->bits;
+  word_type *line = bitmap->bits;
 
-  for (row = image->bitmap->rect.min.y;
-       row < image->bitmap->rect.max.y;
+  memset (& bb, 0, sizeof (bb));
+
+  bb.f = f;
+
+  for (row = bitmap->rect.min.y;
+       row < bitmap->rect.max.y;
        row++)
     {
-      pdf_g4_encode_row (pdf_file, stream, image->Columns,
-			 (uint8_t *) ref_line,
-			 (uint8_t *) line);
+      g4_encode_row (& bb,
+		     (bitmap->rect.max.x - bitmap->rect.min.x) + 1,
+		     (uint8_t *) ref_line,
+		     (uint8_t *) line);
       ref_line = line;
-      line += image->bitmap->row_words;
+      line += bitmap->row_words;
     }
 
   
   /* write EOFB code */
-  pdf_stream_write_bits (pdf_file, stream, 24, 0x001001);
+  write_bits (& bb, 24, 0x001001);
 
-  pdf_stream_flush_bits (pdf_file, stream);
+  flush_bits (& bb);
 }
 
-
-void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
-			     double x,
-			     double y,
-			     double width,
-			     double height,
-			     Bitmap *bitmap,
-			     bool ImageMask,
-			     double r, /* RGB fill color, only for ImageMask */
-			     double g,
-			     double b,
-			     bool BlackIs1)          /* boolean, typ. false */
-{
-  struct pdf_g4_image *image;
-
-  struct pdf_obj *stream;
-  struct pdf_obj *stream_dict;
-  struct pdf_obj *decode_parms;
-
-  struct pdf_obj *content_stream;
-
-  image = pdf_calloc (1, sizeof (struct pdf_g4_image));
-
-  image->width = width;
-  image->height = height;
-  image->x = x;
-  image->y = y;
-  image->r = r;
-  image->g = g;
-  image->b = b;
-
-  image->bitmap = bitmap;
-  image->Columns = bitmap->rect.max.x - bitmap->rect.min.x;
-  image->Rows = bitmap->rect.max.y - bitmap->rect.min.y;
-  image->ImageMask = ImageMask;
-  image->BlackIs1 = BlackIs1;
-
-  stream_dict = pdf_new_obj (PT_DICTIONARY);
-
-  stream = pdf_new_ind_ref (pdf_page->pdf_file,
-			    pdf_new_stream (pdf_page->pdf_file,
-					    stream_dict,
-					    & pdf_write_g4_fax_image_callback,
-					    image));
-
-  strcpy (& image->XObject_name [0], "Im ");
-  image->XObject_name [2] = pdf_new_XObject (pdf_page, stream);
-
-  pdf_set_dict_entry (stream_dict, "Type",    pdf_new_name ("XObject"));
-  pdf_set_dict_entry (stream_dict, "Subtype", pdf_new_name ("Image"));
-  pdf_set_dict_entry (stream_dict, "Name",    pdf_new_name (& image->XObject_name [0]));
-  pdf_set_dict_entry (stream_dict, "Width",   pdf_new_integer (image->Columns));
-  pdf_set_dict_entry (stream_dict, "Height",  pdf_new_integer (image->Rows));
-  pdf_set_dict_entry (stream_dict, "BitsPerComponent", pdf_new_integer (1));
-  if (ImageMask)
-    pdf_set_dict_entry (stream_dict, "ImageMask", pdf_new_bool (ImageMask));
-  else
-    pdf_set_dict_entry (stream_dict, "ColorSpace", pdf_new_name ("DeviceGray"));
-
-  decode_parms = pdf_new_obj (PT_DICTIONARY);
-
-  pdf_set_dict_entry (decode_parms,
-		      "K",
-		      pdf_new_integer (-1));
-
-  pdf_set_dict_entry (decode_parms,
-		      "Columns",
-		      pdf_new_integer (image->Columns));
-
-  pdf_set_dict_entry (decode_parms,
-		      "Rows",
-		      pdf_new_integer (image->Rows));
-
-  if (BlackIs1)
-    pdf_set_dict_entry (decode_parms,
-			"BlackIs1",
-			pdf_new_bool (BlackIs1));
-
-  pdf_stream_add_filter (stream, "CCITTFaxDecode", decode_parms);
-
-  /* the following will write the stream, using our callback function to
-     get the actual data */
-  pdf_write_ind_obj (pdf_page->pdf_file, stream);
-
-  content_stream = pdf_new_ind_ref (pdf_page->pdf_file,
-				    pdf_new_stream (pdf_page->pdf_file,
-						    pdf_new_obj (PT_DICTIONARY),
-						    & pdf_write_g4_content_callback,
-						    image));
-
-  pdf_set_dict_entry (pdf_page->page_dict, "Contents", content_stream);
-
-  pdf_write_ind_obj (pdf_page->pdf_file, content_stream);
-}
 

@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.c,v 1.7 2003/03/07 03:02:31 eric Exp $
+ * $Id: pdf_prim.c,v 1.8 2003/03/10 01:49:50 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -66,8 +66,6 @@ struct pdf_dict
 };
 
 
-#define STREAM_BUF_SIZE 4096
-
 struct pdf_stream
 {
   struct pdf_obj *stream_dict;
@@ -76,13 +74,6 @@ struct pdf_stream
   void *app_data;  /* arg to pass to callback */
   struct pdf_obj *filters;  /* name or array of names */
   struct pdf_obj *decode_parms;
-
-  /* The following fields are used by pdf_stream_write_bits() and
-     pdf_stream_flush_bits(). */
-  uint32_t byte_idx;  /* index to next byte position in data buffer */
-  uint32_t bit_idx;   /* index to next bit position in data buffer,
-			 0 = MSB, 7 = LSB */
-  uint8_t data [STREAM_BUF_SIZE];
 };
 
 
@@ -490,65 +481,6 @@ void pdf_stream_write_data (pdf_file_handle pdf_file,
       len -= l2;
       if (ferror (pdf_file->f))
 	pdf_fatal ("error writing stream data\n");
-    }
-}
-
-
-void pdf_stream_flush_bits (pdf_file_handle pdf_file,
-			    struct pdf_obj *stream)
-{
-  struct pdf_stream *s = & stream->val.stream;
-
-  if (s->bit_idx)
-    {
-      /* zero remaining bits in last byte */
-      s->data [s->byte_idx] &= ~ ((1 << (8 - s->bit_idx)) - 1);
-      s->byte_idx++;
-      s->bit_idx = 0;
-    }
-  pdf_stream_write_data (pdf_file, stream, 
-			 (char *) & s->data [0],
-			 s->byte_idx);
-  s->byte_idx = 0;
-}
-
-
-static void pdf_stream_advance_byte (pdf_file_handle pdf_file,
-				     struct pdf_obj *stream)
-{
-  struct pdf_stream *s = & stream->val.stream;
-
-  s->byte_idx++;
-  s->bit_idx = 0;
-  if (s->byte_idx == STREAM_BUF_SIZE)
-    pdf_stream_flush_bits (pdf_file, stream);
-}
-
-
-void pdf_stream_write_bits (pdf_file_handle pdf_file,
-			    struct pdf_obj *stream,
-			    uint32_t count,
-			    uint32_t bits)
-{
-  struct pdf_stream *s = & stream->val.stream;
-
-  uint32_t b2;  /* how many bits will fit in byte in data buffer */
-  uint32_t c2;  /* how many bits to transfer on this iteration */
-  uint32_t d2;  /* bits to transfer on this iteration */
-
-  while (count)
-    {
-      b2 = 8 - s->bit_idx;
-      if (b2 >= count)
-	c2 = count;
-      else
-	c2 = b2;
-      d2 = bits >> (count - c2);
-      s->data [s->byte_idx] |= (d2 << (b2 + c2));
-      s->bit_idx += c2;
-      if (s->bit_idx > 7)
-	pdf_stream_advance_byte (pdf_file, stream);
-      count -= c2;
     }
 }
 
