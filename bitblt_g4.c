@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * G4 compression
- * $Id: bitblt_g4.c,v 1.12 2003/03/12 02:59:29 eric Exp $
+ * $Id: bitblt_g4.c,v 1.13 2003/03/12 19:30:44 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -42,7 +42,7 @@
 #include "g4_tables.h"
 
 
-#define BIT_BUF_SIZE 1 /* 4096 */
+#define BIT_BUF_SIZE 4096
 
 struct bit_buffer
 {
