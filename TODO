@@ -1,11 +1,17 @@
 t2p TODO list
-$Id: TODO,v 1.16 2003/03/12 23:57:35 eric Exp $
+$Id: TODO,v 1.17 2003/03/19 17:08:05 eric Exp $
 
 No particular order.
 
 -----------------------------------------------------------------------------
 
 t2p:
+
+* support JPEG (JFIF, EXIF)
+
+* multiple "-b" options on command line
+
+* page labels on command line
 
 * pages containing multiple images
     * spec language needs major changes
@@ -14,9 +20,7 @@ t2p:
         * add image
         * close page
 
-* support JPEG (JFIF, EXIF)
-
-* page labels
+* overlay G4 images in different colors - use ImageMask and the fill color
 
 * crop
 
@@ -38,8 +42,6 @@ t2p:
 
 * generate text, line art - option to embed fonts
 
-* overlay G4 images in different colors - use ImageMask and the fill color
-
 * bilevel thresholding of color and grey scale input
 
 * automatic separation using timify code from Tim Shoppa?
@@ -51,8 +53,6 @@ t2p:
 -----------------------------------------------------------------------------
 
 bitblt routines:
-
-* fix rotate 180
 
 * finish optimized bitblt code
 
