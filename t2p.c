@@ -5,7 +5,7 @@
  *           encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.10 2001/12/31 21:41:03 eric Exp $
+ * $Id: t2p.c,v 1.11 2001/12/31 22:11:43 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -114,7 +114,8 @@ boolean close_pdf_output_files (void)
   return (1);
 }
 
-boolean open_pdf_output_file (char *name)
+boolean open_pdf_output_file (char *name,
+			      pdf_file_attributes_t *attributes)
 {
   output_file_t *o;
 
@@ -149,6 +150,17 @@ boolean open_pdf_output_file (char *name)
       free (o);
       return (0);
     }
+
+  if (attributes->author)
+    panda_setauthor (o->pdf, attributes->author);
+  if (attributes->creator)
+    panda_setcreator (o->pdf, attributes->creator);
+  if (attributes->title)
+    panda_settitle (o->pdf, attributes->title);
+  if (attributes->subject)
+    panda_setsubject (o->pdf, attributes->subject);
+  if (attributes->keywords)
+    panda_setkeywords (o->pdf, attributes->keywords);
 
   /* prepend new output file onto list */
   o->next = output_files;

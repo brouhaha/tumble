@@ -52,6 +52,8 @@ typedef struct output_context_t
 		      including those from subcontexts */
 
   char *output_file;
+  pdf_file_attributes_t file_attributes;
+
   bookmark_t *first_bookmark;
   bookmark_t *last_bookmark;
 
@@ -285,7 +287,37 @@ void output_set_file (char *name)
 {
   output_clone ();
   last_output_context->output_file = name;
+  last_output_context->file_attributes.author = NULL;
+  last_output_context->file_attributes.creator = NULL;
+  last_output_context->file_attributes.title = NULL;
+  last_output_context->file_attributes.subject = NULL;
+  last_output_context->file_attributes.keywords = NULL;
 };
+
+void output_set_author (char *author)
+{
+  last_output_context->file_attributes.author = author;
+}
+
+void output_set_creator (char *creator)
+{
+  last_output_context->file_attributes.creator = creator;
+}
+
+void output_set_title (char *title)
+{
+  last_output_context->file_attributes.title = title;
+}
+
+void output_set_subject (char *subject)
+{
+  last_output_context->file_attributes.subject = subject;
+}
+
+void output_set_keywords (char *keywords)
+{
+  last_output_context->file_attributes.keywords = keywords;
+}
 
 void output_set_bookmark (char *name)
 {
@@ -408,7 +440,16 @@ static char *get_output_file (output_context_t *context)
   for (; context; context = context->parent)
     if (context->output_file)
       return (context->output_file);
-  fprintf (stderr, "no output file name found\n");
+  fprintf (stderr, "no output file found\n");
+  exit (2);
+}
+
+static pdf_file_attributes_t *get_output_file_attributes (output_context_t *context)
+{
+  for (; context; context = context->parent)
+    if (context->output_file)
+      return (& context->file_attributes);
+  fprintf (stderr, "no output file found\n");
   exit (2);
 }
 
@@ -557,7 +598,8 @@ boolean process_specs (void)
 	  else
 	    page = first_output_page;
 	  p = 0;
-	  if (! open_pdf_output_file (get_output_file (page->output_context)))
+	  if (! open_pdf_output_file (get_output_file (page->output_context),
+				      get_output_file_attributes (page->output_context)))
 	    return (0);
 	  page_label = get_output_page_label (page->output_context);
 	  process_page_numbers (page_index,

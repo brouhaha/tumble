@@ -8,7 +8,19 @@ typedef struct
 boolean open_tiff_input_file (char *name);
 boolean close_tiff_input_file (void);
 
-boolean open_pdf_output_file (char *name);
+
+typedef struct
+{
+  char *author;
+  char *creator;
+  char *title;
+  char *subject;
+  char *keywords;
+} pdf_file_attributes_t;
+
+boolean open_pdf_output_file (char *name,
+			      pdf_file_attributes_t *attributes);
+
 
 void process_page_numbers (int page_index,
 			   int count,

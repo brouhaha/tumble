@@ -57,7 +57,14 @@ void input_images (range_t range);
 /* semantic routines for output statements */
 void output_push_context (void);
 void output_pop_context (void);
+
 void output_set_file (char *name);
+void output_set_author (char *author);
+void output_set_creator (char *creator);
+void output_set_title (char *title);
+void output_set_subject (char *subject);
+void output_set_keywords (char *keywords);
+
 void output_set_bookmark (char *name);
 void output_set_page_label (page_label_t label);
 void output_pages (range_t range);

@@ -47,6 +47,12 @@
 %token BOOKMARK
 %token OUTPUT
 
+%token AUTHOR
+%token CREATOR
+%token TITLE
+%token SUBJECT
+%token KEYWORDS
+
 %type <range> range
 %type <range> image_ranges
 %type <range> page_ranges
@@ -151,8 +157,21 @@ input_clause_list:
 input_statement:
 	INPUT input_clauses ;
 
+pdf_file_attribute:
+	AUTHOR STRING { output_set_author ($2); }
+	| CREATOR STRING { output_set_creator ($2); }
+	| TITLE STRING { output_set_title ($2); }
+	| SUBJECT STRING { output_set_subject ($2); }
+	| KEYWORDS STRING { output_set_keywords ($2); } ;
+
+pdf_file_attributes:
+	/* empty */
+	| pdf_file_attribute
+	| pdf_file_attributes pdf_file_attribute ;
+
 output_file_clause:
-	FILE_KEYWORD STRING  ';' { output_set_file ($2) } ;
+	FILE_KEYWORD STRING { output_set_file ($2); }
+	pdf_file_attributes ';'
 
 label_clause:
 	LABEL ';' { page_label_t label = { NULL, '\0' }; output_set_page_label (label); }

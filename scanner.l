@@ -1,5 +1,5 @@
 /*
-$Id: scanner.l,v 1.12 2001/12/31 19:46:08 eric Exp $
+$Id: scanner.l,v 1.13 2001/12/31 22:11:43 eric Exp $
 */
 
 %option case-insensitive
@@ -49,8 +49,10 @@ e		{ yylval.size.width = 34.0 * 25.4;
                   return (PAGE_SIZE); }
 
 all		{ return (ALL); }
+author		{ return (AUTHOR); }
 bookmark	{ return (BOOKMARK); }
 cm		{ return (CM); }
+creator		{ return (CREATOR); }
 crop		{ return (CROP); }
 even		{ return (EVEN); }
 file		{ return (FILE_KEYWORD); }
@@ -58,6 +60,7 @@ image		{ return (IMAGE); }
 images		{ return (IMAGES); }
 inch		{ return (INCH); }
 input		{ return (INPUT); }
+keywords	{ return (KEYWORDS); }
 label		{ return (LABEL); }
 landscape	{ return (LANDSCAPE); }
 odd		{ return (ODD); }
@@ -68,6 +71,8 @@ portrait	{ return (PORTRAIT) ; }
 resolution	{ return (RESOLUTION) ; }
 rotate		{ return (ROTATE); }
 size		{ return (SIZE); }
+subject		{ return (SUBJECT); }
+title		{ return (TITLE); }
 
 '[^\n']'	{
 		  yylval.character = yytext [1];
