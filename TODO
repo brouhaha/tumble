@@ -1,11 +1,11 @@
-t2p TODO list
-$Id: TODO,v 1.18 2003/03/19 23:06:35 eric Exp $
+tumble TODO list
+$Id: TODO,v 1.19 2003/03/20 07:26:16 eric Exp $
 
 No particular order.
 
 -----------------------------------------------------------------------------
 
-t2p:
+tumble:
 
 * input handlers shouldn't use globals, use pointer to private structure
   instead.
@@ -39,11 +39,14 @@ t2p:
 
 * flip, transpose
 
+* support color & grayscale TIFF images
+    * pass JPEG through unchanged, others must be encoded
+
 * support PNG, BMP, and other input file formats
 
 * generate text, line art - option to embed fonts
 
-* bilevel thresholding of color and grey scale input
+* bilevel thresholding of color and grayscale input
 
 * automatic separation using timify code from Tim Shoppa?
 
@@ -60,7 +63,7 @@ bitblt routines:
 * optimize inner loops in flip_h and flip_v with Duff's Device
 
 * check for endian problems
-    * reading TIFF - don't bit-reverse on big-endian machines
+    * reading TIFF (don't define TIFF_REVERSE_BITS on some hosts)
     * rle table
     * g4_get_pixel()
     * g4_find_pixel()
