@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_bookmark.c,v 1.4 2003/03/05 12:44:33 eric Exp $
+ * $Id: pdf_bookmark.c,v 1.5 2003/03/05 12:56:25 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,6 +36,24 @@
 #include "pdf_util.h"
 #include "pdf_prim.h"
 #include "pdf_private.h"
+
+
+struct pdf_bookmark
+{
+  struct pdf_obj *dict;    /* indirect reference */
+  struct pdf_obj *count;
+  bool open;
+
+  struct pdf_bookmark *first;
+  struct pdf_bookmark *last;
+
+  /* the following fields don't appear in the root */
+  /* title and dest are in the dictionary but don't have
+     explicit fields in the C structure */
+  struct pdf_bookmark *parent;
+  struct pdf_bookmark *prev;
+  struct pdf_bookmark *next;
+};
 
 
 static void pdf_bookmark_update_count (pdf_bookmark_handle entry)
