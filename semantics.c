@@ -5,6 +5,7 @@
 #include "type.h"
 #include "semantics.h"
 #include "parser.tab.h"
+#include "tiff2pdf.h"
 
 
 typedef struct
@@ -53,7 +54,9 @@ typedef struct output_context_t
   char *output_file;
   bookmark_t *first_bookmark;
   bookmark_t *last_bookmark;
-  char *page_number_format;
+
+  boolean has_page_label;
+  page_label_t page_label;
 } output_context_t;
 
 
@@ -312,10 +315,11 @@ void output_set_bookmark (char *name)
   last_output_context->last_bookmark = new_bookmark;
 }
 
-void output_set_page_number_format (char *format)
+void output_set_page_label (page_label_t label)
 {
   output_clone ();
-  last_output_context->page_number_format = format;
+  last_output_context->has_page_label = 1;
+  last_output_context->page_label = label;
 }
 
 static void increment_output_page_count (int count)
@@ -408,11 +412,11 @@ static char *get_output_file (output_context_t *context)
   exit (2);
 }
 
-static char *get_output_page_number_format (output_context_t *context)
+static page_label_t *get_output_page_label (output_context_t *context)
 {
   for (; context; context = context->parent)
-    if (context->page_number_format)
-      return (context->page_number_format);
+    if (context->has_page_label)
+      return (& context->page_label);
   return (NULL);  /* default */
 }
 
@@ -447,17 +451,86 @@ void dump_output_tree (void)
       if (page->bookmark_list)
 	{
 	  for (bookmark = page->bookmark_list; bookmark; bookmark = bookmark->next)
-	    printf ("bookmark %d '%s'\n", bookmark->level, bookmark->name);
+	    printf ("bookmark %d \"%s\"\n", bookmark->level, bookmark->name);
 	}
       for (i = page->range.first; i <= page->range.last; i++)
 	{
-	  printf ("file '%s' ", get_output_file (page->output_context));
-	  printf ("format '%s' ", get_output_page_number_format (page->output_context));
+	  page_label_t *label = get_output_page_label (page->output_context);
+	  printf ("file \"%s\" ", get_output_file (page->output_context));
+	  if (label)
+	    {
+	      printf ("label ");
+	      if (label->prefix)
+		printf ("\"%s\" ", label->prefix);
+	      if (label->style)
+		printf ("'%c' ", label->style);
+	    }
 	  printf ("page %d\n", i);
 	}
     }
 }
 #endif /* SEMANTIC_DEBUG */
+
+
+static inline int range_count (range_t range)
+{
+  return ((range.last - range.first) + 1);
+}
+
+
+void doit (void)
+{
+  input_image_t *image = NULL;
+  output_page_t *page = NULL;
+  int i = 0;
+  int p = 0;
+  int page_index = 0;
+  input_attributes_t input_attributes;
+  input_modifier_type_t parity;
+  page_label_t *page_label;
+
+  for (;;)
+    {
+      if ((! image) || (i >= range_count (image->range)))
+	{
+	  if (image)
+	    image = image->next;
+	  else
+	    image = first_input_image;
+	  if (! image)
+	    return;
+	  i = 0;
+	}
+
+      if ((! page) || (p >= range_count (page->range)))
+	{
+	  if (page)
+	    page = page->next;
+	  else
+	    page = first_output_page;
+	  p = 0;
+	  page_label = get_output_page_label (page->output_context);
+	  process_page_numbers (page_index,
+				range_count (page->range),
+				page->range.first,
+				page_label);
+	}
+
+      parity = ((image->range.first + i) % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
+
+      memset (& input_attributes, 0, sizeof (input_attributes));
+      input_attributes.rotation = get_input_rotation (image->input_context,
+						      parity);;
+
+      process_page (image->range.first + i,
+		    input_attributes,
+		    page->bookmark_list);
+      i++;
+      p++;
+      page_index++;
+    }
+}
+
 
 boolean parse_spec_file (char *fn)
 {

@@ -18,6 +18,12 @@ typedef struct
   double bottom;
 } crop_t;
 
+typedef struct
+{
+  char *prefix;
+  char style;
+} page_label_t;
+
 
 typedef enum
 {
@@ -56,5 +62,5 @@ void output_push_context (void);
 void output_pop_context (void);
 void output_set_file (char *name);
 void output_set_bookmark (char *name);
-void output_set_page_number_format (char *format);
+void output_set_page_label (page_label_t label);
 void output_pages (range_t range);

@@ -1,7 +1,7 @@
 /*
  * tiffg4: reencode a bilevel TIFF file as a single-strip TIFF Class F Group 4
  * Main program
- * $Id: tumble.c,v 1.6 2001/12/31 00:25:04 eric Exp $
+ * $Id: tumble.c,v 1.7 2001/12/31 08:44:24 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -80,9 +80,17 @@ boolean open_pdf_output_file (char *name)
 }
 
 
+void process_page_numbers (int page_index,
+			   int count,
+			   int base,
+			   page_label_t *page_label)
+{
+}
+
+
 boolean process_page (int image,  /* range 1 .. n */
 		      input_attributes_t input_attributes,
-		      output_attributes_t output_attributes)
+		      bookmark_t *bookmarks)
 {
   u32 image_length, image_width;
 #ifdef CHECK_DEPTH
