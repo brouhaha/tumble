@@ -1,10 +1,12 @@
 /*
-$Id: scanner.l,v 1.6 2001/12/29 10:59:33 eric Exp $
+$Id: scanner.l,v 1.7 2001/12/29 17:54:43 eric Exp $
 */
 
 %option case-insensitive
+%option noyywrap
 
 %{
+#include <string.h>
 #include "parser.tab.h"
 %}
 
