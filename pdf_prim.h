@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.h,v 1.8 2003/03/11 23:43:56 eric Exp $
+ * $Id: pdf_prim.h,v 1.9 2003/03/12 22:56:57 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -52,11 +52,24 @@ typedef void (*pdf_stream_write_callback)(pdf_file_handle pdf_file,
 					  void *app_data);
 
 
+/* returns -1 if o1 < 02, 0 if o1 == o2, 1 if o1 > o2 */
+/* only works for integer, real, string, and name objects */
+int pdf_compare_obj (struct pdf_obj *o1, struct pdf_obj *o2);
+
+
 void pdf_set_dict_entry (struct pdf_obj *dict_obj, char *key, struct pdf_obj *val);
 struct pdf_obj *pdf_get_dict_entry (struct pdf_obj *dict_obj, char *key);
 
 
 void pdf_add_array_elem (struct pdf_obj *array_obj, struct pdf_obj *val);
+
+
+/* Following is intended for things like ProcSet in which an array object
+   is used to represent a set.  Only works if all objects in array, and
+   the element to be added are of scalar types (types that are supported
+   by pdf_compare_obj.  Not efficient for large arrays as it does a
+   comaprison to every element. */
+void pdf_add_array_elem_unique (struct pdf_obj *array_obj, struct pdf_obj *val);
 
 
 /* Create a new object that will NOT be used indirectly */
@@ -86,10 +99,6 @@ void pdf_set_integer (struct pdf_obj *obj, long val);
 
 double pdf_get_real (struct pdf_obj *obj);
 void pdf_set_real (struct pdf_obj *obj, double val);
-
-
-/* returns -1 if o1 < 02, 0 if o1 == o2, 1 if o1 > o2 */
-int pdf_compare_obj (struct pdf_obj *o1, struct pdf_obj *o2);
 
 
 /* The callback will be called when the stream data is to be written to the

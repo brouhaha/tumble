@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf.c,v 1.7 2003/03/12 03:17:00 eric Exp $
+ * $Id: pdf.c,v 1.8 2003/03/12 22:56:57 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -181,7 +181,7 @@ pdf_page_handle pdf_new_page (pdf_file_handle pdf_file,
   pdf_add_array_elem (page->media_box, pdf_new_real (height));
 
   page->procset = pdf_new_obj (PT_ARRAY);
-  pdf_add_array_elem (page->procset, pdf_new_name ("PDF"));
+  pdf_add_array_elem_unique (page->procset, pdf_new_name ("PDF"));
 
   page->resources = pdf_new_obj (PT_DICTIONARY);
   pdf_set_dict_entry (page->resources, "ProcSet", page->procset);

@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.c,v 1.9 2003/03/11 23:43:56 eric Exp $
+ * $Id: pdf_prim.c,v 1.10 2003/03/12 22:56:57 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -180,6 +180,32 @@ void pdf_add_array_elem (struct pdf_obj *array_obj, struct pdf_obj *val)
     array_obj = pdf_deref_ind_obj (array_obj);
 
   pdf_assert (array_obj->type == PT_ARRAY);
+
+  elem->val = ref (val);
+
+  if (! array_obj->val.array.first)
+    array_obj->val.array.first = elem;
+  else
+    array_obj->val.array.last->next = elem;
+
+  array_obj->val.array.last = elem;
+}
+
+
+void pdf_add_array_elem_unique (struct pdf_obj *array_obj, struct pdf_obj *val)
+{
+  struct pdf_array_elem *elem;
+
+  if (array_obj->type == PT_IND_REF)
+    array_obj = pdf_deref_ind_obj (array_obj);
+
+  pdf_assert (array_obj->type == PT_ARRAY);
+
+  for (elem = array_obj->val.array.first; elem; elem = elem->next)
+    if (pdf_compare_obj (val, elem->val) == 0)
+      return;
+
+  elem = pdf_calloc (1, sizeof (struct pdf_array_elem));
 
   elem->val = ref (val);
 
@@ -374,6 +400,8 @@ int pdf_compare_obj (struct pdf_obj *o1, struct pdf_obj *o2)
       return (0);
     case PT_STRING:
       return (strcmp (o1->val.string, o2->val.string));
+    case PT_NAME:
+      return (strcmp (o1->val.name, o2->val.name));
     default:
       pdf_fatal ("invalid object type for comparison\n");
     }
