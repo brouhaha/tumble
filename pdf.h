@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf.h,v 1.10 2003/03/14 00:24:37 eric Exp $
+ * $Id: pdf.h,v 1.11 2003/03/14 00:57:40 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -30,15 +30,15 @@ typedef struct pdf_bookmark *pdf_bookmark_handle;
 
 
 #define PDF_PAGE_MODE_USE_NONE     0
-#define PDF_PAGE_MODE_USE_OUTLINES 1
+#define PDF_PAGE_MODE_USE_OUTLINES 1  /* if no outlines, will use NONE */
 #define PDF_PAGE_MODE_USE_THUMBS   2  /* not yet implemented */
 
 
 void pdf_init (void);
 
-pdf_file_handle pdf_create (char *filename, int page_mode);
+pdf_file_handle pdf_create (char *filename);
 
-void pdf_close (pdf_file_handle pdf_file);
+void pdf_close (pdf_file_handle pdf_file, int page_mode);
 
 void pdf_set_author   (pdf_file_handle pdf_file, char *author);
 void pdf_set_creator  (pdf_file_handle pdf_file, char *author);

@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf.c,v 1.12 2003/03/14 00:24:37 eric Exp $
+ * $Id: pdf.c,v 1.13 2003/03/14 00:57:40 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -67,19 +67,9 @@ struct pdf_pages *pdf_new_pages (pdf_file_handle pdf_file)
 }
 
 
-pdf_file_handle pdf_create (char *filename, int page_mode)
+pdf_file_handle pdf_create (char *filename)
 {
   pdf_file_handle pdf_file;
-  char *page_mode_string;
-
-  switch (page_mode)
-    {
-    case PDF_PAGE_MODE_USE_NONE:      page_mode_string = "UseNone";     break;
-    case PDF_PAGE_MODE_USE_OUTLINES:  page_mode_string = "UseOutlines"; break;
-    case PDF_PAGE_MODE_USE_THUMBS:    page_mode_string = "UseThumbs";   break;
-    default:
-      pdf_fatal ("invalid page mode\n");
-    }
 
   pdf_file = pdf_calloc (1, sizeof (struct pdf_file));
 
@@ -95,9 +85,6 @@ pdf_file_handle pdf_create (char *filename, int page_mode)
   pdf_set_dict_entry (pdf_file->catalog, "Type", pdf_new_name ("Catalog"));
   pdf_set_dict_entry (pdf_file->catalog, "Pages", pdf_file->root->pages_dict);
   /* Outlines dictionary will be created later if needed */
-  pdf_set_dict_entry (pdf_file->catalog,
-		      "PageMode",
-		      pdf_new_name (page_mode_string));
   pdf_set_dict_entry (pdf_file->catalog, "PageLayout", pdf_new_name ("SinglePage"));
 
   pdf_file->info    = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
@@ -119,8 +106,31 @@ pdf_file_handle pdf_create (char *filename, int page_mode)
 }
 
 
-void pdf_close (pdf_file_handle pdf_file)
+void pdf_close (pdf_file_handle pdf_file, int page_mode)
 {
+  char *page_mode_string;
+
+  page_mode_string = "UseNone";
+
+  switch (page_mode)
+    {
+    case PDF_PAGE_MODE_USE_NONE:
+      break;
+    case PDF_PAGE_MODE_USE_OUTLINES:
+      if (pdf_file->outline_root)
+	page_mode_string = "UseOutlines";
+      break;
+    case PDF_PAGE_MODE_USE_THUMBS:
+      page_mode_string = "UseThumbs";
+      break;
+    default:
+      pdf_fatal ("invalid page mode\n");
+    }
+
+  pdf_set_dict_entry (pdf_file->catalog,
+		      "PageMode",
+		      pdf_new_name (page_mode_string));
+
   /* finalize trees, object numbers aren't allocated until this step */
   pdf_finalize_name_trees (pdf_file);
 

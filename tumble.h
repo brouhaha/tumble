@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble.h,v 1.14 2003/03/14 00:24:37 eric Exp $
+ * $Id: tumble.h,v 1.15 2003/03/14 00:57:40 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -50,7 +50,6 @@ typedef struct
   char *title;
   char *subject;
   char *keywords;
-  bool has_bookmarks;
 } pdf_file_attributes_t;
 
 bool open_pdf_output_file (char *name,

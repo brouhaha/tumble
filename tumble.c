@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.34 2003/03/14 00:24:37 eric Exp $
+ * $Id: tumble.c,v 1.35 2003/03/14 00:57:40 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -159,7 +159,7 @@ bool close_pdf_output_files (void)
   for (o = output_files; o; o = n)
     {
       n = o->next;
-      pdf_close (o->pdf);
+      pdf_close (o->pdf, PDF_PAGE_MODE_USE_OUTLINES);
       free (o->name);
       free (o);
     }
@@ -196,9 +196,7 @@ bool open_pdf_output_file (char *name,
       return (0);
     }
 
-  o->pdf = pdf_create (name, (attributes->has_bookmarks ?
-			      PDF_PAGE_MODE_USE_OUTLINES :
-			      PDF_PAGE_MODE_USE_NONE));
+  o->pdf = pdf_create (name);
   if (! o->pdf)
     {
       fprintf (stderr, "can't open output file '%s'\n", name);
@@ -605,8 +603,6 @@ void main_args (char *out_fn,
 
   memset (& input_attributes, 0, sizeof (input_attributes));
   memset (& output_attributes, 0, sizeof (output_attributes));
-
-  output_attributes.has_bookmarks = (bookmark_fmt != NULL);
 
   if (! open_pdf_output_file (out_fn, & output_attributes))
     fatal (3, "error opening output file \"%s\"\n", out_fn);
