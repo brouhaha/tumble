@@ -1,7 +1,7 @@
 %{
   #include <stdio.h>
   #include "type.h"
-  #include "tiff2pdf.h"
+  #include "semantics.h"
 %}
 
 %union {
@@ -74,7 +74,7 @@ image_ranges:
 
 
 input_file_clause:
-	FILE_KEYWORD STRING  ';'  { open_tiff_input_file ($2) } ;
+	FILE_KEYWORD STRING  ';'  { input_set_file ($2) } ;
 
 image_clause:
 	IMAGE INTEGER ';' { input_images ($2, $2); }
@@ -152,7 +152,7 @@ input_statement:
 	INPUT input_clauses ;
 
 output_file_clause:
-	FILE_KEYWORD STRING  ';' { open_pdf_output_file ($2) } ;
+	FILE_KEYWORD STRING  ';' { output_set_file ($2) } ;
 
 page_ranges:
 	range { output_pages ($1.first, $1.last); }

@@ -1,7 +1,7 @@
 /*
  * tiffg4: reencode a bilevel TIFF file as a single-strip TIFF Class F Group 4
  * Main program
- * $Id: t2p.c,v 1.3 2001/12/29 20:16:46 eric Exp $
+ * $Id: t2p.c,v 1.4 2001/12/30 08:29:50 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,12 +29,10 @@
 #include "type.h"
 #include "bitblt.h"
 #include "parser.tab.h"
+#include "semantics.h"
 #include "tiff2pdf.h"
 
 
-int line;
-
-FILE *yyin;
 TIFF *in;
 panda_pdf *out;
 
@@ -209,29 +207,6 @@ boolean process_page (int image)  /* range 1 .. n */
 }
 
 
-void input_images (int first, int last)
-{
-  if (first == last)
-    printf ("image %d\n", first);
-  else
-    printf ("iamges %d..%d\n", first, last);
-}
-
-void output_pages (int first, int last)
-{
-  if (first == last)
-    printf ("page %d\n", first);
-  else
-    printf ("pages %d..%d\n", first, last);
-}
-
-
-void yyerror (char *s)
-{
-  fprintf (stderr, "%d: %s\n", line, s);
-}
-
-
 int main (int argc, char *argv[])
 {
   int result = 0;
@@ -245,21 +220,10 @@ int main (int argc, char *argv[])
       goto fail;
     }
 
-  yyin = fopen (argv [1], "r");
-  if (! yyin)
-    {
-      fprintf (stderr, "can't open spec file '%s'\n", argv [1]);
-      result = 3;
-      goto fail;
-    }
-
-  line = 1;
-
-  yyparse ();
-
+  if (! parse_spec_file (argv [1]))
+    goto fail;
+  
  fail:
-  if (yyin)
-    fclose (yyin);
   close_tiff_input_file ();
   close_pdf_output_file ();
   return (result);
