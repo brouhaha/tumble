@@ -1,3 +1,29 @@
+/*
+ * t2p: Create a PDF file from the contents of one or more TIFF
+ *      bilevel image files.  The images in the resulting PDF file
+ *      will be compressed using ITU-T T.6 (G4) fax encoding.
+ *
+ * PDF routines
+ * $Id: pdf_prim.h,v 1.2 2003/02/20 04:44:17 eric Exp $
+ * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.  Note that permission is
+ * not granted to redistribute this program under the terms of any
+ * other version of the General Public License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ */
+
+
 typedef enum
 {
   PT_BAD,
@@ -36,7 +62,7 @@ void pdf_add_array_elem (struct pdf_obj *array_obj, struct pdf_obj *val);
 /* Create a new object that will NOT be used indirectly */
 struct pdf_obj *pdf_new_obj (pdf_obj_type type);
 
-struct pdf_obj *pdf_new_bool (int bool);
+struct pdf_obj *pdf_new_bool (bool val);
 
 struct pdf_obj *pdf_new_name (char *name);
 

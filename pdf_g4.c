@@ -1,7 +1,36 @@
+/*
+ * t2p: Create a PDF file from the contents of one or more TIFF
+ *      bilevel image files.  The images in the resulting PDF file
+ *      will be compressed using ITU-T T.6 (G4) fax encoding.
+ *
+ * PDF routines
+ * $Id: pdf_g4.c,v 1.3 2003/02/20 04:44:17 eric Exp $
+ * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.  Note that permission is
+ * not granted to redistribute this program under the terms of any
+ * other version of the General Public License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ */
+
+
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 
+#include "bitblt.h"
 #include "pdf.h"
 #include "pdf_util.h"
 #include "pdf_prim.h"
@@ -12,10 +41,8 @@ struct pdf_g4_image
 {
   unsigned long Columns;
   unsigned long Rows;
-  unsigned long rowbytes;
   int BlackIs1;
-  unsigned char *data;
-  unsigned long len;
+  Bitmap *bitmap;
   char XObject_name [4];
 };
 
@@ -69,23 +96,24 @@ void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
 {
   struct pdf_g4_image *image = app_data;
 
-#if 1
+#if 0
   pdf_stream_write_data (pdf_file, stream, image->data, image->len);
 #else
   unsigned long row = 0;
-  unsigned char *ref;
-  unsigned char *raw;
+  word_type *ref;
+  word_type *raw;
 
   ref = NULL;
-  raw = image->data;
+  raw = image->bitmap->bits;
 
   while (row < image->Rows)
     {
-      pdf_stream_write_data (pdf_file, stream, raw, image->rowbytes);
+      pdf_stream_write_data (pdf_file, stream, raw,
+			     image->bitmap->row_words * sizeof (word_type));
 
       row++;
       ref = raw;
-      raw += image->rowbytes;
+      raw += image->bitmap->row_words;
     }
   /* $$$ generate and write EOFB code */
   /* $$$ flush any remaining buffered bits */
@@ -94,13 +122,9 @@ void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
 
 
 void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
-			     unsigned long Columns,
-			     unsigned long Rows,
-			     unsigned long rowbytes,
+			     Bitmap *bitmap,
 			     int ImageMask,
-			     int BlackIs1,          /* boolean, typ. false */
-			     unsigned char *data,
-			     unsigned long len)
+			     int BlackIs1)          /* boolean, typ. false */
 {
   struct pdf_g4_image *image;
 
@@ -112,12 +136,10 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 
   image = pdf_calloc (sizeof (struct pdf_g4_image));
 
-  image->Columns = Columns;
-  image->Rows = Rows;
-  image->rowbytes = rowbytes;
+  image->bitmap = bitmap;
+  image->Columns = bitmap->rect.max.x - bitmap->rect.min.x;
+  image->Rows = bitmap->rect.max.y - bitmap->rect.min.y;
   image->BlackIs1 = BlackIs1;
-  image->data = data;
-  image->len = len;
 
   stream_dict = pdf_new_obj (PT_DICTIONARY);
 
@@ -133,8 +155,8 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
   pdf_set_dict_entry (stream_dict, "Type",    pdf_new_name ("XObject"));
   pdf_set_dict_entry (stream_dict, "Subtype", pdf_new_name ("Image"));
   pdf_set_dict_entry (stream_dict, "Name",    pdf_new_name (& image->XObject_name [0]));
-  pdf_set_dict_entry (stream_dict, "Width",   pdf_new_integer (Columns));
-  pdf_set_dict_entry (stream_dict, "Height",  pdf_new_integer (Rows));
+  pdf_set_dict_entry (stream_dict, "Width",   pdf_new_integer (image->Columns));
+  pdf_set_dict_entry (stream_dict, "Height",  pdf_new_integer (image->Rows));
   pdf_set_dict_entry (stream_dict, "BitsPerComponent", pdf_new_integer (1));
   if (ImageMask)
     pdf_set_dict_entry (stream_dict, "ImageMask", pdf_new_bool (ImageMask));
@@ -149,11 +171,11 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 
   pdf_set_dict_entry (decode_parms,
 		      "Columns",
-		      pdf_new_integer (Columns));
+		      pdf_new_integer (image->Columns));
 
   pdf_set_dict_entry (decode_parms,
 		      "Rows",
-		      pdf_new_integer (Rows));
+		      pdf_new_integer (image->Rows));
 
   if (BlackIs1)
     pdf_set_dict_entry (decode_parms,

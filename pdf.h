@@ -1,3 +1,29 @@
+/*
+ * t2p: Create a PDF file from the contents of one or more TIFF
+ *      bilevel image files.  The images in the resulting PDF file
+ *      will be compressed using ITU-T T.6 (G4) fax encoding.
+ *
+ * PDF routines
+ * $Id: pdf.h,v 1.2 2003/02/20 04:44:17 eric Exp $
+ * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.  Note that permission is
+ * not granted to redistribute this program under the terms of any
+ * other version of the General Public License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ */
+
+
 typedef struct pdf_file *pdf_file_handle;
 
 typedef struct pdf_page *pdf_page_handle;
@@ -28,13 +54,9 @@ void pdf_close_page (pdf_page_handle pdf_page);
    Note that rowbytes must be at least (Columns+7)/8, but may be arbitrarily
    large. */
 void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
-			     unsigned long Columns,
-			     unsigned long Rows,
-			     unsigned long rowbytes,
+			     Bitmap *bitmap,
 			     int ImageMask,
-			     int BlackIs1,          /* boolean, typ. false */
-			     unsigned char *data,
-			     unsigned long len);
+			     int BlackIs1);    /* boolean, typ. false */
 
 
 void pdf_set_page_number (pdf_page_handle pdf_page, char *page_number);

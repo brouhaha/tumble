@@ -1,6 +1,6 @@
 # t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.13 2003/02/20 04:21:10 eric Exp $
+# $Id: Makefile,v 1.14 2003/02/20 04:44:17 eric Exp $
 # Copyright 2001 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -19,13 +19,13 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111  USA
 
 
-CFLAGS = -Wall -g -I/usr/local/include/panda
+CFLAGS = -Wall -g
 
 # Panda is not all that common, so we'll statically link it in order to
 # make the t2p binary more portable.
 
 LDFLAGS = -g
-LDLIBS = -Wl,-static -lpanda -Wl,-dy -lpng -ltiff -ljpeg -lz -lm -L/usr/local/lib/panda 
+LDLIBS = -ltiff -lm
 
 YACC = bison
 YFLAGS = -d -v
@@ -61,7 +61,7 @@ all: $(TARGETS)
 
 
 t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o \
-	pdf_util.o pdf_prim.o pdf_g4.o
+	pdf.o pdf_util.o pdf_prim.o pdf_g4.o
 
 bitblt_tables.h: bitblt_table_gen
 	./bitblt_table_gen >bitblt_tables.h

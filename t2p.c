@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.21 2003/01/21 10:39:55 eric Exp $
+ * $Id: t2p.c,v 1.22 2003/02/20 04:44:17 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA */
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ */
 
 
 #include <stdarg.h>
@@ -28,18 +29,17 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <tiffio.h>
 #define TIFF_REVERSE_BITS
 
-#include <panda/functions.h>
-#include <panda/constants.h>
-
 #include "bitblt.h"
 #include "semantics.h"
 #include "parser.tab.h"
 #include "t2p.h"
+#include "pdf.h"
 
 
 #define MAX_INPUT_FILES 5000
@@ -55,7 +55,7 @@ typedef struct output_file_t
 {
   struct output_file_t *next;
   char *name;
-  panda_pdf *pdf;
+  pdf_file_handle pdf;
 } output_file_t;
 
 
@@ -66,7 +66,6 @@ char *in_filename;
 TIFF *in;
 output_file_t *output_files;
 output_file_t *out;
-/* panda_pdf *out; */
 
 
 char *progname;
@@ -87,6 +86,10 @@ void usage (void)
   fprintf (stderr, "    %s [options] <input.tif>... -o <output.pdf>\n", progname);
   fprintf (stderr, "options:\n");
   fprintf (stderr, "    -v   verbose\n");
+  fprintf (stderr, "    -b fmt  create bookmarks\n");
+  fprintf (stderr, "bookmark format:\n");
+  fprintf (stderr, "    %%F  file name\n");
+  fprintf (stderr, "    %%p  page number\n");
 }
 
 
@@ -158,7 +161,7 @@ bool close_pdf_output_files (void)
   for (o = output_files; o; o = n)
     {
       n = o->next;
-      panda_close (o->pdf);
+      pdf_close (o->pdf);
       free (o->name);
       free (o);
     }
@@ -195,7 +198,7 @@ bool open_pdf_output_file (char *name,
       return (0);
     }
 
-  o->pdf = panda_open (name, "w");
+  o->pdf = pdf_create (name);
   if (! o->pdf)
     {
       fprintf (stderr, "can't open output file '%s'\n", name);
@@ -205,15 +208,15 @@ bool open_pdf_output_file (char *name,
     }
 
   if (attributes->author)
-    panda_setauthor (o->pdf, attributes->author);
+    pdf_set_author (o->pdf, attributes->author);
   if (attributes->creator)
-    panda_setcreator (o->pdf, attributes->creator);
+    pdf_set_creator (o->pdf, attributes->creator);
   if (attributes->title)
-    panda_settitle (o->pdf, attributes->title);
+    pdf_set_title (o->pdf, attributes->title);
   if (attributes->subject)
-    panda_setsubject (o->pdf, attributes->subject);
+    pdf_set_subject (o->pdf, attributes->subject);
   if (attributes->keywords)
-    panda_setkeywords (o->pdf, attributes->keywords);
+    pdf_set_keywords (o->pdf, attributes->keywords);
 
   /* prepend new output file onto list */
   o->next = output_files;
@@ -304,23 +307,15 @@ bool process_page (int image,  /* range 1 .. n */
   float x_resolution, y_resolution;
   float dest_x_resolution, dest_y_resolution;
 
-  int width_points, height_points;  /* really 1/72 inch units rather than
-				       points */
+  double width_points, height_points;  /* really 1/72 inch units rather than
+					  points */
 
   Rect rect;
   Bitmap *bitmap;
 
   int row;
 
-  panda_page *page;
-
-  int tiff_temp_fd;
-  char tiff_temp_fn [] = "/var/tmp/t2p-XXXXXX\0";
-  TIFF *tiff_temp;
-  
-  char pagesize [26];  /* Needs to hold two ints of four characters (0..3420),
-			  two zeros, three spaces, two brackets, and a NULL.
-                          Added an extra ten characters just in case. */
+  pdf_page_handle page;
 
   if (! TIFFSetDirectory (in, image - 1))
     {
@@ -406,7 +401,7 @@ bool process_page (int image,  /* range 1 .. n */
       dest_image_length = image_width;
       dest_x_resolution = y_resolution;
       dest_y_resolution = x_resolution;
-      SWAP (int, width_points, height_points);
+      SWAP (double, width_points, height_points);  /* $$$ not yet set!!! */
     }
   else
     {
@@ -453,56 +448,13 @@ bool process_page (int image,  /* range 1 .. n */
   rotate_bitmap (bitmap,
 		 input_attributes);
 
-  tiff_temp_fd = mkstemp (tiff_temp_fn);
-  if (tiff_temp_fd < 0)
-    {
-      fprintf (stderr, "can't create temporary TIFF file\n");
-      goto fail;
-    }
-
-  tiff_temp = TIFFFdOpen (tiff_temp_fd, tiff_temp_fn, "w");
-  if (! out)
-    {
-      fprintf (stderr, "can't open temporary TIFF file '%s'\n", tiff_temp_fn);
-      goto fail;
-    }
-
-  TIFFSetField (tiff_temp, TIFFTAG_IMAGELENGTH, rect_height (& bitmap->rect));
-  TIFFSetField (tiff_temp, TIFFTAG_IMAGEWIDTH, rect_width (& bitmap->rect));
-  TIFFSetField (tiff_temp, TIFFTAG_PLANARCONFIG, planar_config);
-
-  TIFFSetField (tiff_temp, TIFFTAG_ROWSPERSTRIP, rect_height (& bitmap->rect));
-
-  TIFFSetField (tiff_temp, TIFFTAG_RESOLUTIONUNIT, resolution_unit);
-  TIFFSetField (tiff_temp, TIFFTAG_XRESOLUTION, dest_x_resolution);
-  TIFFSetField (tiff_temp, TIFFTAG_YRESOLUTION, dest_y_resolution);
-
-  TIFFSetField (tiff_temp, TIFFTAG_SAMPLESPERPIXEL, samples_per_pixel);
-  TIFFSetField (tiff_temp, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
-  TIFFSetField (tiff_temp, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
-  TIFFSetField (tiff_temp, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
-
 #ifdef TIFF_REVERSE_BITS
   reverse_bits ((uint8_t *) bitmap->bits,
 		image_length * bitmap->row_words * sizeof (word_type));
 #endif /* TIFF_REVERSE_BITS */
 
-  for (row = 0; row < rect_height (& bitmap->rect); row++)
-    if (1 != TIFFWriteScanline (tiff_temp,
-				bitmap->bits + row * bitmap->row_words,
-				row,
-				0))
-      {
-	fprintf (stderr, "can't write TIFF scanline\n");
-	goto fail;
-      }
-
-  TIFFClose (tiff_temp);
-
   width_points = (rect_width (& bitmap->rect) / dest_x_resolution) * POINTS_PER_INCH;
   height_points = (rect_height (& bitmap->rect) / dest_y_resolution) * POINTS_PER_INCH;
-
-  free_bitmap (bitmap);
 
   if ((height_points > PAGE_MAX_POINTS) || (width_points > PAGE_MAX_POINTS))
     {
@@ -510,23 +462,18 @@ bool process_page (int image,  /* range 1 .. n */
       goto fail;
     }
 
-  sprintf (pagesize, "[0 0 %d %d]", width_points, height_points);
+  page = pdf_new_page (out->pdf, width_points, height_points);
 
-  page = panda_newpage (out->pdf, pagesize);
-  panda_imagebox (out->pdf,
-		  page,
-		  0, /* top */
-		  0, /* left */
-		  height_points, /* bottom */
-		  width_points, /* right */
-		  tiff_temp_fn,
-		  panda_image_tiff);
+  pdf_write_g4_fax_image (page,
+			  bitmap,
+			  0, /* ImageMask */
+			  0); /* BlackIs1 */
+
+  free_bitmap (bitmap);
 
   result = 1;
 
  fail:
-  if (tiff_temp_fd)
-    unlink (tiff_temp_fn);
   return (result);
 }
 
@@ -548,6 +495,7 @@ void main_args (char *out_fn, int inf_count, char **in_fn)
 	fatal (3, "error opening input file \"%s\"\n", in_fn [i]);
       for (ip = 1;; ip++)
 	{
+	  fprintf (stderr, "processing page %d of file \"%s\"\r", ip, in_fn [i]);
 	  if (! process_page (ip, input_attributes, NULL))
 	    fatal (3, "error processing page %d of input file \"%s\"\n", ip, in_fn [i]);
 	  if (last_tiff_page ())
@@ -576,12 +524,13 @@ int main (int argc, char *argv[])
 {
   char *spec_fn = NULL;
   char *out_fn = NULL;
+  char *bookmark_fmt = NULL;
   int inf_count = 0;
   char *in_fn [MAX_INPUT_FILES];
 
   progname = argv [0];
 
-  panda_init ();
+  pdf_init ();
 
   while (--argc)
     {
@@ -610,6 +559,17 @@ int main (int argc, char *argv[])
 		}
 	      else
 		fatal (1, "missing filename after \"-s\" option\n");
+	    }
+	  else if (strcmp (argv [1], "-b") == 0)
+	    {
+	      if (argc)
+		{
+		  argc--;
+		  argv++;
+		  bookmark_fmt = argv [1];
+		}
+	      else
+		fatal (1, "missing format string after \"-b\" option\n");
 	    }
 	  else
 	    fatal (1, "unrecognized option \"%s\"\n", argv [1]);
