@@ -1,5 +1,5 @@
 t2p TODO list
-$Id: TODO,v 1.13 2003/03/12 00:18:04 eric Exp $
+$Id: TODO,v 1.14 2003/03/12 01:52:09 eric Exp $
 
 No particular order.
 
@@ -8,6 +8,11 @@ No particular order.
 t2p:
 
 * pages containing multiple images
+    * spec language needs major changes
+    * split process_page into multiple parts:
+        * open page
+        * add image
+        * close page
 
 * support JPEG (JFIF, EXIF)
 
@@ -54,6 +59,10 @@ bitblt routines:
 * optimize inner loops in flip_h and flip_v with Duff's Device
 
 * check for endian problems
+    * reading TIFF - don't bit-reverse on big-endian machines
+    * rle table
+    * g4_get_pixel()
+    * g4_find_pixel()
 
 -----------------------------------------------------------------------------
 
