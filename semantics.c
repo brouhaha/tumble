@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Semantic routines for spec file parser
- * $Id: semantics.c,v 1.16 2003/01/21 10:30:49 eric Exp $
+ * $Id: semantics.c,v 1.17 2003/02/19 02:20:05 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -449,7 +449,7 @@ void yyerror (char *s)
 }
 
 
-static char *get_input_file (input_context_t *context)
+static char *get_input_filename (input_context_t *context)
 {
   for (; context; context = context->parent)
     if (context->input_file)
@@ -498,7 +498,7 @@ static bool get_input_page_size (input_context_t *context,
   return (0);  /* default */
 }
 
-static char *get_output_file (output_context_t *context)
+static char *get_output_filename (output_context_t *context)
 {
   for (; context; context = context->parent)
     if (context->output_file)
@@ -547,7 +547,7 @@ void dump_input_tree (void)
 					     parity,
 					     & page_size);
 	printf ("file '%s' image %d",
-	        get_input_file (image->input_context),
+	        get_input_filename (image->input_context),
 		i);
 	if (has_rotation)
 	  printf (" rotation %d", rotation);
@@ -575,7 +575,7 @@ void dump_output_tree (void)
       for (i = page->range.first; i <= page->range.last; i++)
 	{
 	  page_label_t *label = get_output_page_label (page->output_context);
-	  printf ("file \"%s\" ", get_output_file (page->output_context));
+	  printf ("file \"%s\" ", get_output_filename (page->output_context));
 	  if (label)
 	    {
 	      printf ("label ");
@@ -658,27 +658,41 @@ bool process_specs (void)
     {
       if ((! image) || (i >= range_count (image->range)))
 	{
+	  char *input_fn;
 	  if (image)
 	    image = image->next;
 	  else
 	    image = first_input_image;
 	  if (! image)
-	    return (0);
+	    return (1);  /* done */
 	  i = 0;
-	  if (! open_tiff_input_file (get_input_file (image->input_context)))
-	    return (0);
+	  input_fn = get_input_filename (image->input_context);
+	  if (verbose)
+	    fprintf (stderr, "opening TIFF file '%s'\n", input_fn);
+	  if (! open_tiff_input_file (input_fn))
+	    {
+	      fprintf (stderr, "error opening TIFF file '%s'\n", input_fn);
+	      return (0);
+	    }
 	}
 
       if ((! page) || (p >= range_count (page->range)))
 	{
+	  char *output_fn;
 	  if (page)
 	    page = page->next;
 	  else
 	    page = first_output_page;
 	  p = 0;
-	  if (! open_pdf_output_file (get_output_file (page->output_context),
+	  output_fn = get_output_filename (page->output_context);
+	  if (verbose)
+	    fprintf (stderr, "opening PDF file '%s'\n", output_fn);
+	  if (! open_pdf_output_file (output_fn,
 				      get_output_file_attributes (page->output_context)))
-	    return (0);
+	    {
+	      fprintf (stderr, "error opening PDF file '%s'\n", output_fn);
+	      return (0);
+	    }
 	  page_label = get_output_page_label (page->output_context);
 	  process_page_numbers (page_index,
 				range_count (page->range),
@@ -699,14 +713,17 @@ bool process_specs (void)
 							    parity,
 							    & input_attributes.page_size);
 
+      if (verbose)
+	fprintf (stderr, "processing image %d\n", image->range.first + i);
       if (! process_page (image->range.first + i,
 			  input_attributes,
 			  page->bookmark_list))
-	return (0);
+	{
+	  fprintf (stderr, "error processing image %d\n", image->range.first + i);
+	  return (0);
+	}
       i++;
       p++;
       page_index++;
     }
-
-  return (1);
 }
