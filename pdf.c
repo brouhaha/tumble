@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf.c,v 1.8 2003/03/12 22:56:57 eric Exp $
+ * $Id: pdf.c,v 1.9 2003/03/13 00:03:11 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,11 @@ void pdf_init (void)
 struct pdf_pages *pdf_new_pages (pdf_file_handle pdf_file)
 {
   struct pdf_pages *pages = pdf_calloc (1, sizeof (struct pdf_pages));
-  pages->kids = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_ARRAY));
+
+  pages->kids = pdf_new_obj (PT_ARRAY);
+  /* The PDF 1.0 spec doesn't say that kids can't be an indirect object,
+     but Acrobat 4.0 fails to optimize files if it is. */
+
   pages->count = pdf_new_integer (0);
   pages->pages_dict = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
   pdf_set_dict_entry (pages->pages_dict, "Type", pdf_new_name ("Pages"));
@@ -98,7 +102,7 @@ pdf_file_handle pdf_create (char *filename, int page_mode)
 		      pdf_new_name (page_mode_string));
 
   pdf_file->info    = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
-  pdf_set_info (pdf_file, "Producer", "t2p by Eric Smith <eric@brouhaha.com>");
+  pdf_set_info (pdf_file, "Producer", "tumble by Eric Smith <eric@brouhaha.com>");
 
   pdf_file->trailer_dict = pdf_new_obj (PT_DICTIONARY);
   /* Size key will be added later */
