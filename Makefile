@@ -1,6 +1,6 @@
 # tumble: build a PDF file from image files
 # Makefile
-# $Id: Makefile,v 1.33 2003/03/16 07:37:16 eric Exp $
+# $Id: Makefile,v 1.34 2003/03/16 07:40:00 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -76,6 +76,8 @@ MISC = COPYING README INSTALL Makefile
 DISTFILES = $(MISC) $(HDRS) $(CSRCS) $(OSRCS)
 DISTNAME = $(PACKAGE)-$(VERSION)
 
+BIN_DISTFILES = COPYING README $(TARGETS)
+
 
 AUTO_CSRCS = scanner.c parser.tab.c bitblt_tables.c g4_tables.c
 AUTO_HDRS = parser.tab.h  bitblt_tables.h g4_tables.h
@@ -126,8 +128,8 @@ dist: $(DISTFILES)
 
 rh-rel := $(shell sed 's/^Red Hat Linux release \([0-9][0-9]*\.[0-9][0-9]*\) (.*)/\1/' </etc/redhat-release)
 
-bin-dist-rh: COPYING $(TARGETS) /etc/redhat-release
-	tar --gzip -chf $(DISTNAME)-rh${rh-rel}.tar.gz COPYING $(TARGETS)
+bin-dist-rh: $(BIN_DISTFILES) /etc/redhat-release
+	tar --gzip -chf $(DISTNAME)-rh${rh-rel}.tar.gz $(BIN_DISTFILES)
 
 
 clean:
