@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_jpeg.c,v 1.3 2003/03/20 00:32:16 eric Exp $
+ * $Id: tumble_jpeg.c,v 1.4 2003/03/20 06:55:27 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <strings.h>  /* strcasecmp() is a BSDism */
 #include <jpeglib.h>
 
 
@@ -40,13 +41,19 @@ static struct jpeg_decompress_struct cinfo;
 static struct jpeg_error_mgr jerr;
 
 
-bool close_jpeg_input_file (void)
+static bool match_jpeg_suffix (char *suffix)
+{
+  return ((strcasecmp (suffix, ".jpg") == 0) ||
+	  (strcasecmp (suffix, ".jpeg") == 0));
+}
+
+static bool close_jpeg_input_file (void)
 {
   return (1);
 }
 
 
-bool open_jpeg_input_file (FILE *f, char *name)
+static bool open_jpeg_input_file (FILE *f, char *name)
 {
   uint8_t buf [2];
   size_t l;
@@ -75,15 +82,15 @@ bool open_jpeg_input_file (FILE *f, char *name)
 }
 
 
-bool last_jpeg_input_page (void)
+static bool last_jpeg_input_page (void)
 {
   return (1);
 }
 
 
-bool get_jpeg_image_info (int image,
-			  input_attributes_t input_attributes,
-			  image_info_t *image_info)
+static bool get_jpeg_image_info (int image,
+				 input_attributes_t input_attributes,
+				 image_info_t *image_info)
 {
   double unit;
 
@@ -155,10 +162,10 @@ bool get_jpeg_image_info (int image,
 }
 
 
-bool process_jpeg_image (int image,  /* range 1 .. n */
-			 input_attributes_t input_attributes,
-			 image_info_t *image_info,
-			 pdf_page_handle page)
+static bool process_jpeg_image (int image,  /* range 1 .. n */
+				input_attributes_t input_attributes,
+				image_info_t *image_info,
+				pdf_page_handle page)
 {
   pdf_write_jpeg_image (page,
 			0, 0,  /* x, y */
@@ -175,6 +182,7 @@ bool process_jpeg_image (int image,  /* range 1 .. n */
 
 input_handler_t jpeg_handler =
   {
+    match_jpeg_suffix,
     open_jpeg_input_file,
     close_jpeg_input_file,
     last_jpeg_input_page,

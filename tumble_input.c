@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Input handler dispatch
- * $Id: tumble_input.c,v 1.2 2003/03/19 23:02:28 eric Exp $
+ * $Id: tumble_input.c,v 1.3 2003/03/20 06:55:27 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -56,6 +56,15 @@ void install_input_handler (input_handler_t *handler)
     input_handlers [input_handler_count++] = handler;
 }
 
+
+bool match_input_suffix (char *suffix)
+{
+  int i;
+  for (i = 0; i < input_handler_count; i++)
+    if (input_handlers [i]->match_suffix (suffix))
+      return (1);
+  return (0);
+}
 
 bool open_input_file (char *name)
 {

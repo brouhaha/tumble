@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_input.h,v 1.1 2003/03/19 22:54:08 eric Exp $
+ * $Id: tumble_input.h,v 1.2 2003/03/20 06:55:27 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -32,6 +32,7 @@ typedef struct
 
 typedef struct
 {
+  bool (*match_suffix) (char *suffix);
   bool (*open_input_file) (FILE *f, char *name);
   bool (*close_input_file) (void);
   bool (*last_input_page) (void);
@@ -48,6 +49,7 @@ typedef struct
 void install_input_handler (input_handler_t *handler);
 
 
+bool match_input_suffix (char *suffix);
 bool open_input_file (char *name);
 bool close_input_file (void);
 bool last_input_page (void);

@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_tiff.c,v 1.3 2003/03/20 00:20:52 eric Exp $
+ * $Id: tumble_tiff.c,v 1.4 2003/03/20 06:55:28 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <strings.h>  /* strcasecmp() is a BSDism */
 
 #include <tiffio.h>
 #define TIFF_REVERSE_BITS
@@ -44,14 +44,21 @@ TIFF *tiff_in;
 #define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
 
 
-bool close_tiff_input_file (void)
+static bool match_tiff_suffix (char *suffix)
+{
+  return ((strcasecmp (suffix, ".tif") == 0) ||
+	  (strcasecmp (suffix, ".tiff") == 0));
+}
+
+
+static bool close_tiff_input_file (void)
 {
   TIFFClose (tiff_in);
   return (1);
 }
 
 
-bool open_tiff_input_file (FILE *f, char *name)
+static bool open_tiff_input_file (FILE *f, char *name)
 {
   uint8_t buf [2];
   size_t l;
@@ -75,15 +82,15 @@ bool open_tiff_input_file (FILE *f, char *name)
 }
 
 
-bool last_tiff_input_page (void)
+static bool last_tiff_input_page (void)
 {
   return (TIFFLastDirectory (tiff_in));
 }
 
 
-bool get_tiff_image_info (int image,
-			  input_attributes_t input_attributes,
-			  image_info_t *image_info)
+static bool get_tiff_image_info (int image,
+				 input_attributes_t input_attributes,
+				 image_info_t *image_info)
 {
   uint32_t image_height, image_width;
   uint16_t samples_per_pixel;
@@ -250,10 +257,10 @@ static void rotate_bitmap (Bitmap *src,
 }
 
 
-bool process_tiff_image (int image,  /* range 1 .. n */
-			 input_attributes_t input_attributes,
-			 image_info_t *image_info,
-			 pdf_page_handle page)
+static bool process_tiff_image (int image,  /* range 1 .. n */
+				input_attributes_t input_attributes,
+				image_info_t *image_info,
+				pdf_page_handle page)
 {
   bool result = 0;
   Rect rect;
@@ -333,6 +340,7 @@ bool process_tiff_image (int image,  /* range 1 .. n */
 
 input_handler_t tiff_handler =
   {
+    match_tiff_suffix,
     open_tiff_input_file,
     close_tiff_input_file,
     last_tiff_input_page,
