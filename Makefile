@@ -1,6 +1,6 @@
 # t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.12 2003/02/19 02:14:49 eric Exp $
+# $Id: Makefile,v 1.13 2003/02/20 04:21:10 eric Exp $
 # Copyright 2001 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -42,7 +42,8 @@ PACKAGE = t2p
 
 TARGETS = t2p bitblt_test
 
-CSRCS = t2p.c semantics.c bitblt.c bitblt_test.c bitblt_table_gen.c
+CSRCS = t2p.c semantics.c bitblt.c bitblt_test.c bitblt_table_gen.c \
+	pdf.c pdf_util.c pdf_prim.c pdf_g4.c
 OSRCS = scanner.l parser.y
 HDRS = t2p.h semantics.h bitblt.h
 MISC = COPYING Makefile
@@ -59,7 +60,8 @@ AUTO_MISC = parser.output
 all: $(TARGETS)
 
 
-t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o
+t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o \
+	pdf_util.o pdf_prim.o pdf_g4.o
 
 bitblt_tables.h: bitblt_table_gen
 	./bitblt_table_gen >bitblt_tables.h
