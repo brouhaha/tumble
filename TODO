@@ -1,5 +1,5 @@
 tiff2pdf TODO list
-$Id: TODO,v 1.6 2003/02/19 02:15:16 eric Exp $
+$Id: TODO,v 1.7 2003/02/19 02:17:12 eric Exp $
 
 No particular order.  Page numbers refer to _Portable Document Format
 Reference Manual_ by Adobe Systems Incorporated, Addison-Wesley, 1993.
@@ -8,6 +8,7 @@ Reference Manual_ by Adobe Systems Incorporated, Addison-Wesley, 1993.
 * bookmark format string processing
 
 * bitblt library:
+    * run length encoding (needed for G4 compression)
     * optimize
         * replace inner loops in flip_h and flip_v with Duff's Device
     * check for endian problems
@@ -26,16 +27,17 @@ Reference Manual_ by Adobe Systems Incorporated, Addison-Wesley, 1993.
     * rotation (0, 90, 180, or 270)
     * page number style (D, r, R, a, A)
 
-* enhance Panda
+* switch from Panda to my own PDF routines
+
+* enhance PDF routines
+    * G4 compression
     * bookmarks (outline)
     * name trees, number trees
     * page labels
-    * in-memory images
     * page tree balancing
     * imagemask
     * thumbnails
-
-* PDF Page rotate attribute (p. 53)?
+    * PDF Page rotate attribute (p. 53)?
 
 * watermarking - in image?
 
