@@ -78,16 +78,23 @@ int main (int argc, char *argv[])
   print_bitmap (stdout, b);
   printf ("\n");
 
-#if 0
-  r.upper_left.x = r.upper_left.y = 0;
-  r.lower_right.x = b->width;
-  r.lower_right.y = b->height;
-  p.x = p.y = 0;
+#if 1
+  r.min.x = r.min.y = 0;
+  r.max.x = b->rect.max.x + 8;
+  r.max.y = b->rect.max.y + 8;
 
-  b2 = bitblt (b, r,
-	       NULL, p,
-	       ROT_90,
-	       TF_SRC);
+  b2 = create_bitmap (& r);
+
+  r.min.x = r.min.y = 0;
+  r.max.x = b->rect.max.x;
+  r.max.y = b->rect.max.y;
+
+  p.x = -3;
+  p.y = -3;
+
+  b2 = bitblt (b, & r,
+	       b2, & p,
+	       TF_SRC, 0);
   if (! b2)
     {
       fprintf (stderr, "bitblt failed\n");

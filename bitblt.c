@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +46,17 @@ static const u8 bit_reverse_byte [0x100] =
   0x1f, 0x9f, 0x5f, 0xdf, 0x3f, 0xbf, 0x7f, 0xff
 };
 
+
+void reverse_bits (u8 *p, int byte_count)
+{
+  while (byte_count--)
+    {
+      (*p) = bit_reverse_byte [*p];
+      p++;
+    }
+}
+
+
 static word_type bit_reverse_word (word_type d)
 {
   return (bit_reverse_byte [d >> 24] |
@@ -54,8 +66,8 @@ static word_type bit_reverse_word (word_type d)
 }
 
 
-static u32 *temp_buffer;
-static u32 temp_buffer_size;
+static word_type *temp_buffer;
+static word_type temp_buffer_size;
 
 static void realloc_temp_buffer (u32 size)
 {
@@ -71,14 +83,40 @@ static void realloc_temp_buffer (u32 size)
 }
 
 
-static inline word_type pixel_mask (x)
+static inline word_type pixel_mask (int x)
 {
-#ifdef LSB_LEFT
-  return (1 << x);
+#if defined (MIXED_ENDIAN)  /* disgusting hack for mixed-endian */
+  word_type m;
+  m = 0x80 >> (x & 7);
+  m <<= (x & 24);
+  return (m);
+#elif defined (LSB_RIGHT)
+  return (1U << ((BITS_PER_WORD - 1) - x));
 #else
-  return (1 << ((BITS_PER_WORD - 1) - x));
+  return (1U << x);
 #endif
 };
+
+
+/* mask for range of bits left..right, inclusive */
+static inline word_type pixel_range_mask (int left, int right)
+{
+  word_type m1, m2, val;
+
+  /* $$$ one of these cases is wrong! */
+#if defined (LSB_RIGHT)
+  m1 = (~ 0U) >> left;
+  m2 = (~ 0U) << (BITS_PER_WORD - 1 - right);
+#else
+  m1 = (~ 0U) << left;
+  m2 = (~ 0U) >> (BITS_PER_WORD - 1 - right);
+#endif
+  val = m1 & m2;
+
+  printf ("left %d, right %d, mask %08x\n", left, right, val);
+  return (val);
+};
+
 
 Bitmap *create_bitmap (Rect *rect)
 {
@@ -112,32 +150,40 @@ void free_bitmap (Bitmap *bitmap)
 boolean get_pixel (Bitmap *bitmap, Point coord)
 {
   word_type *p;
+  int w,b;
+
   if ((coord.x < bitmap->rect.min.x) ||
       (coord.x >= bitmap->rect.max.x) ||
       (coord.y < bitmap->rect.min.y) ||
       (coord.y >= bitmap->rect.max.y))
     return (0);
-  p = bitmap->bits +
-    (coord.y - bitmap->rect.min.y) * bitmap->row_words +
-    (coord.x - bitmap->rect.min.x) / BITS_PER_WORD;
-  return ((*p & pixel_mask (coord.x & (BITS_PER_WORD - 1))) != 0);
+  coord.y -= bitmap->rect.min.y;
+  coord.x -= bitmap->rect.min.x;
+  w = coord.x / BITS_PER_WORD;
+  b = coord.x & (BITS_PER_WORD - 1);
+  p = bitmap->bits + coord.y * bitmap->row_words + w;
+  return (((*p) & pixel_mask (b)) != 0);
 }
 
 void set_pixel (Bitmap *bitmap, Point coord, boolean value)
 {
   word_type *p;
+  int w,b;
+
   if ((coord.x < bitmap->rect.min.x) ||
       (coord.x >= bitmap->rect.max.x) ||
       (coord.y < bitmap->rect.min.y) ||
       (coord.y >= bitmap->rect.max.y))
     return;
-  p = bitmap->bits +
-    (coord.y - bitmap->rect.min.y) * bitmap->row_words +
-    (coord.x - bitmap->rect.min.x) / BITS_PER_WORD;
+  coord.y -= bitmap->rect.min.y;
+  coord.x -= bitmap->rect.min.x;
+  w = coord.x / BITS_PER_WORD;
+  b = coord.x & (BITS_PER_WORD - 1);
+  p = bitmap->bits + coord.y * bitmap->row_words + w;
   if (value)
-    *p |= pixel_mask (coord.x & (BITS_PER_WORD - 1));
+    (*p) |= pixel_mask (b);
   else
-    *p &= ~pixel_mask (coord.x & (BITS_PER_WORD - 1));
+    (*p) &= ~pixel_mask (b);
 }
 
 
@@ -174,36 +220,104 @@ static boolean clip_rect (Rect *rect1, Rect *rect2)
 }
 
 
-#if 0
 static void blt_background (Bitmap *dest_bitmap,
-			    Rect *dest_rect)
+			    Rect dest_rect)
 {
-  s32 y;
+  u32 y;
   word_type *rp;
+  u32 left_bit, left_word;
+  u32 right_bit, right_word;
+  word_type left_mask, right_mask;
+  s32 word_count;
 
   /* This function requires a non-null dest rect */
-  assert (dest_rect->min.x < dest_rect->max.x);
-  assert (dest_rect->min.y < dest_rect->max.y);
+  assert (dest_rect.min.x < dest_rect.max.x);
+  assert (dest_rect.min.y < dest_rect.max.y);
  
   /* and that the rows of the dest rect lie entirely within the dest bitmap */
-  assert (dest_rect->min.y >= dest_bitmap->rect->min.y);
-  assert (dest_rect->max.y <= dest_bitmap->rect->max.y);
+  assert (dest_rect.min.y >= dest_bitmap->rect.min.y);
+  assert (dest_rect.max.y <= dest_bitmap->rect.max.y);
 
   /* clip the x axis of the dest_rect to the bounds of the dest bitmap */
-  if (dest_rect->min.x < dest_bitmap->rect.min.x)
-    dest_rect->min.x = dest_bitmap->rect.min.x;
-  if (dest_rect->max.x > dest_bitmap->rect.max.x)
-    dest_rect->max.x = dest_bitmap->rect.max.x;
+  if (dest_rect.min.x < dest_bitmap->rect.min.x)
+    dest_rect.min.x = dest_bitmap->rect.min.x;
+  if (dest_rect.max.x > dest_bitmap->rect.max.x)
+    dest_rect.max.x = dest_bitmap->rect.max.x;
 
-  rp = ???;
-  for (y = 0; y < rect_height (dest_rect); y++)
+  rp = dest_bitmap->bits +
+    (dest_rect.min.y - dest_bitmap->rect.min.y) * dest_bitmap->row_words +
+    (dest_rect.min.x - dest_bitmap->rect.min.x) / BITS_PER_WORD;
+
+  left_bit = dest_rect.min.x % BITS_PER_WORD;
+  left_word = dest_rect.min.x / BITS_PER_WORD;
+
+  right_bit = (dest_rect.max.x - 1) % BITS_PER_WORD;
+  right_word = (dest_rect.max.x - 1) / BITS_PER_WORD;
+
+  word_count = right_word + 1 - left_word;
+
+  /* special case if entire horizontal range fits in a single word */
+  if (word_count == 1)
     {
-  ???;
+      left_mask = 0;
+      right_mask = ~ pixel_range_mask (left_bit, right_bit);
+      word_count = 0;
+    }
+  else
+    {
+      if (left_bit)
+	{
+	  left_mask = ~ pixel_range_mask (left_bit, BITS_PER_WORD - 1);
+	  word_count--;
+	}
+
+      if (right_bit != (BITS_PER_WORD - 1))
+	{
+	  right_mask = ~ pixel_range_mask (0, right_bit);
+	  word_count--;
+	}
+    }
+
+  for (y = 0; y < rect_height (& dest_rect); y++)
+    {
+      word_type *wp = rp;
+
+      /* partial word at left, if any */
+      if (left_mask)
+	*(wp++) &= left_mask;
+
+      /* use Duff's Device for the full words */
+      if (word_count)
+	{
+	  s32 i = word_count;
+	  switch (i % 8)
+	    {
+	      while (i > 0)
+		{
+		  *(wp++) = 0;
+		case 7: *(wp++) = 0;
+		case 6: *(wp++) = 0;
+		case 5: *(wp++) = 0;
+		case 4: *(wp++) = 0;
+		case 3: *(wp++) = 0;
+		case 2: *(wp++) = 0;
+		case 1: *(wp++) = 0;
+		case 0: i -= 8;
+		}
+	    }
+	}
+
+      /* partial word at right, if any */
+      if (right_mask)
+	*wp &= right_mask;
+
+      /* advance to next row */
       rp += dest_bitmap->row_words;
     }
 }
 
 
+#if 0
 static void blt (Bitmap *src_bitmap,
 		 Rect *src_rect,
 		 Bitmap *dest_bitmap,
@@ -253,6 +367,32 @@ static void blt (Bitmap *src_bitmap,
 }
 
 
+/*
+ * The destination rectangle is first clipped to the dest bitmap, and
+ * the source rectangle is adjusted in the corresponding manner.
+ * What's left is divided into five sections, any of which may be
+ * null.  The portion that actually corresponds to the intersection of
+ * the source rectangle and the source bitmpa is the "middle".  The
+ * other four sections will use the background color as the source
+ * operand.
+ *
+ *          
+ *   y0 ->  -------------------------------------------------
+ *          |                     top                       |
+ *          |                                               |
+ *   y1 ->  -------------------------------------------------
+ *          |   left        |    middle     |    right      |
+ *          |               |               |               |
+ *   y2 ->  -------------------------------------------------
+ *          |                     bottom                    |
+ *          |                                               |
+ *   y3 ->  -------------------------------------------------
+ *
+ *          ^               ^               ^               ^
+ *          |               |               |               |
+ *         x0              x1              x2              x3
+ *
+ * */
 Bitmap *bitblt (Bitmap *src_bitmap,
 		Rect   *src_rect,
 		Bitmap *dest_bitmap,
@@ -265,6 +405,10 @@ Bitmap *bitblt (Bitmap *src_bitmap,
   u32 drw, drh;    /* dest rect width, height - gets adjusted */
   Point src_point, dest_point;
 
+  /* dest coordinates: */
+  u32 x0, x1, x2, x3;
+  u32 y0, y1, y2, y3;
+
   {
     sr = * src_rect;
 
@@ -274,7 +418,8 @@ Bitmap *bitblt (Bitmap *src_bitmap,
     if ((srw < 0) || (srh < 0))
       goto done;  /* the source rect is empty! */
 
-    dr.min = * dest_min;
+    dr.min.x = dest_min->x;
+    dr.min.y = dest_min->y;
     dr.max.x = dr.min.x + srw;
     dr.max.y = dr.min.y + srh;
   }
@@ -291,7 +436,6 @@ Bitmap *bitblt (Bitmap *src_bitmap,
     goto done;  /* the dest rect isn't even in the dest bitmap! */
 
   /* crop dest rect to dest bitmap */
-
   delta = dest_bitmap->rect.min.x - dr.min.x;
   if (delta > 0)
     {
@@ -323,17 +467,36 @@ Bitmap *bitblt (Bitmap *src_bitmap,
   drw = rect_width (& dr);
   drh = rect_height (& dh);
 
+  x0 = dr.min.x;
+  y0 = dr.min.y;
+  x3 = dr.max.x;
+  y3 = dr.max.y;
+
+#if 0
   /* if the source rect min y is >= the source bitmap max y,
      we transfer background color to the entire dest rect */
   if (sr.min.y >= src->rect.max.y)
     {
-      blt_background (dest_bitmap, & dr);
+      blt_background (dest_bitmap, dr);
       goto done;
     }
+#endif
 
-  /* if the source rect min y is less than the source bitmap min y,
-     we need to transfer some backgound color to the top part of the dest
-     rect */
+  /* top */
+  if (y0 != y1)
+    {
+      dr2.min.x = x0;
+      dr2.max.x = x3;
+      dr2.min.y = y0;
+      dr2.max.y = y1;
+      blt_background (dest_bitmap, & dr2);
+    }
+
+  /*
+   * top:  if the source rect min y is less than the source bitmap min y,
+   * we need to transfer some backgound color to the top part of the dest
+   * rect
+   */
   if (sr.min.y < src->rect.min.y)
     {
       Rect dr2;
@@ -359,13 +522,43 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 	goto done;
     }
 
-  /* now blt the available rows of the source rect */
-
-  /* now transfer the background color to any remaining rows of the
-     dest rect */
-  if (??? )
+  if (y1 != y2)
     {
-      blt_background (dest_bitmap, & dr);
+      /* left */
+      if (x0 != x1)
+	{
+	  dr2.min.x = x1;
+	  dr2.max.x = x1;
+	  dr2.min.y = y1;
+	  dr2.max.y = y2
+	  blt_background (dest_bitmap, & dr2);
+	}
+
+      /* middle */
+      if (x1 != x2)
+	{
+	  /* ??? */
+	}
+
+      /* right */
+      if (x2 != x3)
+	{
+	  dr2.min.x = x2;
+	  dr2.max.x = x3;
+	  dr2.min.y = y1;
+	  dr2.max.y = y2
+	  blt_background (dest_bitmap, & dr2);
+	}
+    }
+
+  /* bottom */
+  if (y2 != y3)
+    {
+      dr2.min.x = x0;
+      dr2.max.x = x3;
+      dr2.min.y = y2;
+      dr2.max.y = y3;
+      blt_background (dest_bitmap, & dr2);
     }
 
  done:
@@ -390,25 +583,49 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 	return (NULL);
     }
 
-  for (src_point.y = src_rect->min.y;
-       src_point.y < src_rect->max.y;
-       src_point.y++)
+  if (tfn == TF_SRC)
     {
-      dest_point.y = dest_min->y + src_point.y - src_rect->min.y;
-
-      for (src_point.x = src_rect->min.x;
-	   src_point.x < src_rect->max.x;
-	   src_point.x++)
+      for (src_point.y = src_rect->min.y;
+	   src_point.y < src_rect->max.y;
+	   src_point.y++)
 	{
-	  boolean a, b, c;
+	  dest_point.y = dest_min->y + src_point.y - src_rect->min.y;
+	  
+	  for (src_point.x = src_rect->min.x;
+	       src_point.x < src_rect->max.x;
+	       src_point.x++)
+	    {
+	      boolean a;
 
-	  dest_point.x = dest_min->x + src_point.x - src_rect->min.x;
+	      dest_point.x = dest_min->x + src_point.x - src_rect->min.x;
 
-	  a = get_pixel (src_bitmap, src_point);
-	  b = get_pixel (dest_bitmap, dest_point);
-	  c = (tfn & (1 << (a * 2 + b))) != 0;
+	      a = get_pixel (src_bitmap, src_point);
+	      set_pixel (dest_bitmap, dest_point, a);
+	    }
+	}
+    }
+  else
+    {
+      for (src_point.y = src_rect->min.y;
+	   src_point.y < src_rect->max.y;
+	   src_point.y++)
+	{
+	  dest_point.y = dest_min->y + src_point.y - src_rect->min.y;
+	  
+	  for (src_point.x = src_rect->min.x;
+	       src_point.x < src_rect->max.x;
+	       src_point.x++)
+	    {
+	      boolean a, b, c;
 
-	  set_pixel (dest_bitmap, dest_point, c);
+	      dest_point.x = dest_min->x + src_point.x - src_rect->min.x;
+
+	      a = get_pixel (src_bitmap, src_point);
+	      b = get_pixel (dest_bitmap, dest_point);
+	      c = (tfn & (1 << (a * 2 + b))) != 0;
+
+	      set_pixel (dest_bitmap, dest_point, c);
+	    }
 	}
     }
   return (dest_bitmap);

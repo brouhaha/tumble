@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: tumble.c,v 1.17 2002/08/25 05:22:42 eric Exp $
+ * $Id: tumble.c,v 1.18 2002/08/25 21:43:49 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #include <tiffio.h>
+#define TIFF_REVERSE_BITS
+
 #include <panda/functions.h>
 #include <panda/constants.h>
 
@@ -377,6 +380,11 @@ boolean process_page (int image,  /* range 1 .. n */
 	goto fail;
       }
 
+#ifdef TIFF_REVERSE_BITS
+  reverse_bits ((u8 *) bitmap->bits,
+		image_length * bitmap->row_words * sizeof (word_type));
+#endif /* TIFF_REVERSE_BITS */
+
   if (input_attributes.has_page_size)
     bitmap = resize_bitmap (bitmap,
 			    x_resolution,
@@ -414,6 +422,11 @@ boolean process_page (int image,  /* range 1 .. n */
   TIFFSetField (tiff_temp, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
   TIFFSetField (tiff_temp, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
   TIFFSetField (tiff_temp, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
+
+#ifdef TIFF_REVERSE_BITS
+  reverse_bits ((u8 *) bitmap->bits,
+		image_length * bitmap->row_words * sizeof (word_type));
+#endif /* TIFF_REVERSE_BITS */
 
   for (row = 0; row < rect_height (& bitmap->rect); row++)
     if (1 != TIFFWriteScanline (tiff_temp,

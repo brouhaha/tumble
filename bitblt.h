@@ -20,12 +20,11 @@ static inline s32 rect_height (Rect *r)
   return (r->max.y - r->min.y);
 }
 
-/*
- * Despite the following two definitions, there are still some places
- * in the code that depend on words having 32 bits.
- */ 
-#define BITS_PER_WORD 32
+
 typedef u32 word_type;
+#define BITS_PER_WORD (8 * sizeof (word_type))
+#define ALL_ONES (~ 0U)
+
 
 typedef struct Bitmap
 {
@@ -67,3 +66,6 @@ void transpose (Bitmap *src);
 
 void rot_90 (Bitmap *src);   /* transpose + flip_h */
 void rot_270 (Bitmap *src);  /* transpose + flip_v */
+
+
+void reverse_bits (u8 *p, int byte_count);
