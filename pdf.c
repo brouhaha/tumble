@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf.c,v 1.6 2003/03/07 22:52:09 eric Exp $
+ * $Id: pdf.c,v 1.7 2003/03/12 03:17:00 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -98,7 +98,7 @@ pdf_file_handle pdf_create (char *filename, int page_mode)
 		      pdf_new_name (page_mode_string));
 
   pdf_file->info    = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
-  pdf_set_info (pdf_file, "Producer", "t2p, Copyright 2003 Eric Smith <eric@brouhaha.com>");
+  pdf_set_info (pdf_file, "Producer", "t2p by Eric Smith <eric@brouhaha.com>");
 
   pdf_file->trailer_dict = pdf_new_obj (PT_DICTIONARY);
   /* Size key will be added later */
