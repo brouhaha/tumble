@@ -81,11 +81,11 @@ Bitmap *bitblt (Bitmap *src_bitmap,
   if (! dest_bitmap)
     {
       if (scan & TRANSPOSE)
-	dest_bitmap = create_bitmap (rect_height (src_rect),
-				     rect_width (src_rect));
+	dest_bitmap = create_bitmap (dest_upper_left.x + rect_height (src_rect),
+				     dest_upper_left.y + rect_width (src_rect));
       else
-	dest_bitmap = create_bitmap (rect_width (src_rect),
-				     rect_height (src_rect));
+	dest_bitmap = create_bitmap (dest_upper_left.x + rect_width (src_rect),
+				     dest_upper_left.y + rect_height (src_rect));
       if (! dest_bitmap)
 	return (NULL);
     }
