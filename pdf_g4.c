@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_g4.c,v 1.9 2003/03/10 01:49:50 eric Exp $
+ * $Id: pdf_g4.c,v 1.10 2003/03/11 23:38:57 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,9 +36,6 @@
 #include "pdf_util.h"
 #include "pdf_prim.h"
 #include "pdf_private.h"
-
-
-#define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
 
 
 struct pdf_g4_image
