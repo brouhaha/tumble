@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf.c,v 1.10 2003/03/13 00:57:05 eric Exp $
+ * $Id: pdf.c,v 1.11 2003/03/13 03:44:34 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -98,9 +98,10 @@ pdf_file_handle pdf_create (char *filename, int page_mode)
   pdf_set_dict_entry (pdf_file->catalog,
 		      "PageMode",
 		      pdf_new_name (page_mode_string));
+  pdf_set_dict_entry (pdf_file->catalog, "PageLayout", pdf_new_name ("SinglePage"));
 
   pdf_file->info    = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
-  pdf_set_info (pdf_file, "Producer", "tumble by Eric Smith <eric@brouhaha.com>");
+  pdf_set_info (pdf_file, "Producer", "tumble by Eric Smith -- http://tumble.brouhaha.com/");
 
   pdf_file->trailer_dict = pdf_new_obj (PT_DICTIONARY);
   /* Size key will be added later */
@@ -108,7 +109,11 @@ pdf_file_handle pdf_create (char *filename, int page_mode)
   pdf_set_dict_entry (pdf_file->trailer_dict, "Info", pdf_file->info);
 
   /* write file header */
-  fprintf (pdf_file->f, "%%PDF-1.2\r\n");
+  fprintf (pdf_file->f, "%%PDF-1.3\r\n");
+
+  /* write comment containing 8-bit chars as a hint that the file is binary */
+  /* PDF 1.4 spec, section 3.4.1 */
+  fprintf (pdf_file->f, "%%\342\343\317\323\r\n");
 
   return (pdf_file);
 }
@@ -193,6 +198,14 @@ pdf_page_handle pdf_new_page (pdf_file_handle pdf_file,
   pdf_set_dict_entry (page->page_dict, "MediaBox", page->media_box);
   pdf_set_dict_entry (page->page_dict, "Resources", page->resources);
 
+  if (pdf_get_integer (pdf_file->root->count) == 0)
+    {
+      struct pdf_obj *dest_array = pdf_new_obj (PT_ARRAY);
+      pdf_add_array_elem (dest_array, page->page_dict);
+      pdf_add_array_elem (dest_array, pdf_new_name ("Fit"));
+      pdf_set_dict_entry (pdf_file->catalog, "OpenAction", dest_array);
+    }
+
   /* $$$ currently only support a single-level pages tree */
   pdf_set_dict_entry (page->page_dict, "Parent", pdf_file->root->pages_dict);
   pdf_add_array_elem (pdf_file->root->kids, page->page_dict);
@@ -213,6 +226,3 @@ void pdf_set_page_number (pdf_page_handle pdf_page, char *page_number)
 {
 }
 
-void pdf_bookmark (pdf_page_handle pdf_page, int level, char *name)
-{
-}
