@@ -5,7 +5,7 @@
  *           encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.14 2002/01/02 08:39:39 eric Exp $
+ * $Id: t2p.c,v 1.15 2002/01/22 01:42:42 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -200,7 +200,7 @@ static Bitmap *resize_bitmap (Bitmap *src,
   dest_min.x = 0;
   dest_min.y = 0;
 
-  dest = bitblt (src, & src_rect, NULL, & dest_min, TF_SRC);
+  dest = bitblt (src, & src_rect, NULL, & dest_min, TF_SRC, 0);
   free_bitmap (src);
   return (dest);
 }
@@ -243,8 +243,6 @@ boolean process_page (int image,  /* range 1 .. n */
   u16 resolution_unit;
   float x_resolution, y_resolution;
   float dest_x_resolution, dest_y_resolution;
-
-  int scanline_size;
 
   int width_points, height_points;  /* really 1/72 inch units rather than
 				       points */
@@ -358,8 +356,6 @@ boolean process_page (int image,  /* range 1 .. n */
       dest_y_resolution = y_resolution;
     }
 
-  scanline_size = TIFFScanlineSize (in);
-
   rect.min.x = 0;
   rect.min.y = 0;
   rect.max.x = image_width;
@@ -373,22 +369,9 @@ boolean process_page (int image,  /* range 1 .. n */
       goto fail;
     }
 
-  if (bitmap->rowbytes != scanline_size)
-    {
-      printf ("image_width %d\n", image_width);
-      printf ("rowbytes %d\n", bitmap->rowbytes);
-      printf ("TIFFScanlineSize %d\n", scanline_size);
-    }
-
   for (row = 0; row < image_length; row++)
-    TIFFReadScanline (in,
-		      bitmap->bits + row * bitmap->rowbytes,
-		      row,
-		      0);
-
-  for (row = 0; row < dest_image_length; row++)
     if (1 != TIFFReadScanline (in,
-			       bitmap->bits + row * bitmap->rowbytes,
+			       bitmap->bits + row * bitmap->row_words,
 			       row,
 			       0))
       {
@@ -435,7 +418,7 @@ boolean process_page (int image,  /* range 1 .. n */
 
   for (row = 0; row < rect_height (& bitmap->rect); row++)
     if (1 != TIFFWriteScanline (tiff_temp,
-				bitmap->bits + row * bitmap->rowbytes,
+				bitmap->bits + row * bitmap->row_words,
 				row,
 				0))
       {

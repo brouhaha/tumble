@@ -1,5 +1,5 @@
 tiff2pdf TODO list
-$Id: TODO,v 1.4 2002/01/02 05:49:42 eric Exp $
+$Id: TODO,v 1.5 2002/01/22 01:40:59 eric Exp $
 
 No particular order.  Page numbers refer to _Portable Document Format
 Reference Manual_ by Adobe Systems Incorporated, Addison-Wesley, 1993.
@@ -7,6 +7,7 @@ Reference Manual_ by Adobe Systems Incorporated, Addison-Wesley, 1993.
 -----------------------------------------------------------------------------
 * bitblt library:
     * optimize
+        * replace inner loops in flip_h and flip_v with Duff's Device
     * check for endian problems
 
 * crop

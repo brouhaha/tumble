@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "type.h"
 #include "bitblt.h"
@@ -24,8 +25,9 @@ Bitmap *setup (void)
 {
   Bitmap *b;
   Point p;
+  Rect r = {{ 0, 0 }, { WIDTH, HEIGHT }};
 
-  b = create_bitmap (WIDTH, HEIGHT);
+  b = create_bitmap (& r);
   if (! b)
     return (NULL);
 
@@ -39,10 +41,10 @@ Bitmap *setup (void)
 void print_bitmap (FILE *o, Bitmap *b)
 {
   Point p;
-  printf ("rowbytes: %d\n", b->rowbytes);
-  for (p.y = 0; p.y < b->height; p.y++)
+  printf ("row_words: %d\n", b->row_words);
+  for (p.y = b->rect.min.y; p.y < b->rect.max.y; p.y++)
     {
-      for (p.x = 0; p.x < b->width; p.x++)
+      for (p.x = b->rect.min.x; p.x < b->rect.max.x; p.x++)
 	fputc (".X" [get_pixel (b, p)], o);
       fprintf (o, "\n");
     }
@@ -64,18 +66,19 @@ int main (int argc, char *argv[])
     }
 
   print_bitmap (stdout, b);
+  printf ("\n");
 
+  flip_v (b);
+
+  print_bitmap (stdout, b);
+  printf ("\n");
+
+  flip_h (b);
+
+  print_bitmap (stdout, b);
   printf ("\n");
 
 #if 0
-  b2 = create_bitmap (b->height, b->width);
-  if (! b2)
-    {
-      fprintf (stderr, "create_bitmap failed\n");
-      exit (2);
-    }
-#endif
-
   r.upper_left.x = r.upper_left.y = 0;
   r.lower_right.x = b->width;
   r.lower_right.y = b->height;
@@ -92,6 +95,7 @@ int main (int argc, char *argv[])
     }
 
   print_bitmap (stdout, b2);
+#endif
 
   exit (0);
 }
