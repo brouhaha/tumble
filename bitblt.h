@@ -1,7 +1,7 @@
 typedef struct Point
 {
-  u32 x;
-  u32 y;
+  int x;
+  int y;
 } Point;
 
 typedef struct Rect

@@ -50,7 +50,8 @@ void free_bitmap (Bitmap *bitmap)
 boolean get_pixel (Bitmap *bitmap, Point coord)
 {
   u8 *p;
-  if ((coord.x >= bitmap->width) || (coord.y >= bitmap->height))
+  if ((coord.x < 0) || (coord.y < 0) ||
+      (coord.x >= bitmap->width) || (coord.y >= bitmap->height))
     return (0);
   p = bitmap->bits + coord.y * bitmap->rowbytes + coord.x / 8;
   return ((*p & pixel_mask (coord.x & 7)) != 0);
@@ -59,7 +60,8 @@ boolean get_pixel (Bitmap *bitmap, Point coord)
 void set_pixel (Bitmap *bitmap, Point coord, boolean value)
 {
   u8 *p;
-  if ((coord.x >= bitmap->width) || (coord.y >= bitmap->height))
+  if ((coord.x < 0) || (coord.y < 0) ||
+      (coord.x >= bitmap->width) || (coord.y >= bitmap->height))
     return;
   p = bitmap->bits + coord.y * bitmap->rowbytes + coord.x / 8;
   if (value)
@@ -77,7 +79,6 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 		int tfn)
 {
   Point src_point, dest_point;
-  boolean src_pixel, dest_pixel;
 
   if (! dest_bitmap)
     {
