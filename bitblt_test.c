@@ -16,7 +16,7 @@ char test_data [HEIGHT][WIDTH] =
   ".....X....X...X.....",
   ".....X.....X..X.....",
   ".....XXXXXXXXXX.....",
-  ".....XXXXXXXXXX....."
+  ".....X.X.X.X.X......"
 };
 
 Bitmap *setup (void)
@@ -82,8 +82,7 @@ int main (int argc, char *argv[])
 
   b2 = bitblt (b, r,
 	       NULL, p,
-	       0, 0, 
-	       1,  /* transpose */
+	       ROT_90,
 	       TF_SRC);
   if (! b2)
     {

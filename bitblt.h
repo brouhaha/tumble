@@ -29,6 +29,16 @@ typedef struct Bitmap
 #define TF_XOR 0x6
 
 
+#define FLIP_H    0x1
+#define FLIP_V    0x2
+#define TRANSPOSE 0x4
+
+#define ROT_0     0x0
+#define ROT_90    (TRANSPOSE + FLIP_H)
+#define ROT_180   (FLIP_H + FLIP_V)
+#define ROT_270   (TRANSPOSE + FLIP_V)
+
+
 Bitmap *create_bitmap (u32 width, u32 height);
 void free_bitmap (Bitmap *bitmap);
 boolean get_pixel (Bitmap *bitmap, Point coord);
@@ -38,7 +48,5 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 		Rect src_rect,
 		Bitmap *dest_bitmap,
 		Point dest_upper_left,
-		boolean flip_horizontal,
-		boolean flip_vertical,
-		boolean transpose,
+		int scan,
 		int tfn);

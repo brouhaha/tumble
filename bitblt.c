@@ -72,9 +72,7 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 		Rect src_rect,
 		Bitmap *dest_bitmap,
 		Point dest_upper_left,
-		boolean flip_horizontal,
-		boolean flip_vertical,
-		boolean transpose,
+		int scan,
 		int tfn)
 {
   Point src_point, dest_point;
@@ -82,7 +80,7 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 
   if (! dest_bitmap)
     {
-      if (transpose)
+      if (scan & TRANSPOSE)
 	dest_bitmap = create_bitmap (rect_height (src_rect),
 				     rect_width (src_rect));
       else
@@ -102,16 +100,31 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 	{
 	  boolean a, b, c;
 
-	  if (transpose)
+	  if (scan & TRANSPOSE)
 	    {
-	      dest_point.x = dest_upper_left.x + (src_point.y - src_rect.upper_left.y);
-	      dest_point.y = dest_upper_left.y + (src_point.x - src_rect.upper_left.x);
+	      dest_point.x = src_point.y - src_rect.upper_left.y;
+	      dest_point.y = src_point.x - src_rect.upper_left.x;
+
+	      if (scan & FLIP_H)
+		dest_point.x = (rect_height (src_rect) - 1) - dest_point.x;
+
+	      if (scan & FLIP_V)
+		dest_point.y = (rect_width (src_rect) - 1) - dest_point.y;
 	    }
 	  else
 	    {
-	      dest_point.x = dest_upper_left.x + (src_point.x - src_rect.upper_left.x);
-	      dest_point.y = dest_upper_left.y + (src_point.y - src_rect.upper_left.y);
+	      dest_point.x = src_point.x - src_rect.upper_left.x;
+	      dest_point.y = src_point.y - src_rect.upper_left.y;
+
+	      if (scan & FLIP_H)
+		dest_point.x = (rect_width (src_rect) - 1) - dest_point.x;
+
+	      if (scan & FLIP_V)
+		dest_point.y = (rect_height (src_rect) - 1) - dest_point.y;
 	    }
+
+	  dest_point.x += dest_upper_left.x;
+	  dest_point.y += dest_upper_left.y;
 
 	  a = get_pixel (src_bitmap, src_point);
 	  b = get_pixel (dest_bitmap, dest_point);
