@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: tumble.c,v 1.29 2003/03/12 02:58:33 eric Exp $
+ * $Id: tumble.c,v 1.30 2003/03/12 19:38:59 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -582,7 +582,7 @@ static void generate_bookmark_name (char *name,
 	  }
       bookmark_fmt++;
     }
-  *bookmark_fmt = '\0';
+  *name = '\0';
 }
 
 
