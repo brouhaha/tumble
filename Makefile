@@ -1,6 +1,6 @@
 # tumble: build a PDF file from image files
 # Makefile
-# $Id: Makefile,v 1.40 2003/04/10 00:47:30 eric Exp $
+# $Id: Makefile,v 1.41 2003/04/10 01:02:12 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -83,6 +83,9 @@ BIN_DISTFILES = COPYING README $(TARGETS)
 AUTO_CSRCS = scanner.c parser.tab.c bitblt_tables.c g4_tables.c
 AUTO_HDRS = parser.tab.h  bitblt_tables.h g4_tables.h
 AUTO_MISC = parser.output
+
+
+CFLAGS := $(CFLAGS) -DTUMBLE_VERSION=$(VERSION)
 
 
 -include Maketest
