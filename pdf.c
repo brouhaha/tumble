@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf.c,v 1.3 2003/02/20 04:44:17 eric Exp $
+ * $Id: pdf.c,v 1.4 2003/02/21 02:49:11 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -53,7 +53,7 @@ void pdf_init (void)
 
 struct pdf_pages *pdf_new_pages (pdf_file_handle pdf_file)
 {
-  struct pdf_pages *pages = pdf_calloc (sizeof (struct pdf_pages));
+  struct pdf_pages *pages = pdf_calloc (1, sizeof (struct pdf_pages));
   pages->kids = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_ARRAY));
   pages->count = pdf_new_integer (0);
   pages->pages_dict = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
@@ -68,7 +68,7 @@ pdf_file_handle pdf_create (char *filename)
 {
   pdf_file_handle pdf_file;
 
-  pdf_file = pdf_calloc (sizeof (struct pdf_file));
+  pdf_file = pdf_calloc (1, sizeof (struct pdf_file));
 
   pdf_file->f = fopen (filename, "wb");
   if (! pdf_file->f)
@@ -154,7 +154,7 @@ pdf_page_handle pdf_new_page (pdf_file_handle pdf_file,
 			      double width,
 			      double height)
 {
-  pdf_page_handle page = pdf_calloc (sizeof (struct pdf_page));
+  pdf_page_handle page = pdf_calloc (1, sizeof (struct pdf_page));
 
   page->pdf_file = pdf_file;
 

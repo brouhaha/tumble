@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_g4.c,v 1.5 2003/02/21 01:25:47 eric Exp $
+ * $Id: pdf_g4.c,v 1.6 2003/02/21 02:49:11 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -35,6 +36,9 @@
 #include "pdf_util.h"
 #include "pdf_prim.h"
 #include "pdf_private.h"
+
+
+#define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
 
 
 struct pdf_g4_image
@@ -94,28 +98,48 @@ void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
 {
   struct pdf_g4_image *image = app_data;
 
-#if 0
-  pdf_stream_write_data (pdf_file, stream, image->data, image->len);
-#else
-  unsigned long row = 0;
-  word_type *ref;
-  word_type *raw;
+  uint32_t row;
 
-  ref = NULL;
-  raw = image->bitmap->bits;
+  /* reference (previous) row */
+  uint32_t *ref_runs = pdf_calloc (image->Columns, sizeof (uint32_t));
+  uint32_t ref_run_count;
 
-  while (row < image->Rows)
+  /* row being converted */
+  uint32_t *row_runs = pdf_calloc (image->Columns, sizeof (uint32_t));
+  uint32_t row_run_count;
+
+  /* initialize reference row - all white */
+  ref_runs [0] = image->Columns;
+  ref_run_count = 0;
+
+  for (row = image->bitmap->rect.min.y;
+       row < image->bitmap->rect.max.y;
+       row++)
     {
-      pdf_stream_write_data (pdf_file, stream, (uint8_t *) raw,
-			     image->bitmap->row_words * sizeof (word_type));
+      row_run_count = get_row_run_lengths (image->bitmap,
+					   row,
+					   image->bitmap->rect.min.x,
+					   image->bitmap->rect.max.x - 1,
+					   image->Columns,  /* max_runs */
+					   row_runs);
+      pdf_assert (row_run_count > 0);
 
-      row++;
-      ref = raw;
-      raw += image->bitmap->row_words;
+      /* $$$ G4 encode the runs here */
+
+      /* pdf_stream_write_data (pdf_file, stream, image->data, image->len); */
+
+      SWAP (uint32_t *, row_runs, ref_runs);
+      ref_run_count = row_run_count;
     }
+
+  
   /* $$$ generate and write EOFB code */
-  /* $$$ flush any remaining buffered bits */
-#endif
+  pdf_stream_write_bits (pdf_file, stream, 24, 0x001001);
+
+  pdf_stream_flush_bits (pdf_file, stream);
+
+  free (ref_runs);
+  free (row_runs);
 }
 
 
@@ -139,7 +163,7 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 
   struct pdf_obj *content_stream;
 
-  image = pdf_calloc (sizeof (struct pdf_g4_image));
+  image = pdf_calloc (1, sizeof (struct pdf_g4_image));
 
   image->width = width;
   image->height = height;
