@@ -1,6 +1,6 @@
-# tiff2pdf: build a PDF file out of one or more TIFF Class F Group 4 files
+# t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.8 2002/01/22 01:41:12 eric Exp $
+# $Id: Makefile,v 1.9 2002/01/30 00:55:53 eric Exp $
 # Copyright 2001 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -24,23 +24,27 @@ LDLIBS = -g -ltiff -lm -L/usr/local/lib/panda -lpanda -lpng
 YACC = bison
 YFLAGS = -d -v
 
-SRCS = bitblt.c bitblt_test.c tiff2pdf.c semantics.c
-HDRS = type.h bitblt.h tiff2pdf.h semantics.h
+SRCS = bitblt.c bitblt_test.c t2p.c semantics.c
+HDRS = type.h bitblt.h t2p.h semantics.h
 MISC = Makefile scanner.l parser.y
 
-TARGETS = tiff2pdf bitblt_test
+TARGETS = t2p bitblt_test
 
 AUTO_SRCS = scanner.c parser.tab.c
 AUTO_HDRS = parser.tab.h
 AUTO_MISC = parser.output
 
-tiff2pdf: tiff2pdf.o scanner.o semantics.o parser.tab.o bitblt.o
+t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o
 
 bitblt_test: bitblt_test.o bitblt.o
 
 
 clean:
-	rm -f *.o *.d $(TARGETS) $(AUTO_SRCS) $(AUTO_HDRS) $(AUTO_MISC) 
+	rm -f *.o *.d $(TARGETS) $(AUTO_SRCS) $(AUTO_HDRS) $(AUTO_MISC)
+
+very_clean:
+	rm -f *.o *.d $(TARGETS) $(AUTO_SRCS) $(AUTO_HDRS) $(AUTO_MISC) \
+		*~ *.pdf
 
 wc:
 	wc -l $(SRCS) $(HDRS) $(MISC)

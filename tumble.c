@@ -1,11 +1,10 @@
 /*
- * tiff2pdf: Create a PDF file from the contents of one or more
- *           TIFF bilevel image files.  The images in the resulting
- *           PDF file will be compressed using ITU-T T.6 (G4) fax
- *           encoding.
+ * t2p: Create a PDF file from the contents of one or more TIFF
+ *      bilevel image files.  The images in the resulting PDF file
+ *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: tumble.c,v 1.15 2002/01/22 01:42:42 eric Exp $
+ * $Id: tumble.c,v 1.16 2002/01/30 00:55:34 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,8 +20,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111  USA
- */
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA */
 
 
 #include <stdio.h>
@@ -36,7 +34,7 @@
 #include "bitblt.h"
 #include "semantics.h"
 #include "parser.tab.h"
-#include "tiff2pdf.h"
+#include "t2p.h"
 
 
 #define POINTS_PER_INCH 72
@@ -255,7 +253,7 @@ boolean process_page (int image,  /* range 1 .. n */
   panda_page *page;
 
   int tiff_temp_fd;
-  char tiff_temp_fn [] = "/var/tmp/tiff2pdf-XXXXXX\0";
+  char tiff_temp_fn [] = "/var/tmp/t2p-XXXXXX\0";
   TIFF *tiff_temp;
   
   char pagesize [26];  /* Needs to hold two ints of four characters (0..3420),

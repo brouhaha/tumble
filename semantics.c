@@ -5,7 +5,7 @@
 #include "type.h"
 #include "semantics.h"
 #include "parser.tab.h"
-#include "tiff2pdf.h"
+#include "t2p.h"
 
 
 typedef struct
