@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_bookmark.c,v 1.2 2003/03/04 18:26:43 eric Exp $
+ * $Id: pdf_bookmark.c,v 1.3 2003/03/05 12:39:50 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -40,18 +40,15 @@
 
 static void pdf_bookmark_update_count (pdf_bookmark_handle entry)
 {
-  struct pdf_obj *count_obj;
-
   while (entry)
     {
-      count_obj = pdf_get_dict_entry (entry->dict, "Count");
-      if (! count_obj)
+      if (! entry->count)
 	{
-	  count_obj = pdf_new_integer (0);
-	  pdf_set_dict_entry (entry->dict, "Count", count_obj);
+	  entry->count = pdf_new_integer (0);
+	  pdf_set_dict_entry (entry->dict, "Count", entry->count);
 	}
-      pdf_set_integer (count_obj,
-		       pdf_get_integer (count_obj) +
+      pdf_set_integer (entry->count,
+		       pdf_get_integer (entry->count) +
 		       ((entry->open) ? 1 : -1));
       if (! entry->open)
 	break;
@@ -78,7 +75,6 @@ pdf_bookmark_handle pdf_new_bookmark (pdf_bookmark_handle parent,
     {
       root = pdf_calloc (1, sizeof (struct pdf_bookmark));
       root->dict = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
-      pdf_set_dict_entry (root->dict, "Count", pdf_new_integer (0));
 
       pdf_file->outline_root = root;
       pdf_set_dict_entry (pdf_file->catalog, "Outlines", root->dict);
