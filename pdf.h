@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf.h,v 1.4 2003/02/21 01:25:47 eric Exp $
+ * $Id: pdf.h,v 1.5 2003/03/04 17:58:36 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,6 +27,8 @@
 typedef struct pdf_file *pdf_file_handle;
 
 typedef struct pdf_page *pdf_page_handle;
+
+typedef struct pdf_bookmark *pdf_bookmark_handle;
 
 
 void pdf_init (void);
@@ -68,6 +70,11 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 
 void pdf_set_page_number (pdf_page_handle pdf_page, char *page_number);
 
-void pdf_bookmark (pdf_page_handle pdf_page, int level, char *name);
+/* Create a new bookmark, under the specified parent, or at the top
+   level if parent is NULL. */
+pdf_bookmark_handle pdf_new_bookmark (pdf_bookmark_handle parent,
+				      char *title,
+				      bool open,
+				      pdf_page_handle pdf_page);
 
 void pdf_insert_tiff_image (pdf_page_handle pdf_page, char *filename);

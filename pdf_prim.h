@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.h,v 1.4 2003/02/21 02:49:11 eric Exp $
+ * $Id: pdf_prim.h,v 1.5 2003/03/04 17:58:36 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -68,7 +68,7 @@ struct pdf_obj *pdf_new_name (char *name);
 
 struct pdf_obj *pdf_new_string (char *str);
 
-struct pdf_obj *pdf_new_integer (unsigned long val);
+struct pdf_obj *pdf_new_integer (long val);
 
 struct pdf_obj *pdf_new_real (double val);
 
@@ -80,8 +80,8 @@ struct pdf_obj *pdf_new_ind_ref (pdf_file_handle pdf_file, struct pdf_obj *obj);
 struct pdf_obj *pdf_deref_ind_obj (struct pdf_obj *ind_obj);
 
 
-unsigned long pdf_get_integer (struct pdf_obj *obj);
-void pdf_set_integer (struct pdf_obj *obj, unsigned long val);
+long pdf_get_integer (struct pdf_obj *obj);
+void pdf_set_integer (struct pdf_obj *obj, long val);
 
 
 double pdf_get_real (struct pdf_obj *obj);

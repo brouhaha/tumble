@@ -1,5 +1,5 @@
 t2p TODO list
-$Id: TODO,v 1.9 2003/02/21 01:25:47 eric Exp $
+$Id: TODO,v 1.10 2003/03/04 17:58:36 eric Exp $
 
 No particular order.
 
@@ -70,6 +70,7 @@ Adobe Systems Incorporated, Addison-Wesley, 1993.]
 * proper output of real numbers - variable precision, no exponent
 
 * bookmarks (outline)
+    * alternate destination specs (only is /Fit currently supported)
 
 * name trees, number trees
 

@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: tumble.c,v 1.24 2003/02/21 01:25:47 eric Exp $
+ * $Id: tumble.c,v 1.25 2003/03/04 17:58:36 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -88,7 +88,7 @@ void usage (void)
   fprintf (stderr, "    -v   verbose\n");
   fprintf (stderr, "    -b fmt  create bookmarks\n");
   fprintf (stderr, "bookmark format:\n");
-  fprintf (stderr, "    %%F  file name\n");
+  fprintf (stderr, "    %%F  file name (sans suffix)\n");
   fprintf (stderr, "    %%p  page number\n");
 }
 
@@ -311,7 +311,7 @@ bool process_page (int image,  /* range 1 .. n */
 					  points */
 
   Rect rect;
-  Bitmap *bitmap;
+  Bitmap *bitmap = NULL;
 
   int row;
 
@@ -464,6 +464,7 @@ bool process_page (int image,  /* range 1 .. n */
 
   page = pdf_new_page (out->pdf, width_points, height_points);
 
+#if 0
   pdf_write_g4_fax_image (page,
 			  0, 0,  /* x, y */
 			  width_points, height_points,
@@ -471,21 +472,102 @@ bool process_page (int image,  /* range 1 .. n */
 			  0, /* ImageMask */
 			  0, 0, 0,  /* r, g, b */
 			  0); /* BlackIs1 */
+#endif
 
-  free_bitmap (bitmap);
+  while (bookmarks)
+    {
+      /* $$$ need to handle level here */
+      pdf_new_bookmark (NULL, bookmarks->name, 0, page);
+      bookmarks = bookmarks->next;
+    }
 
   result = 1;
 
  fail:
+  if (bitmap)
+    free_bitmap (bitmap);
+
   return (result);
 }
 
 
-void main_args (char *out_fn, int inf_count, char **in_fn)
+#define MAX_BOOKMARK_NAME_LEN 500
+
+
+static int filename_length_without_suffix (char *in_fn)
+{
+  char *p;
+  int len = strlen (in_fn);
+
+  p = strrchr (in_fn, '.');
+  if (p && ((strcasecmp (p, ".tif") == 0) ||
+	    (strcasecmp (p, ".tiff") == 0)))
+    return (p - in_fn);
+  return (len);
+}
+
+
+/* $$$ this function should ensure that it doesn't overflow the name string! */
+static void generate_bookmark_name (char *name,
+				    char *bookmark_fmt, 
+				    char *in_fn,
+				    int page)
+{
+  bool meta = 0;
+  int len;
+
+  while (*bookmark_fmt)
+    {
+      if (meta)
+	{
+	  meta = 0;
+	  switch (*bookmark_fmt)
+	    {
+	    case '%':
+	      *(name++) = '%';
+	      break;
+	    case 'F':
+	      len = filename_length_without_suffix (in_fn);
+	      strncpy (name, in_fn, len);
+	      name += len;
+	      break;
+	    case 'p':
+	      sprintf (name, "%d", page);
+	      name += strlen (name);
+	      break;
+	    default:
+	      break;
+	    }
+	}
+      else
+	switch (*bookmark_fmt)
+	  {
+	  case '%':
+	    meta = 1;
+	    break;
+	  default:
+	    *(name++) = *bookmark_fmt;
+	  }
+      bookmark_fmt++;
+    }
+  *bookmark_fmt = '\0';
+}
+
+
+void main_args (char *out_fn,
+		int inf_count,
+		char **in_fn,
+		char *bookmark_fmt)
 {
   int i, ip;
   input_attributes_t input_attributes;
   pdf_file_attributes_t output_attributes;
+  bookmark_t bookmark;
+  char bookmark_name [MAX_BOOKMARK_NAME_LEN];
+
+  bookmark.next = NULL;
+  bookmark.level = 1;
+  bookmark.name = & bookmark_name [0];
 
   memset (& input_attributes, 0, sizeof (input_attributes));
   memset (& output_attributes, 0, sizeof (output_attributes));
@@ -499,7 +581,13 @@ void main_args (char *out_fn, int inf_count, char **in_fn)
       for (ip = 1;; ip++)
 	{
 	  fprintf (stderr, "processing page %d of file \"%s\"\r", ip, in_fn [i]);
-	  if (! process_page (ip, input_attributes, NULL))
+	  if (bookmark_fmt)
+	    generate_bookmark_name (& bookmark_name [0],
+				    bookmark_fmt, 
+				    in_fn [i],
+				    ip);
+	  if (! process_page (ip, input_attributes,
+			      bookmark_fmt ? & bookmark : NULL))
 	    fatal (3, "error processing page %d of input file \"%s\"\n", ip, in_fn [i]);
 	  if (last_tiff_page ())
 	    break;
@@ -596,7 +684,7 @@ int main (int argc, char *argv[])
   if (spec_fn)
     main_spec (spec_fn);
   else
-    main_args (out_fn, inf_count, in_fn);
+    main_args (out_fn, inf_count, in_fn, bookmark_fmt);
   
   close_tiff_input_file ();
   close_pdf_output_files ();
