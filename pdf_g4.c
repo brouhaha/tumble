@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_g4.c,v 1.3 2003/02/20 04:44:17 eric Exp $
+ * $Id: pdf_g4.c,v 1.4 2003/02/21 01:01:33 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -39,6 +39,8 @@
 
 struct pdf_g4_image
 {
+  double width, height;
+  double x, y;
   unsigned long Columns;
   unsigned long Rows;
   int BlackIs1;
@@ -69,18 +71,16 @@ void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
 				    struct pdf_obj *stream,
 				    void *app_data)
 {
-  unsigned long width = (8.5 * 72);  /* full width of page */
-  unsigned long height = (11 * 72);  /* full height of page */
-  unsigned long x = 0;  /* 0 is left edge */
-  unsigned long y = 0;  /* 0 is bottom edge */
   struct pdf_g4_image *image = app_data;
 
   char str1 [100];
   char *str2 = "/";
-  char *str3 = " Do\r\n";
+  char *str3 = " Do Q\r\n";
 
   /* width 0 0 height x y cm */
-  sprintf (str1, "q %ld 0 0 %ld %ld %ld cm\r\n", width, height, x, y);
+  sprintf (str1, "q %g 0 0 %g %g %g cm\r\n",
+	   image->width, image->height,
+	   image->x, image->y);
 
   pdf_stream_write_data (pdf_file, stream, str1, strlen (str1));
   pdf_stream_write_data (pdf_file, stream, str2, strlen (str2));
@@ -108,7 +108,7 @@ void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
 
   while (row < image->Rows)
     {
-      pdf_stream_write_data (pdf_file, stream, raw,
+      pdf_stream_write_data (pdf_file, stream, (uint8_t *) raw,
 			     image->bitmap->row_words * sizeof (word_type));
 
       row++;
@@ -122,6 +122,10 @@ void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
 
 
 void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
+			     double x,
+			     double y,
+			     double width,
+			     double height,
 			     Bitmap *bitmap,
 			     int ImageMask,
 			     int BlackIs1)          /* boolean, typ. false */
@@ -135,6 +139,11 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
   struct pdf_obj *content_stream;
 
   image = pdf_calloc (sizeof (struct pdf_g4_image));
+
+  image->width = width;
+  image->height = height;
+  image->x = x;
+  image->y = y;
 
   image->bitmap = bitmap;
   image->Columns = bitmap->rect.max.x - bitmap->rect.min.x;
