@@ -1,6 +1,6 @@
 # t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.10 2002/08/25 22:03:55 eric Exp $
+# $Id: Makefile,v 1.11 2003/01/21 10:53:48 eric Exp $
 # Copyright 2001 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -24,15 +24,41 @@ LDLIBS = -g -ltiff -lm -L/usr/local/lib/panda -lpanda -lpng
 YACC = bison
 YFLAGS = -d -v
 
-SRCS = bitblt.c bitblt_test.c t2p.c semantics.c
-HDRS = bitblt.h t2p.h semantics.h
-MISC = Makefile scanner.l parser.y
+# -----------------------------------------------------------------------------
+# You shouldn't have to change anything below this point, but if you do please
+# let me know why so I can improve this Makefile.
+# -----------------------------------------------------------------------------
+
+VERSION = 0.1
+
+PACKAGE = t2p
 
 TARGETS = t2p bitblt_test
 
-AUTO_SRCS = scanner.c parser.tab.c
+CSRCS = t2p.c semantics.c bitblt.c bitblt_test.c
+OSRCS = scanner.l parser.y
+HDRS = t2p.h semantics.h bitblt.h 
+MISC = COPYING Makefile
+
+DISTFILES = $(MISC) $(HDRS) $(CSRCS) $(OSRCS)
+DISTNAME = $(PACKAGE)-$(VERSION)
+
+
+AUTO_CSRCS = scanner.c parser.tab.c
 AUTO_HDRS = parser.tab.h
 AUTO_MISC = parser.output
+
+
+all: $(TARGETS)
+
+
+dist: $(DISTFILES)
+	-rm -rf $(DISTNAME)
+	mkdir $(DISTNAME)
+	for f in $(DISTFILES); do ln $$f $(DISTNAME)/$$f; done
+	tar --gzip -chf $(DISTNAME).tar.gz $(DISTNAME)
+	-rm -rf $(DISTNAME)
+
 
 t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o
 
@@ -47,10 +73,10 @@ very_clean:
 		*~ *.pdf
 
 wc:
-	wc -l $(SRCS) $(HDRS) $(MISC)
+	wc -l $(HDRS) $(CSRCS) $(OSRCS) $(MISC)
 
 ls-lt:
-	ls -lt $(SRCS) $(HDRS) $(MISC)
+	ls -lt $(HDRS) $(CSRCS) $(OSRCS) $(MISC)
 
 
 %.tab.c %.tab.h %.output: %.y
@@ -60,9 +86,9 @@ ls-lt:
 # 	$(LEX) $(LFLAGS) $<
 
 
-ALL_SRCS = $(SRCS) $(AUTO_SRCS)
+ALL_CSRCS = $(CSRCS) $(AUTO_CSRCS)
 
-DEPENDS = $(ALL_SRCS:.c=.d)
+DEPENDS = $(ALL_CSRCS:.c=.d)
 
 %.d: %.c
 	$(CC) -M -MG $(CFLAGS) $< | sed -e 's@ /[^ ]*@@g' -e 's@^\(.*\)\.o:@\1.d \1.o:@' > $@
