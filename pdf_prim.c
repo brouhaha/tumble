@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.c,v 1.6 2003/03/04 17:58:36 eric Exp $
+ * $Id: pdf_prim.c,v 1.7 2003/03/07 03:02:31 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -354,6 +354,38 @@ void pdf_set_real (struct pdf_obj *obj, double val)
   pdf_assert (obj->type == PT_REAL);
 
   obj->val.real = val;
+}
+
+
+int pdf_compare_obj (struct pdf_obj *o1, struct pdf_obj *o2)
+{
+  if (o1->type == PT_IND_REF)
+    o1 = pdf_deref_ind_obj (o1);
+
+  if (o2->type == PT_IND_REF)
+    o2 = pdf_deref_ind_obj (o2);
+
+  pdf_assert (o1->type == o2->type);
+
+  switch (o1->type)
+    {
+    case PT_INTEGER:
+      if (o1->val.integer < o2->val.integer)
+	return (-1);
+      if (o1->val.integer > o2->val.integer)
+	return (1);
+      return (0);
+    case PT_REAL:
+      if (o1->val.real < o2->val.real)
+	return (-1);
+      if (o1->val.real > o2->val.real)
+	return (1);
+      return (0);
+    case PT_STRING:
+      return (strcmp (o1->val.string, o2->val.string));
+    default:
+      pdf_fatal ("invalid object type for comparison\n");
+    }
 }
 
 

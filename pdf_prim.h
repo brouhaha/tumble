@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.h,v 1.5 2003/03/04 17:58:36 eric Exp $
+ * $Id: pdf_prim.h,v 1.6 2003/03/07 03:02:31 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -86,6 +86,10 @@ void pdf_set_integer (struct pdf_obj *obj, long val);
 
 double pdf_get_real (struct pdf_obj *obj);
 void pdf_set_real (struct pdf_obj *obj, double val);
+
+
+/* returns -1 if o1 < 02, 0 if o1 == o2, 1 if o1 > o2 */
+int pdf_compare_obj (struct pdf_obj *o1, struct pdf_obj *o2);
 
 
 /* The callback will be called when the stream data is to be written to the
