@@ -8,8 +8,8 @@
   int integer;
   double fp;
   char *string;
-  struct { double width; double height; } size;
-  struct { int first; int last; } range;
+  page_size_t size;
+  range_t range;
 }
 
 %token <integer> INTEGER

@@ -1,5 +1,5 @@
 /*
-$Id: scanner.l,v 1.9 2001/12/30 08:29:50 eric Exp $
+$Id: scanner.l,v 1.10 2001/12/30 09:09:08 eric Exp $
 */
 
 %option case-insensitive
@@ -8,9 +8,9 @@ $Id: scanner.l,v 1.9 2001/12/30 08:29:50 eric Exp $
 %{
 #include <stdio.h>
 #include <string.h>
-#include "parser.tab.h"
 #include "type.h"
 #include "semantics.h"
+#include "parser.tab.h"
 
 #ifdef SCANNER_DEBUG
 #define LDBG(x) printf x

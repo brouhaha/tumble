@@ -1,7 +1,7 @@
 /*
  * tiffg4: reencode a bilevel TIFF file as a single-strip TIFF Class F Group 4
  * Main program
- * $Id: t2p.c,v 1.4 2001/12/30 08:29:50 eric Exp $
+ * $Id: t2p.c,v 1.5 2001/12/30 09:09:08 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,8 +28,8 @@
 
 #include "type.h"
 #include "bitblt.h"
-#include "parser.tab.h"
 #include "semantics.h"
+#include "parser.tab.h"
 #include "tiff2pdf.h"
 
 
