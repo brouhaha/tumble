@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf.h,v 1.12 2003/03/19 22:54:07 eric Exp $
+ * $Id: pdf.h,v 1.13 2003/03/19 23:53:09 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,8 @@
  */
 
 
-#define POINTS_PER_INCH 72
+/* Acrobat default units aren't really points, but they're close. */
+#define POINTS_PER_INCH 72.0
 
 /* page size limited by Acrobat Reader to 45 inches on a side */
 #define PAGE_MAX_INCHES 45
@@ -86,6 +87,9 @@ void pdf_write_jpeg_image (pdf_page_handle pdf_page,
 			   double y,
 			   double width,
 			   double height,
+			   bool color,
+			   uint32_t width_samples,
+			   uint32_t height_samples,
 			   FILE *f);
 
 

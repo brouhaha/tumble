@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_jpeg.c,v 1.1 2003/03/19 22:54:08 eric Exp $
+ * $Id: tumble_jpeg.c,v 1.2 2003/03/19 23:53:09 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -87,6 +87,16 @@ bool get_jpeg_image_info (int image,
 {
   double unit;
 
+#ifdef DEBUG_JPEG
+  printf ("color space: %d\n", cinfo.jpeg_color_space);
+  printf ("components: %d\n", cinfo.num_components);
+  printf ("density unit: %d\n", cinfo.density_unit);
+  printf ("x density: %d\n", cinfo.X_density);
+  printf ("y density: %d\n", cinfo.Y_density);
+  printf ("width: %d\n", cinfo.image_width);
+  printf ("height: %d\n", cinfo.image_height);
+#endif
+
   switch (cinfo.jpeg_color_space)
     {
     case JCS_GRAYSCALE:
@@ -154,6 +164,9 @@ bool process_jpeg_image (int image,  /* range 1 .. n */
 			0, 0,  /* x, y */
 			image_info->width_points,
 			image_info->height_points,
+			image_info->color,
+			image_info->width_samples,
+			image_info->height_samples,
 			jpeg_f);
 
   return (page);

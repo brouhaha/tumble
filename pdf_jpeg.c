@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_jpeg.c,v 1.4 2003/03/19 23:44:53 eric Exp $
+ * $Id: pdf_jpeg.c,v 1.5 2003/03/19 23:53:09 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -98,6 +98,9 @@ void pdf_write_jpeg_image (pdf_page_handle pdf_page,
 			   double y,
 			   double width,
 			   double height,
+			   bool color,
+			   uint32_t width_samples,
+			   uint32_t height_samples,
 			   FILE *f)
 {
   struct pdf_jpeg_image *image;
@@ -116,10 +119,9 @@ void pdf_write_jpeg_image (pdf_page_handle pdf_page,
 
   image->f = f;
 
-  /* $$$ quick hack, should read these from file! */
-  image->color = 1;
-  image->width_samples = 71;
-  image->height_samples = 88;
+  image->color = color;
+  image->width_samples = width_samples;
+  image->height_samples = height_samples;
 
   pdf_add_array_elem_unique (pdf_page->procset,
 			     pdf_new_name (image->color ? "ImageC" : "ImageB"));
