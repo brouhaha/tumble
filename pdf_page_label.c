@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_page_label.c,v 1.1 2003/03/14 00:24:37 eric Exp $
+ * $Id: pdf_page_label.c,v 1.2 2003/03/14 00:56:38 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -46,12 +46,6 @@ void pdf_new_page_label (pdf_file_handle pdf_file,
 {
   struct pdf_obj *label_dict;
   char style_str [2] = { style, '\0' };
-
-  fprintf (stderr,
-	   "page index %d, count %d, base %d, prefix '%s', style %c\n",
-	   page_index, count, base,
-	   prefix ? prefix : "NULL",
-	   style);
 
   if (! pdf_file->page_label_tree)
     {
