@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * G4 compression
- * $Id: bitblt_g4.c,v 1.10 2003/03/10 05:08:25 eric Exp $
+ * $Id: bitblt_g4.c,v 1.11 2003/03/11 03:14:39 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,6 +24,9 @@
  */
 
 
+#define G4_DEBUG 0
+
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -38,38 +41,53 @@
 #include "g4_tables.h"
 
 
-#define BIT_BUF_SIZE 4096
+#define BIT_BUF_SIZE 1 /* 4096 */
 
 struct bit_buffer
 {
   FILE *f;
   uint32_t byte_idx;  /* index to next byte position in data buffer */
-  uint32_t bit_idx;   /* index to next bit position in data buffer,
-			 0 = MSB, 7 = LSB */
+  uint32_t bit_idx;   /* one greater than the next bit position in data buffer,
+			 8 = MSB, 1 = LSB */
   uint8_t data [BIT_BUF_SIZE];
 };
+
+
+static void init_bit_buffer (struct bit_buffer *buf)
+{
+  buf->byte_idx = 0;
+  buf->bit_idx = 8;
+  memset (& buf->data [0], 0, BIT_BUF_SIZE);
+}
 
 
 static void flush_bits (struct bit_buffer *buf)
 {
   size_t s;
-  if (buf->bit_idx)
+  if (buf->bit_idx != 8)
     {
-      /* zero remaining bits in last byte */
-      buf->data [buf->byte_idx] &= ~ ((1 << (8 - buf->bit_idx)) - 1);
       buf->byte_idx++;
-      buf->bit_idx = 0;
+      buf->bit_idx = 8;
     }
+#if (G4_DEBUG >= 3)
+ {
+   int i;
+   fprintf (stderr, "::: ");
+   for (i = 0; i < buf->byte_idx; i++)
+     fprintf (stderr, "%02x ", buf->data [i]);
+   fprintf (stderr, "\n");
+ }
+#endif
   s = fwrite (& buf->data [0], 1, buf->byte_idx, buf->f);
   /* $$$ should check result */
-  buf->byte_idx = 0;
+  init_bit_buffer (buf);
 }
 
 
 static void advance_byte (struct bit_buffer *buf)
 {
   buf->byte_idx++;
-  buf->bit_idx = 0;
+  buf->bit_idx = 8;
   if (buf->byte_idx == BIT_BUF_SIZE)
     flush_bits (buf);
 }
@@ -79,24 +97,28 @@ static void write_bits (struct bit_buffer *buf,
 			uint32_t count,
 			uint32_t bits)
 {
-  uint32_t b2;  /* how many bits will fit in byte in data buffer */
-  uint32_t c2;  /* how many bits to transfer on this iteration */
-  uint32_t d2;  /* bits to transfer on this iteration */
+#if (G4_DEBUG >= 2)
+  {
+    int i;
+    fprintf (stderr, "%d %04x:  ", count, bits);
+    for (i = count - 1; i >= 0; i--)
+      fprintf (stderr, "%d", (bits >> i) & 1);
+    fprintf (stderr, "\n");
+  }
+#endif
 
-  while (count)
+  while (count > buf->bit_idx)
     {
-      b2 = 8 - buf->bit_idx;
-      if (b2 >= count)
-	c2 = count;
-      else
-	c2 = b2;
-      d2 = bits >> (count - c2);
-      buf->data [buf->byte_idx] |= (d2 << (b2 + c2));
-      buf->bit_idx += c2;
-      if (buf->bit_idx > 7)
-	advance_byte (buf);
-      count -= c2;
+      buf->data [buf->byte_idx] |= bits >> (count - buf->bit_idx);
+      count -= buf->bit_idx;
+      advance_byte (buf);
     }
+
+  bits &= ((1 << count) - 1);
+  buf->data [buf->byte_idx] |= bits << (buf->bit_idx - count);
+  buf->bit_idx -= count;
+  if (buf->bit_idx == 0)
+    advance_byte (buf);
 }
 
 
@@ -169,17 +191,29 @@ static void g4_encode_row (struct bit_buffer *buf,
   a0_c = 0;
 
   a1 = g4_find_pixel (row, 0, width, 1);
+
   b1 = g4_find_pixel (ref, 0, width, 1);
+
+#if G4_DEBUG
+  fprintf (stderr, "start of row\n");
+  if ((a1 != width) || (b1 != width))
+    {
+      fprintf (stderr, "a1 = %u, b1 = %u\n", a1, b1);
+    }
+#endif
   
   while (a0 < width)
     {
-      b2 = g4_find_pixel (ref, b1 + 1, width, g4_get_pixel (ref, b1));
+      b2 = g4_find_pixel (ref, b1 + 1, width, ! g4_get_pixel (ref, b1));
 
       if (b2 < a1)
 	{
 	  /* pass mode - 0001 */
 	  write_bits (buf, 4, 0x1);
 	  a0 = b2;
+#if G4_DEBUG
+	  fprintf (stderr, "pass\n");
+#endif
 	}
       else if (abs (a1 - b1) <= 3)
 	{
@@ -188,14 +222,22 @@ static void g4_encode_row (struct bit_buffer *buf,
 		      g4_vert_code [3 + a1 - b1].count,
 		      g4_vert_code [3 + a1 - b1].bits);
 	  a0 = a1;
+#if G4_DEBUG
+	  fprintf (stderr, "vertical %d\n", a1 - b1);
+#endif
 	}
       else
 	{
 	  /* horizontal mode - 001 */
-	  a2 = g4_find_pixel (row, a1, width, a0_c);
+	  a2 = g4_find_pixel (row, a1 + 1, width, a0_c);
 	  write_bits (buf, 3, 0x1);
 	  g4_encode_horizontal_run (buf,   a0_c, a1 - a0);
 	  g4_encode_horizontal_run (buf, ! a0_c, a2 - a1);
+#if G4_DEBUG
+	  fprintf (stderr, "horizontal %d %s, %d %s\n",
+		   a1 - a0, a0_c ? "black" : "white",
+		   a2 - a1, a0_c ? "white" : "black");
+#endif
 	  a0 = a2;
 	}
 
@@ -205,15 +247,19 @@ static void g4_encode_row (struct bit_buffer *buf,
       a0_c = g4_get_pixel (row, a0);
 
       a1 = g4_find_pixel (row, a0 + 1, width, ! a0_c);
-      b1 = g4_find_pixel (ref, a0 + 1, width, a0_c);
-      b1 = g4_find_pixel (ref, b1 + 1, width, ! a0_c);
+      b1 = g4_find_pixel (ref, a0 + 1, width, ! g4_get_pixel (ref, a0));
+      if (g4_get_pixel (ref, b1) == a0_c)
+	b1 = g4_find_pixel (ref, b1 + 1, width, ! a0_c);
+#if G4_DEBUG
+      fprintf (stderr, "a1 = %u, b1 = %u\n", a1, b1);
+#endif
     }
 }
 
 
 void bitblt_write_g4 (Bitmap *bitmap, FILE *f)
 {
-  uint32_t width = (bitmap->rect.max.x - bitmap->rect.min.x) + 1;
+  uint32_t width = bitmap->rect.max.x - bitmap->rect.min.x;
   uint32_t row;
   struct bit_buffer bb;
 
@@ -222,13 +268,17 @@ void bitblt_write_g4 (Bitmap *bitmap, FILE *f)
   word_type *cur_line;
   word_type *ref_line;  /* reference (previous) row */
 
+#if G4_DEBUG
+  fprintf (stderr, "width %u\n", width);
+#endif
+
   temp_buffer = pdf_calloc ((width + BITS_PER_WORD - 1) / BITS_PER_WORD,
 			    sizeof (word_type));
 
   cur_line = bitmap->bits;
   ref_line = temp_buffer;
 
-  memset (& bb, 0, sizeof (bb));
+  init_bit_buffer (& bb);
 
   bb.f = f;
 
