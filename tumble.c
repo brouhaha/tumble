@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.41 2003/03/20 08:23:37 eric Exp $
+ * $Id: tumble.c,v 1.42 2003/04/10 00:47:30 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -366,6 +366,7 @@ int main (int argc, char *argv[])
 
   init_tiff_handler ();
   init_jpeg_handler ();
+  init_pbm_handler ();
 
   while (--argc)
     {

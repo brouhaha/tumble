@@ -1,6 +1,6 @@
 # tumble: build a PDF file from image files
 # Makefile
-# $Id: Makefile,v 1.39 2003/03/25 01:38:08 eric Exp $
+# $Id: Makefile,v 1.40 2003/04/10 00:47:30 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -30,7 +30,7 @@
 
 CFLAGS = -Wall
 LDFLAGS =
-LDLIBS = -ltiff -ljpeg -lz -lm
+LDLIBS = -ltiff -ljpeg -lpbm -lz -lm
 
 ifdef DEBUG
 CFLAGS := $(CFLAGS) -g
@@ -57,14 +57,14 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.32
+VERSION = 0.33
 
 PACKAGE = tumble
 
 TARGETS = tumble
 
 CSRCS = tumble.c semantics.c \
-	tumble_input.c tumble_tiff.c tumble_jpeg.c \
+	tumble_input.c tumble_tiff.c tumble_jpeg.c tumble_pbm.c \
 	bitblt.c bitblt_table_gen.c bitblt_g4.c g4_table_gen.c \
 	pdf.c pdf_util.c pdf_prim.c pdf_name_tree.c \
 	pdf_bookmark.c pdf_page_label.c \
@@ -92,7 +92,7 @@ all: $(TARGETS) $(TEST_TARGETS)
 
 
 tumble: tumble.o semantics.o \
-		tumble_input.o tumble_tiff.o tumble_jpeg.o \
+		tumble_input.o tumble_tiff.o tumble_jpeg.o tumble_pbm.o \
 		scanner.o parser.tab.o \
 		bitblt.o bitblt_g4.o bitblt_tables.o g4_tables.o \
 		pdf.o pdf_util.o pdf_prim.o pdf_name_tree.o \

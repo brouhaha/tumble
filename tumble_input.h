@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_input.h,v 1.2 2003/03/20 06:55:27 eric Exp $
+ * $Id: tumble_input.h,v 1.3 2003/04/10 00:47:30 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -64,3 +64,4 @@ bool process_image (int image,
 
 void init_tiff_handler (void);
 void init_jpeg_handler (void);
+void init_pbm_handler  (void);
