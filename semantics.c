@@ -19,12 +19,19 @@ FILE *yyin;
 int line;  /* line number in spec file */
 
 
-int input_page_count;   /* total input pages in spec */
-int output_page_count;  /* total output pages in spec */
+input_context_t *first_input_context;
+input_context_t *last_input_context;
 
-
-input_context_t *current_input_context;
 input_modifier_type_t current_modifier_context;
+
+input_image_t *first_input_image;
+input_image_t *last_input_image;
+
+output_context_t *first_output_context;
+output_context_t *last_output_context;
+
+output_page_t *first_output_page;
+output_page_t *last_output_page;
 
 
 void input_push_context (void)
@@ -34,31 +41,34 @@ void input_push_context (void)
   new_input_context = malloc (sizeof (input_context_t));
   if (! new_input_context)
     {
-      fprintf (stderr, "failed to calloc an input context\n");
+      fprintf (stderr, "failed to malloc an input context\n");
       return;
     }
 
-  if (current_input_context)
+  if (last_input_context)
     {
-      memcpy (new_input_context, current_input_context, sizeof (input_context_t));
-      new_input_context->page_count = 0;
+      memcpy (new_input_context, last_input_context, sizeof (input_context_t));
+      new_input_context->image_count = 0;
     }
   else
-    memset (new_input_context, 0, sizeof (input_context_t));
+    {
+      memset (new_input_context, 0, sizeof (input_context_t));
+      first_input_context = new_input_context;
+    }
 
-  new_input_context->parent_input_context = current_input_context;
-  current_input_context = new_input_context;
+  new_input_context->parent = last_input_context;
+  last_input_context = new_input_context;
 };
 
 void input_pop_context (void)
 {
-  if (! current_input_context)
+  if (! last_input_context)
     {
       fprintf (stderr, "failed to pop an input context\n");
       return;
     }
 
-  current_input_context = current_input_context->parent_input_context;
+  last_input_context = last_input_context->parent;
 };
 
 void input_set_modifier_context (input_modifier_type_t type)
@@ -77,46 +87,218 @@ void input_set_modifier_context (input_modifier_type_t type)
 #endif /* SEMANTIC_DEBUG */
 }
 
+void input_clone (void)
+{
+  input_context_t *new_input_context;
+
+  if (! last_input_context->image_count)
+    return;
+
+  new_input_context = malloc (sizeof (input_context_t));
+  if (! new_input_context)
+    {
+      fprintf (stderr, "failed to malloc an input context\n");
+      return;
+    }
+
+  memcpy (new_input_context, last_input_context, sizeof (input_context_t));
+  new_input_context->image_count = 0;
+  last_input_context->next = new_input_context;
+}
+
 void input_set_file (char *name)
 {
+  input_clone ();
+  last_input_context->input_file = name;
 };
 
 void input_set_rotation (int rotation)
 {
-  current_input_context->modifiers [current_modifier_context].has_rotation = 1;
-  current_input_context->modifiers [current_modifier_context].rotation = rotation;
+  last_input_context->modifiers [current_modifier_context].has_rotation = 1;
+  last_input_context->modifiers [current_modifier_context].rotation = rotation;
   SDBG(("rotation %d\n", rotation));
 }
 
-void input_images (int first, int last)
+void increment_input_image_count (int count)
 {
-  input_page_count += ((last - first) + 1);
+  input_context_t *context;
+
+  for (context = last_input_context; context; context = context->parent)
+    context->image_count += count;
+}
+
+void input_images (range_t range)
+{
+  input_image_t *new_image;
+  int count = ((range.last - range.first) + 1);
+
 #ifdef SEMANTIC_DEBUG
-  if (first == last)
-    SDBG(("image %d\n", first));
+  if (range.first == range.last)
+    SDBG(("image %d\n", range.first));
   else
-    SDBG(("images %d..%d\n", first, last));
+    SDBG(("images %d..%d\n", range.first, range.last));
 #endif /* SEMANTIC_DEBUG */
+
+  new_image = calloc (1, sizeof (input_image_t));
+  if (! new_image)
+    {
+      fprintf (stderr, "failed to malloc an input image struct\n");
+      return;
+    }
+  if (first_input_image)
+    {
+      last_input_image->next = new_image;
+      last_input_image = new_image;
+    }
+  else
+    {
+      first_input_image = last_input_image = new_image;
+    }
+  new_image->range = range;
+  new_image->input_context = last_input_context;
+  increment_input_image_count (count);
 }
 
 
 void output_push_context (void)
 {
+  output_context_t *new_output_context;
+
+  new_output_context = malloc (sizeof (output_context_t));
+  if (! new_output_context)
+    {
+      fprintf (stderr, "failed to malloc an output context\n");
+      return;
+    }
+
+  if (last_output_context)
+    {
+      memcpy (new_output_context, last_output_context, sizeof (output_context_t));
+      new_output_context->page_count = 0;
+    }
+  else
+    {
+      memset (new_output_context, 0, sizeof (output_context_t));
+      first_output_context = new_output_context;
+    }
+
+  new_output_context->parent = last_output_context;
+  last_output_context = new_output_context;
 };
+
+void output_pop_context (void)
+{
+  if (! last_output_context)
+    {
+      fprintf (stderr, "failed to pop an output context\n");
+      return;
+    }
+
+  last_output_context = last_output_context->parent;
+};
+
+void output_clone (void)
+{
+  output_context_t *new_output_context;
+
+  if (! last_output_context->page_count)
+    return;
+
+  new_output_context = malloc (sizeof (output_context_t));
+  if (! new_output_context)
+    {
+      fprintf (stderr, "failed to malloc an output context\n");
+      return;
+    }
+
+  memcpy (new_output_context, last_output_context, sizeof (output_context_t));
+  new_output_context->page_count = 0;
+  last_output_context->next = new_output_context;
+}
 
 void output_set_file (char *name)
 {
+  output_clone ();
+  last_output_context->output_file = name;
 };
 
-void output_pages (int first, int last)
+void output_set_bookmark (char *name)
 {
-  output_page_count += ((last - first) + 1);
-#ifdef SEMANTIC_DEBUG
-  if (first == last)
-    SDBG(("page %d\n", first));
+  bookmark_t *new_bookmark;
+
+  /* As the language is defined (parser.y), a bookmark can only appear
+     at the beginning of a context! */
+  if (last_output_context->page_count)
+    {
+      fprintf (stderr, "internal error, bookmark not at beginning of context\n");
+      exit (2);
+    }
+
+  new_bookmark = calloc (1, sizeof (bookmark_t));
+  if (! new_bookmark)
+    {
+      fprintf (stderr, "failed to calloc a bookmark\n");
+      return;
+    }
+
+  new_bookmark->name = name;
+  if (last_output_context->first_bookmark)
+    last_output_context->last_bookmark->next = new_bookmark;
   else
-    SDBG(("pages %d..%d\n", first, last));
+    last_output_context->first_bookmark = new_bookmark;
+  last_output_context->last_bookmark = new_bookmark;
+}
+
+void output_set_page_number_format (char *format)
+{
+  output_clone ();
+  last_output_context->page_number_format = format;
+}
+
+void increment_output_page_count (int count)
+{
+  output_context_t *context;
+
+  for (context = last_output_context; context; context = context->parent)
+    context->page_count += count;
+}
+
+void output_pages (range_t range)
+{
+  output_page_t *new_page;
+  int count = ((range.last - range.first) + 1);
+
+#ifdef SEMANTIC_DEBUG
+  if (range.first == range.last)
+    SDBG(("page %d\n", range.first));
+  else
+    SDBG(("pages %d..%d\n", range.first, range.last));
 #endif /* SEMANTIC_DEBUG */
+
+  new_page = calloc (1, sizeof (output_page_t));
+  if (! new_page)
+    {
+      fprintf (stderr, "failed to malloc an output page struct\n");
+      return;
+    }
+  if (first_output_page)
+    {
+      last_output_page->next = new_page;
+      last_output_page = new_page;
+    }
+  else
+    {
+      first_output_page = last_output_page = new_page;
+    }
+  new_page->range = range;
+  new_page->output_context = last_output_context;
+
+  /* transfer bookmarks from context to page */
+  new_page->bookmark_list = last_output_context->first_bookmark;
+  last_output_context->first_bookmark = NULL;
+  last_output_context->last_bookmark = NULL;
+
+  increment_output_page_count (count);
 }
 
 
@@ -125,6 +307,88 @@ void yyerror (char *s)
   fprintf (stderr, "%d: %s\n", line, s);
 }
 
+
+char *get_input_file (input_context_t *context)
+{
+  for (; context; context = context->parent)
+    if (context->input_file)
+      return (context->input_file);
+  fprintf (stderr, "no input file name found\n");
+  exit (2);
+}
+
+int get_input_rotation (input_context_t *context, input_modifier_type_t type)
+{
+  for (; context; context = context->parent)
+    {
+      if (context->modifiers [type].has_rotation)
+	return (context->modifiers [type].rotation);
+      if (context->modifiers [INPUT_MODIFIER_ALL].has_rotation)
+	return (context->modifiers [INPUT_MODIFIER_ALL].rotation);
+    }
+  return (0);  /* default */
+}
+
+char *get_output_file (output_context_t *context)
+{
+  for (; context; context = context->parent)
+    if (context->output_file)
+      return (context->output_file);
+  fprintf (stderr, "no output file name found\n");
+  exit (2);
+}
+
+char *get_output_page_number_format (output_context_t *context)
+{
+  for (; context; context = context->parent)
+    if (context->page_number_format)
+      return (context->page_number_format);
+  return (NULL);  /* default */
+}
+
+
+#ifdef SEMANTIC_DEBUG
+void dump_input_tree (void)
+{
+  input_image_t *image;
+  int i;
+
+  printf ("input images:\n");
+  for (image = first_input_image; image; image = image->next)
+    for (i = image->range.first; i <= image->range.last; i++)
+      {
+	input_modifier_type_t parity = (i % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
+	printf ("file '%s' image %d, rotation %d\n",
+	        get_input_file (image->input_context),
+		i, 
+		get_input_rotation (image->input_context, parity));
+      }
+}
+
+void dump_output_tree (void)
+{
+  int i;
+  output_page_t *page;
+  bookmark_t *bookmark;
+
+  printf ("output pages:\n");
+  for (page = first_output_page; page; page = page->next)
+    {
+      if (page->bookmark_list)
+	{
+	  for (bookmark = page->bookmark_list; bookmark; bookmark = bookmark->next)
+	    printf ("bookmark '%s' ", bookmark->name);
+	  printf ("\n");
+	}
+      for (i = page->range.first; i <= page->range.last; i++)
+	{
+	  printf ("file '%s' ", get_output_file (page->output_context));
+	  printf ("format '%s' ", get_output_page_number_format (page->output_context));
+	  printf ("page %d\n", i);
+	}
+    }
+}
+#endif /* SEMANTIC_DEBUG */
 
 boolean parse_spec_file (char *fn)
 {
@@ -139,21 +403,30 @@ boolean parse_spec_file (char *fn)
 
   line = 1;
 
-  input_push_context ();  /* create initial input context */
+  input_push_context ();  /* create root input context */
+  input_push_context ();  /* create inital input context */
+
+  output_push_context ();  /* create root output context */
   output_push_context ();  /* create initial output context */
 
   yyparse ();
 
-  if (input_page_count != output_page_count)
+  if (first_input_context->image_count != first_output_context->page_count)
     {
-      fprintf (stderr, "input page count %d != output page count %d\n",
-	       input_page_count, output_page_count);
+      fprintf (stderr, "input image count %d != output page count %d\n",
+	       first_input_context->image_count,
+	       first_output_context->page_count);
       goto fail;
     }
 
-  fprintf (stderr, "%d pages specified\n", input_page_count);
+  fprintf (stderr, "%d pages specified\n", first_input_context->image_count);
 
   result = 1;
+
+#ifdef SEMANTIC_DEBUG
+  dump_input_tree ();
+  dump_output_tree ();
+#endif /* SEMANTIC_DEBUG */
 
  fail:
   if (yyin)

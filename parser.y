@@ -38,6 +38,7 @@
 %token RESOLUTION
 %token INPUT
 
+%token FORMAT
 %token PAGE
 %token PAGES
 %token BOOKMARK
@@ -69,21 +70,21 @@ range:
 	| INTEGER { $$.first = $1; $$.last = $1; } ;
 
 image_ranges:
-	range { input_images ($1.first, $1.last); }
-	| image_ranges ',' range { input_images ($3.first, $3.last); } ;
+	range { input_images ($1); }
+	| image_ranges ',' range { input_images ($3); } ;
 
 
 input_file_clause:
 	FILE_KEYWORD STRING  ';'  { input_set_file ($2) } ;
 
 image_clause:
-	IMAGE INTEGER ';' { input_images ($2, $2); } ;
+	IMAGE INTEGER ';' { range_t range = { $2, $2 }; input_images (range); } ;
 
 images_clause:
 	IMAGES image_ranges ';' ;
 
 rotate_clause:
-	ROTATE INTEGER ';' { input_set_rotation ($2) };
+	ROTATE INTEGER ';' { input_set_rotation ($2) } ;
 
 unit:
 	/* empty */  /* default to INCH */ { $$ = 25.4; }
@@ -125,7 +126,7 @@ part_clause:
 	ODD { input_set_modifier_context (INPUT_MODIFIER_ODD); }
           modifier_clause_list ';'
           { input_set_modifier_context (INPUT_MODIFIER_ALL); }
-	| EVEN { input_set_modifier_context (INPUT_MODIFIER_ODD); }
+	| EVEN { input_set_modifier_context (INPUT_MODIFIER_EVEN); }
 	  modifier_clause_list ';'
           { input_set_modifier_context (INPUT_MODIFIER_ALL); } ;
 
@@ -150,24 +151,34 @@ input_statement:
 output_file_clause:
 	FILE_KEYWORD STRING  ';' { output_set_file ($2) } ;
 
+format_clause:
+	FORMAT STRING ';' { output_set_page_number_format ($2) } ;
+
 page_ranges:
-	range { output_pages ($1.first, $1.last); }
-	| page_ranges ',' range { output_pages ($3.first, $3.last); } ;
+	range { output_pages ($1); }
+	| page_ranges ',' range { output_pages ($3); } ;
 
 page_clause:
-	PAGE INTEGER ';' { output_pages ($2, $2); }
-	| PAGE STRING ',' INTEGER ';' { output_pages ($4, $4); } ;
+	PAGE INTEGER ';' { range_t range = { $2, $2 }; output_pages (range); } ;
 
 pages_clause:
-	PAGES page_ranges ';'
-	| PAGES STRING ',' page_ranges ';' ;
+	PAGES page_ranges ';' ;
+
+bookmark_name:
+	STRING { output_set_bookmark ($1); } ;
+
+bookmark_name_list:
+	bookmark_name
+	| bookmark_name_list ',' bookmark_name ;
 
 bookmark_clause:
-	BOOKMARK INTEGER ',' STRING ';'
-	| BOOKMARK STRING ';' ;
+	BOOKMARK { output_push_context (); }
+	bookmark_name_list
+	output_clause_list ';' { output_pop_context (); } ;
 
 output_clause:
 	output_file_clause
+	| format_clause
 	| page_clause | pages_clause
 	| bookmark_clause
 	| output_clause_list ;
@@ -177,7 +188,8 @@ output_clauses:
 	| output_clauses output_clause ;
 
 output_clause_list:
-	'{' output_clauses '}' ;
+	'{' { output_push_context (); }
+	output_clauses '}' { output_pop_context (); } ;
 
 output_statement:
 	OUTPUT output_clauses ;
