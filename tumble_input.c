@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Input handler dispatch
- * $Id: tumble_input.c,v 1.3 2003/03/20 06:55:27 eric Exp $
+ * $Id: tumble_input.c,v 1.4 2003/03/25 01:38:08 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -110,9 +110,13 @@ bool open_input_file (char *name)
 
 bool close_input_file (void)
 {
-  bool result;
+  bool result = 1;
 
-  result = current_input_handler->close_input_file ();
+  if (current_input_handler)
+    {
+      result = current_input_handler->close_input_file ();
+      current_input_handler = NULL;
+    }
   if (in_filename)
     free (in_filename);
   if (in)
@@ -127,6 +131,8 @@ bool close_input_file (void)
 
 bool last_input_page (void)
 {
+  if (! current_input_handler)
+    return (0);
   return (current_input_handler->last_input_page ());
 }
 
@@ -135,6 +141,8 @@ bool get_image_info (int image,
 		     input_attributes_t input_attributes,
 		     image_info_t *image_info)
 {
+  if (! current_input_handler)
+    return (0);
   return (current_input_handler->get_image_info (image,
 						 input_attributes,
 						 image_info));
@@ -145,6 +153,8 @@ bool process_image (int image,
 		    image_info_t *image_info,
 		    pdf_page_handle page)
 {
+  if (! current_input_handler)
+    return (0);
   return (current_input_handler->process_image (image,
 						input_attributes,
 						image_info,
