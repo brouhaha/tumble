@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.25 2003/03/04 17:58:36 eric Exp $
+ * $Id: t2p.c,v 1.26 2003/03/04 18:09:49 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -198,7 +198,7 @@ bool open_pdf_output_file (char *name,
       return (0);
     }
 
-  o->pdf = pdf_create (name);
+  o->pdf = pdf_create (name, PDF_PAGE_MODE_USE_OUTLINES);
   if (! o->pdf)
     {
       fprintf (stderr, "can't open output file '%s'\n", name);

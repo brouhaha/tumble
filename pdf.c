@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf.c,v 1.4 2003/02/21 02:49:11 eric Exp $
+ * $Id: pdf.c,v 1.5 2003/03/04 18:09:49 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -64,9 +64,19 @@ struct pdf_pages *pdf_new_pages (pdf_file_handle pdf_file)
 }
 
 
-pdf_file_handle pdf_create (char *filename)
+pdf_file_handle pdf_create (char *filename, int page_mode)
 {
   pdf_file_handle pdf_file;
+  char *page_mode_string;
+
+  switch (page_mode)
+    {
+    case PDF_PAGE_MODE_USE_NONE:      page_mode_string = "UseNone";     break;
+    case PDF_PAGE_MODE_USE_OUTLINES:  page_mode_string = "UseOutlines"; break;
+    case PDF_PAGE_MODE_USE_THUMBS:    page_mode_string = "UseThumbs";   break;
+    default:
+      pdf_fatal ("invalid page mode\n");
+    }
 
   pdf_file = pdf_calloc (1, sizeof (struct pdf_file));
 
@@ -81,8 +91,10 @@ pdf_file_handle pdf_create (char *filename)
   pdf_file->catalog = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
   pdf_set_dict_entry (pdf_file->catalog, "Type", pdf_new_name ("Catalog"));
   pdf_set_dict_entry (pdf_file->catalog, "Pages", pdf_file->root->pages_dict);
-  /* Outlines dictionary will be created later if needed*/
-  pdf_set_dict_entry (pdf_file->catalog, "PageMode", pdf_new_name ("UseNone"));
+  /* Outlines dictionary will be created later if needed */
+  pdf_set_dict_entry (pdf_file->catalog,
+		      "PageMode",
+		      pdf_new_name (page_mode_string));
 
   pdf_file->info    = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
   pdf_set_info (pdf_file, "Producer", "t2p, Copyright 2003 Eric Smith <eric@brouhaha.com>");
