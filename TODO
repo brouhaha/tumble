@@ -1,5 +1,5 @@
 t2p TODO list
-$Id: TODO,v 1.8 2003/02/21 01:12:05 eric Exp $
+$Id: TODO,v 1.9 2003/02/21 01:25:47 eric Exp $
 
 No particular order.
 
@@ -77,8 +77,6 @@ Adobe Systems Incorporated, Addison-Wesley, 1993.]
 
 * balance pages tree - currently a degenerate single-level tree, but the
   PDF spec recommends max. of 6 children per parent
-
-* ImageMask (p. 79) using fill color (g, k, or rg operator, p. 95)
 
 * thumbnails
 

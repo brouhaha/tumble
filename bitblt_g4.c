@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: bitblt_g4.c,v 1.4 2003/02/21 01:01:33 eric Exp $
+ * $Id: bitblt_g4.c,v 1.5 2003/02/21 01:25:47 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -41,9 +41,11 @@ struct pdf_g4_image
 {
   double width, height;
   double x, y;
+  double r, g, b;  /* fill color, only for ImageMask */
   unsigned long Columns;
   unsigned long Rows;
-  int BlackIs1;
+  bool ImageMask;
+  bool BlackIs1;
   Bitmap *bitmap;
   char XObject_name [4];
 };
@@ -73,20 +75,16 @@ void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
 {
   struct pdf_g4_image *image = app_data;
 
-  char str1 [100];
-  char *str2 = "/";
-  char *str3 = " Do Q\r\n";
+  /* transformation matrix is: width 0 0 height x y cm */
+  pdf_stream_printf (pdf_file, stream, "q %g 0 0 %g %g %g cm ",
+		     image->width, image->height,
+		     image->x, image->y);
+  if (image->ImageMask)
+    pdf_stream_printf (pdf_file, stream, "%g %g %g rg ",
+		       image->r, image->g, image->b);
 
-  /* width 0 0 height x y cm */
-  sprintf (str1, "q %g 0 0 %g %g %g cm\r\n",
-	   image->width, image->height,
-	   image->x, image->y);
-
-  pdf_stream_write_data (pdf_file, stream, str1, strlen (str1));
-  pdf_stream_write_data (pdf_file, stream, str2, strlen (str2));
-  pdf_stream_write_data (pdf_file, stream, & image->XObject_name [0],
-			 strlen (& image->XObject_name [0]));
-  pdf_stream_write_data (pdf_file, stream, str3, strlen (str3));
+  pdf_stream_printf (pdf_file, stream, "/%s Do Q\r\n",
+		     image->XObject_name);
 }
 
 
@@ -127,8 +125,11 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 			     double width,
 			     double height,
 			     Bitmap *bitmap,
-			     int ImageMask,
-			     int BlackIs1)          /* boolean, typ. false */
+			     bool ImageMask,
+			     double r, /* RGB fill color, only for ImageMask */
+			     double g,
+			     double b,
+			     bool BlackIs1)          /* boolean, typ. false */
 {
   struct pdf_g4_image *image;
 
@@ -144,10 +145,14 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
   image->height = height;
   image->x = x;
   image->y = y;
+  image->r = r;
+  image->g = g;
+  image->b = b;
 
   image->bitmap = bitmap;
   image->Columns = bitmap->rect.max.x - bitmap->rect.min.x;
   image->Rows = bitmap->rect.max.y - bitmap->rect.min.y;
+  image->ImageMask = ImageMask;
   image->BlackIs1 = BlackIs1;
 
   stream_dict = pdf_new_obj (PT_DICTIONARY);

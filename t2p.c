@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.23 2003/02/21 01:01:33 eric Exp $
+ * $Id: t2p.c,v 1.24 2003/02/21 01:25:47 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -465,12 +465,11 @@ bool process_page (int image,  /* range 1 .. n */
   page = pdf_new_page (out->pdf, width_points, height_points);
 
   pdf_write_g4_fax_image (page,
-			  0,  /* x */
-			  0,  /* y */
-			  width_points,
-			  height_points,
+			  0, 0,  /* x, y */
+			  width_points, height_points,
 			  bitmap,
 			  0, /* ImageMask */
+			  0, 0, 0,  /* r, g, b */
 			  0); /* BlackIs1 */
 
   free_bitmap (bitmap);

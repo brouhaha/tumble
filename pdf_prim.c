@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.c,v 1.3 2003/02/20 04:44:17 eric Exp $
+ * $Id: pdf_prim.c,v 1.4 2003/02/21 01:25:47 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,6 +24,7 @@
  */
 
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -449,6 +450,18 @@ void pdf_stream_write_data (pdf_file_handle pdf_file,
       if (ferror (pdf_file->f))
 	pdf_fatal ("error writing stream data\n");
     }
+}
+
+
+void pdf_stream_printf (pdf_file_handle pdf_file,
+			struct pdf_obj *stream,
+			char *fmt, ...)
+{
+  va_list ap;
+
+  va_start (ap, fmt);
+  vfprintf (pdf_file->f, fmt, ap);
+  va_end (ap);
 }
 
 

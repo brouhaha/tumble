@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.h,v 1.2 2003/02/20 04:44:17 eric Exp $
+ * $Id: pdf_prim.h,v 1.3 2003/02/21 01:25:47 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -95,12 +95,17 @@ struct pdf_obj *pdf_new_stream (pdf_file_handle pdf_file,
 				pdf_stream_write_callback callback,
 				void *app_data);
 
-/* The callback should call pdf_stream_write_data to write the actual
-   stream data. */
+/* The callback should call pdf_stream_write_data or pdf_stream_printf
+   to write the actual stream data. */
 void pdf_stream_write_data (pdf_file_handle pdf_file,
 			    struct pdf_obj *stream,
 			    char *data,
 			    unsigned long len);
+
+void pdf_stream_printf (pdf_file_handle pdf_file,
+			struct pdf_obj *stream,
+			char *fmt, ...);
+
 
 void pdf_stream_add_filter (struct pdf_obj *stream,
 			    char *filter_name,
