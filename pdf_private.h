@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_private.h,v 1.5 2003/03/05 12:56:25 eric Exp $
+ * $Id: pdf_private.h,v 1.6 2003/03/07 22:52:09 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -47,13 +47,14 @@ struct pdf_pages
 
 struct pdf_file
 {
-  FILE                *f;
-  struct pdf_obj      *first_ind_obj;
-  struct pdf_obj      *last_ind_obj;
-  long int             xref_offset;
-  struct pdf_obj      *catalog;
-  struct pdf_obj      *info;
-  struct pdf_pages    *root;
-  struct pdf_bookmark *outline_root;
-  struct pdf_obj      *trailer_dict;
+  FILE                 *f;
+  struct pdf_obj       *first_ind_obj;
+  struct pdf_obj       *last_ind_obj;
+  long int              xref_offset;
+  struct pdf_obj       *catalog;
+  struct pdf_obj       *info;
+  struct pdf_pages     *root;
+  struct pdf_bookmark  *outline_root;
+  struct pdf_obj       *trailer_dict;
+  struct pdf_name_tree *name_tree_list;
 };

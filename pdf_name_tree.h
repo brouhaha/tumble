@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_name_tree.h,v 1.1 2003/03/07 02:16:08 eric Exp $
+ * $Id: pdf_name_tree.h,v 1.2 2003/03/07 22:52:09 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,9 +26,10 @@
 
 struct pdf_name_tree
 {
-  pdf_file_handle   pdf_file;
-  bool              number_tree;   /* false for name tree,
-				      true for number tree */
+  pdf_file_handle           pdf_file;
+  struct pdf_name_tree      *next;  /* chain all name trees in the PDF file */
+  bool                      number_tree;   /* false for name tree,
+					      true for number tree */
   struct pdf_name_tree_node *root;
 };
 
@@ -47,4 +48,4 @@ void pdf_add_number_tree_element (struct pdf_name_tree *tree,
 				  struct pdf_obj *val);
 
 
-void pdf_finalize_name_tree (struct pdf_name_tree *tree);
+void pdf_finalize_name_trees (pdf_file_handle pdf_file);

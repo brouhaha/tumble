@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf.c,v 1.5 2003/03/04 18:09:49 eric Exp $
+ * $Id: pdf.c,v 1.6 2003/03/07 22:52:09 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -35,6 +35,7 @@
 #include "pdf_util.h"
 #include "pdf_prim.h"
 #include "pdf_private.h"
+#include "pdf_name_tree.h"
 
 
 static void pdf_set_info (pdf_file_handle pdf_file, char *key, char *val)
@@ -113,6 +114,9 @@ pdf_file_handle pdf_create (char *filename, int page_mode)
 
 void pdf_close (pdf_file_handle pdf_file)
 {
+  /* finalize all data structures */
+  pdf_finalize_name_trees (pdf_file);
+
   /* write body */
   pdf_write_all_ind_obj (pdf_file);
 
