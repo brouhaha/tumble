@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf.h,v 1.6 2003/03/04 18:09:49 eric Exp $
+ * $Id: pdf.h,v 1.7 2003/03/12 02:57:55 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -73,6 +73,14 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 			     bool BlackIs1);    /* boolean, typ. false */
 
 
+void pdf_write_jpeg_image (pdf_page_handle pdf_page,
+			   double x,
+			   double y,
+			   double width,
+			   double height,
+			   FILE *f);
+
+
 void pdf_set_page_number (pdf_page_handle pdf_page, char *page_number);
 
 /* Create a new bookmark, under the specified parent, or at the top
@@ -81,5 +89,3 @@ pdf_bookmark_handle pdf_new_bookmark (pdf_bookmark_handle parent,
 				      char *title,
 				      bool open,
 				      pdf_page_handle pdf_page);
-
-void pdf_insert_tiff_image (pdf_page_handle pdf_page, char *filename);
