@@ -5,7 +5,7 @@
  *           encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.12 2002/01/01 02:16:50 eric Exp $
+ * $Id: t2p.c,v 1.13 2002/01/02 02:18:13 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -179,21 +179,37 @@ void process_page_numbers (int page_index,
 }
 
 
-static Bitmap *rotate_bitmap (Bitmap *src, int rotation)
+static Bitmap *rotate_bitmap (Bitmap *src,
+			      float x_resolution,
+			      float y_resolution,
+			      input_attributes_t input_attributes)
 {
   Rect src_rect;
   Point dest_upper_left;
   int scan;
 
-  src_rect.upper_left.x = 0;
-  src_rect.upper_left.y = 0;
-  src_rect.lower_right.x = src->width;
-  src_rect.lower_right.y = src->height;
+  if (input_attributes.has_page_size)
+    {
+      int width_pixels = input_attributes.page_size.width * x_resolution;
+      int height_pixels = input_attributes.page_size.height * y_resolution;
+
+      src_rect.upper_left.x = (src->width - width_pixels) / 2;
+      src_rect.upper_left.y = (src->height - height_pixels) / 2;
+      src_rect.lower_right.x = src_rect.upper_left.x + width_pixels;
+      src_rect.lower_right.y = src_rect.upper_left.y + height_pixels;
+    }
+  else
+    {
+      src_rect.upper_left.x = 0;
+      src_rect.upper_left.y = 0;
+      src_rect.lower_right.x = src->width;
+      src_rect.lower_right.y = src->height;
+    }
 
   dest_upper_left.x = 0;
   dest_upper_left.y = 0;
 
-  switch (rotation)
+  switch (input_attributes.rotation)
     {
     case 0: scan = ROT_0; break;
     case 90: scan = ROT_90; break;
@@ -293,26 +309,12 @@ boolean process_page (int image,  /* range 1 .. n */
   if (1 != TIFFGetField (in, TIFFTAG_PLANARCONFIG, & planar_config))
     planar_config = 1;
 
-  printf ("image length %u width %u, "
-#ifdef CHECK_DEPTH
-          "depth %u, "
-#endif
-          "planar config %u\n",
-	  image_length, image_width,
-#ifdef CHECK_DEPTH
-	  image_depth,
-#endif
-	  planar_config);
-
   if (1 != TIFFGetField (in, TIFFTAG_RESOLUTIONUNIT, & resolution_unit))
     resolution_unit = 2;
   if (1 != TIFFGetField (in, TIFFTAG_XRESOLUTION, & x_resolution))
     x_resolution = 300;
   if (1 != TIFFGetField (in, TIFFTAG_YRESOLUTION, & y_resolution))
     y_resolution = 300;
-
-  printf ("resolution unit %u, x resolution %f, y resolution %f\n",
-	  resolution_unit, x_resolution, y_resolution);
 
   if (samples_per_pixel != 1)
     {
@@ -340,32 +342,11 @@ boolean process_page (int image,  /* range 1 .. n */
       goto fail;
     }
 
-  width_points = (image_width / x_resolution) * POINTS_PER_INCH;
-  height_points = (image_length / y_resolution) * POINTS_PER_INCH;
-
-  if ((height_points > PAGE_MAX_POINTS) || (width_points > PAGE_MAX_POINTS))
+  if (input_attributes.has_resolution)
     {
-      fprintf (stdout, "image too large (max %d inches on a side\n", PAGE_MAX_INCHES);
-      goto fail;
+      x_resolution = input_attributes.x_resolution;
+      y_resolution = input_attributes.y_resolution;
     }
-
-  printf ("height_points %d, width_points %d\n", height_points, width_points);
-
-  tiff_temp_fd = mkstemp (tiff_temp_fn);
-  if (tiff_temp_fd < 0)
-    {
-      fprintf (stderr, "can't create temporary TIFF file\n");
-      goto fail;
-    }
-
-  tiff_temp = TIFFFdOpen (tiff_temp_fd, tiff_temp_fn, "w");
-  if (! out)
-    {
-      fprintf (stderr, "can't open temporary TIFF file '%s'\n", tiff_temp_fn);
-      goto fail;
-    }
-
-  printf ("rotation %d\n", input_attributes.rotation);
 
   if ((input_attributes.rotation == 90) || (input_attributes.rotation == 270))
     {
@@ -382,21 +363,6 @@ boolean process_page (int image,  /* range 1 .. n */
       dest_x_resolution = x_resolution;
       dest_y_resolution = y_resolution;
     }
-
-  TIFFSetField (tiff_temp, TIFFTAG_IMAGELENGTH, dest_image_length);
-  TIFFSetField (tiff_temp, TIFFTAG_IMAGEWIDTH, dest_image_width);
-  TIFFSetField (tiff_temp, TIFFTAG_PLANARCONFIG, planar_config);
-
-  TIFFSetField (tiff_temp, TIFFTAG_ROWSPERSTRIP, dest_image_length);
-
-  TIFFSetField (tiff_temp, TIFFTAG_RESOLUTIONUNIT, resolution_unit);
-  TIFFSetField (tiff_temp, TIFFTAG_XRESOLUTION, dest_x_resolution);
-  TIFFSetField (tiff_temp, TIFFTAG_YRESOLUTION, dest_y_resolution);
-
-  TIFFSetField (tiff_temp, TIFFTAG_SAMPLESPERPIXEL, samples_per_pixel);
-  TIFFSetField (tiff_temp, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
-  TIFFSetField (tiff_temp, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
-  TIFFSetField (tiff_temp, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
 
   scanline_size = TIFFScanlineSize (in);
 
@@ -430,12 +396,44 @@ boolean process_page (int image,  /* range 1 .. n */
 	goto fail;
       }
 
-  dest_bitmap = rotate_bitmap (src_bitmap, input_attributes.rotation);
+  dest_bitmap = rotate_bitmap (src_bitmap,
+			       x_resolution,
+			       y_resolution,
+			       input_attributes);
   if (! dest_bitmap)
     {
       fprintf (stderr, "can't allocate bitmap\n");
       goto fail;
     }
+
+  tiff_temp_fd = mkstemp (tiff_temp_fn);
+  if (tiff_temp_fd < 0)
+    {
+      fprintf (stderr, "can't create temporary TIFF file\n");
+      goto fail;
+    }
+
+  tiff_temp = TIFFFdOpen (tiff_temp_fd, tiff_temp_fn, "w");
+  if (! out)
+    {
+      fprintf (stderr, "can't open temporary TIFF file '%s'\n", tiff_temp_fn);
+      goto fail;
+    }
+
+  TIFFSetField (tiff_temp, TIFFTAG_IMAGELENGTH, dest_bitmap->height);
+  TIFFSetField (tiff_temp, TIFFTAG_IMAGEWIDTH, dest_bitmap->width);
+  TIFFSetField (tiff_temp, TIFFTAG_PLANARCONFIG, planar_config);
+
+  TIFFSetField (tiff_temp, TIFFTAG_ROWSPERSTRIP, dest_bitmap->height);
+
+  TIFFSetField (tiff_temp, TIFFTAG_RESOLUTIONUNIT, resolution_unit);
+  TIFFSetField (tiff_temp, TIFFTAG_XRESOLUTION, dest_x_resolution);
+  TIFFSetField (tiff_temp, TIFFTAG_YRESOLUTION, dest_y_resolution);
+
+  TIFFSetField (tiff_temp, TIFFTAG_SAMPLESPERPIXEL, samples_per_pixel);
+  TIFFSetField (tiff_temp, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
+  TIFFSetField (tiff_temp, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
+  TIFFSetField (tiff_temp, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
 
   for (row = 0; row < dest_bitmap->height; row++)
     if (1 != TIFFWriteScanline (tiff_temp,
@@ -449,8 +447,17 @@ boolean process_page (int image,  /* range 1 .. n */
 
   TIFFClose (tiff_temp);
 
+  width_points = (dest_bitmap->width / dest_x_resolution) * POINTS_PER_INCH;
+  height_points = (dest_bitmap->height / dest_y_resolution) * POINTS_PER_INCH;
+
   free_bitmap (dest_bitmap);
   free_bitmap (src_bitmap);
+
+  if ((height_points > PAGE_MAX_POINTS) || (width_points > PAGE_MAX_POINTS))
+    {
+      fprintf (stdout, "image too large (max %d inches on a side\n", PAGE_MAX_INCHES);
+      goto fail;
+    }
 
   sprintf (pagesize, "[0 0 %d %d]", width_points, height_points);
 

@@ -1,5 +1,9 @@
 typedef struct
 {
+  boolean has_resolution;
+  double x_resolution;
+  double y_resolution;
+
   boolean has_page_size;
   page_size_t page_size;
 

@@ -71,7 +71,8 @@ typedef struct output_page_t
 } output_page_t;
 
 
-#define SEMANTIC_DEBUG
+#undef SEMANTIC_DEBUG
+
 #ifdef SEMANTIC_DEBUG
 #define SDBG(x) printf x
 #else
@@ -188,7 +189,6 @@ void input_set_page_size (page_size_t size)
 {
   last_input_context->modifiers [current_modifier_context].has_page_size = 1;
   last_input_context->modifiers [current_modifier_context].page_size = size;
-  printf ("page size %f, %f\n", size.width, size.height);
   SDBG(("page size %f, %f\n", size.width, size.height));
 }
 
