@@ -1,10 +1,12 @@
-tiff2pdf TODO list
-$Id: TODO,v 1.7 2003/02/19 02:17:12 eric Exp $
+t2p TODO list
+$Id: TODO,v 1.8 2003/02/21 01:12:05 eric Exp $
 
-No particular order.  Page numbers refer to _Portable Document Format
-Reference Manual_ by Adobe Systems Incorporated, Addison-Wesley, 1993.
+No particular order.
 
 -----------------------------------------------------------------------------
+
+t2p:
+
 * bookmark format string processing
 
 * bitblt library:
@@ -27,31 +29,15 @@ Reference Manual_ by Adobe Systems Incorporated, Addison-Wesley, 1993.
     * rotation (0, 90, 180, or 270)
     * page number style (D, r, R, a, A)
 
-* switch from Panda to my own PDF routines
-
-* enhance PDF routines
-    * G4 compression
-    * bookmarks (outline)
-    * name trees, number trees
-    * page labels
-    * page tree balancing
-    * imagemask
-    * thumbnails
-    * PDF Page rotate attribute (p. 53)?
-
 * watermarking - in image?
 
-* ??? split into two tools, one to process TIFF files,
-  and one to convert a single multipage TIFF into a PDF
-
-* support flip, transpose
+* flip, transpose
 
 * support JPEG, PNG, and other input file formats
 
 * generate text, line art - option to embed fonts
 
-* overlay G4 images in different colors
-  draw overlay images with ImageMask set, using the fill color (p. 79)
+* overlay G4 images in different colors - use ImageMask and the fill color
 
 * thresholding of color and grey scale input
 
@@ -62,3 +48,50 @@ Reference Manual_ by Adobe Systems Incorporated, Addison-Wesley, 1993.
 * bilevel thresholding
 
 * downsampling
+
+* ??? split into two tools, one to process TIFF files,
+  and one to convert a single multipage TIFF into a PDF
+
+-----------------------------------------------------------------------------
+
+bitblt routines:
+
+* finish optimized bitblt code
+
+-----------------------------------------------------------------------------
+
+PDF routines:
+
+[Page numbers refer to _Portable Document Format Reference Manual_ by
+Adobe Systems Incorporated, Addison-Wesley, 1993.]
+
+* G4 fax encoding
+
+* proper output of real numbers - variable precision, no exponent
+
+* bookmarks (outline)
+
+* name trees, number trees
+
+* page labels
+
+* balance pages tree - currently a degenerate single-level tree, but the
+  PDF spec recommends max. of 6 children per parent
+
+* ImageMask (p. 79) using fill color (g, k, or rg operator, p. 95)
+
+* thumbnails
+
+* PDF Page rotate attribute (p. 53)?
+
+* fix array element ordering
+
+* memory management - need to reference count all structures and free
+  them as appropriate - not necessary for t2p program
+
+* when an object is written to the file, set a flag to indicate that
+  it is now immutable
+
+* buffered streams (vs. current callback mechanism for unbuffered streams)
+
+* add support for streams with multiple filters
