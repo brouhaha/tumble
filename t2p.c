@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.20 2003/01/21 10:30:49 eric Exp $
+ * $Id: t2p.c,v 1.21 2003/01/21 10:39:55 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -78,6 +78,10 @@ bool close_pdf_output_files (void);
 
 void usage (void)
 {
+  fprintf (stderr, "\n");
+  fprintf (stderr, "t2p - Copyright 2001-2003 Eric Smith <eric@brouhaha.com>\n");
+  fprintf (stderr, "http://www.brouhaha.com/~eric/software/t2p/\n");
+  fprintf (stderr, "\n");
   fprintf (stderr, "usage:\n");
   fprintf (stderr, "    %s [options] -s spec\n", progname);
   fprintf (stderr, "    %s [options] <input.tif>... -o <output.pdf>\n", progname);
