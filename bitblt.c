@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "type.h"
 #include "bitblt.h"
 
 static inline u8 pixel_mask (x)

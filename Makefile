@@ -1,6 +1,6 @@
-# tiffg4: reencode a bilevel TIFF file as a single-strip TIFF Class F Group 4
+# tiff2pdf: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.3 2001/12/27 20:44:15 eric Exp $
+# $Id: Makefile,v 1.4 2001/12/29 09:44:27 eric Exp $
 # Copyright 2001 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -19,16 +19,14 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111  USA
 
 
-CFLAGS = -g -I/usr/local/include/panda
+CFLAGS = -Wall -g -I/usr/local/include/panda
 LDLIBS = -g -ltiff -lm -L/usr/local/lib/panda -lpanda -lpng
 YACC = bison
 YFLAGS = -d -v
 
-bitblt_test: bitblt_test.o bitblt.o
-
-bitblt.o: bitblt.c
-
 tiff2pdf: tiff2pdf.o scanner.o parser.tab.o
+
+bitblt_test: bitblt_test.o bitblt.o
 
 pandamain: pandamain.o
 
@@ -38,3 +36,4 @@ pandamain: pandamain.o
 
 # %.c: %.l
 # 	$(LEX) $(LFLAGS) $<
+

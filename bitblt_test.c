@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "type.h"
 #include "bitblt.h"
 
 

@@ -1,12 +1,15 @@
 %{
-#include <stdio.h>
+  #include <stdio.h>
+  #include "type.h"
+  #include "tiff2pdf.h"
 %}
 
 %union {
   int integer;
   double fp;
   char *string;
-  struct { double width, double height } size;
+  struct { double width; double height; } size;
+  struct { int first; int last; } range;
 }
 
 %token <integer> INTEGER
@@ -26,12 +29,13 @@
 %token PORTRAIT
 %token LANDSCAPE
 
-%token FILE
+%token FILE_KEYWORD
 %token IMAGE
 %token IMAGES
 %token ROTATE
 %token CROP
 %token SIZE
+%token RESOLUTION
 %token INPUT
 
 %token PAGE
@@ -39,10 +43,13 @@
 %token BOOKMARK
 %token OUTPUT
 
-%type <integer> image_range
-%type <integer> image_ranges
-%type <integer> page_range
-%type <integer> page_ranges
+%type <range> range
+%type <range> image_ranges
+%type <range> page_ranges
+
+%type <fp> unit
+
+
 
 %type <fp> length
 
@@ -57,17 +64,17 @@ statement:
 	| output_statement ;
 
 
-image_range:
-	INTEGER ELIPSIS INTEGER
-	| INTEGER ;
+range:
+	INTEGER ELIPSIS INTEGER { $$.first = $1; $$.last = $3; }
+	| INTEGER { $$.first = $1; $$.last = $1; } ;
 
 image_ranges:
-	image_range
-	| image_ranges ',' image_range ;
+	range
+	| image_ranges ',' range ;
 
 
 file_clause:
-	FILE STRING  ';' ;
+	FILE_KEYWORD STRING  ';' ;
 
 image_clause:
 	IMAGE INTEGER ';'
@@ -82,12 +89,12 @@ rotate_clause:
 	ROTATE INTEGER ';' ;
 
 unit:
-	CM
-	| INCH ;
+	/* empty */  /* default to INCH */ { $$ = 25.4; }
+	| CM { $$ = 1.0; }
+	| INCH { $$ = 25.4; } ;
 
 length:
-	FLOAT
-	| FLOAT unit ;
+	FLOAT unit { $$ = $1 * $2; } ;
 
 crop_clause:
 	CROP PAGE_SIZE ';'
@@ -104,8 +111,11 @@ size_clause:
 	| SIZE PAGE_SIZE orientation ';'
 	| SIZE length ',' length ';' ;
 
+resolution_clause:
+	RESOLUTION FLOAT unit ;
+
 modifier_clause:
-	rotate_clause | crop_clause | size_clause;
+	rotate_clause | crop_clause | size_clause | resolution_clause;
 
 modifier_clauses:
 	modifier_clause
@@ -141,13 +151,9 @@ input_clause_list:
 input_statement:
 	INPUT input_clauses ;
 
-page_range:
-	INTEGER ELIPSIS INTEGER
-	| INTEGER ;
-
 page_ranges:
-	page_range
-	| page_ranges ',' page_range ;
+	range
+	| page_ranges ',' range ;
 
 page_clause:
 	PAGE INTEGER ';'

@@ -1,10 +1,8 @@
 %option case-insensitive
 
-/*
 %{
 #include "parser.tab.h"
 }%
-*/
 
 digit [0-9]
 alpha [a-zA-Z]
@@ -37,7 +35,7 @@ bookmark	{ return (BOOKMARK); }
 cm		{ return (CM); }
 crop		{ return (CROP); }
 even		{ return (EVEN); }
-file		{ return (FILE); }
+file		{ return (FILE_KEYWORD); }
 image		{ return (IMAGE); }
 images		{ return (IMAGES); }
 inch		{ return (INCH); }
@@ -48,6 +46,7 @@ output		{ return (OUTPUT); }
 page		{ return (PAGE); }
 pages		{ return (PAGES); }
 portrait	{ return (PORTRAIT) ; }
+resolution	{ return (RESOLUTION) ; }
 rotate		{ return (ROTATE); }
 size		{ return (SIZE); }
 
