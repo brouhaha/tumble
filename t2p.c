@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.28 2003/03/10 05:08:25 eric Exp $
+ * $Id: t2p.c,v 1.29 2003/03/12 02:58:33 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -287,9 +287,9 @@ bool last_tiff_page (void)
 }
 
 
-bool process_page (int image,  /* range 1 .. n */
-		   input_attributes_t input_attributes,
-		   bookmark_t *bookmarks)
+bool process_tiff_page (int image,  /* range 1 .. n */
+			input_attributes_t input_attributes,
+			bookmark_t *bookmarks)
 {
   int result = 0;
 
@@ -436,7 +436,7 @@ bool process_page (int image,  /* range 1 .. n */
 
 #ifdef TIFF_REVERSE_BITS
   reverse_bits ((uint8_t *) bitmap->bits,
-		image_length * bitmap->row_words * sizeof (word_type));
+		image_length * bitmap->row_words * sizeof (word_t));
 #endif /* TIFF_REVERSE_BITS */
 
 #if 0
@@ -481,6 +481,43 @@ bool process_page (int image,  /* range 1 .. n */
  fail:
   if (bitmap)
     free_bitmap (bitmap);
+
+  return (result);
+}
+
+
+#if 0
+bool process_jpeg_page (int image,  /* range 1 .. n */
+			input_attributes_t input_attributes,
+			bookmark_t *bookmarks)
+{
+  int result = 0;
+  FILE *f;
+  pdf_page_handle page;
+
+  f = fopen (filename, "rb");
+  if (! f)
+    fatal ("error opening input file '%s'\n", filename);
+
+  page = pdf_new_page (out->pdf, width_points, height_points);
+
+  pdf_write_jpeg_image (page,
+			0, 0,  /* x, y */
+			width_points, height_points,
+			f);
+
+  return (result);
+}
+#endif
+
+
+bool process_page (int image,  /* range 1 .. n */
+		   input_attributes_t input_attributes,
+		   bookmark_t *bookmarks)
+{
+  int result = 0;
+
+  result = process_tiff_page (image, input_attributes, bookmarks);
 
   return (result);
 }
