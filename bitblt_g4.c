@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * G4 compression
- * $Id: bitblt_g4.c,v 1.11 2003/03/11 03:14:39 eric Exp $
+ * $Id: bitblt_g4.c,v 1.12 2003/03/12 02:59:29 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -35,6 +35,7 @@
 
 
 #include "bitblt.h"
+#include "bitblt_tables.h"
 #include "pdf_util.h"
 
 
@@ -69,15 +70,6 @@ static void flush_bits (struct bit_buffer *buf)
       buf->byte_idx++;
       buf->bit_idx = 8;
     }
-#if (G4_DEBUG >= 3)
- {
-   int i;
-   fprintf (stderr, "::: ");
-   for (i = 0; i < buf->byte_idx; i++)
-     fprintf (stderr, "%02x ", buf->data [i]);
-   fprintf (stderr, "\n");
- }
-#endif
   s = fwrite (& buf->data [0], 1, buf->byte_idx, buf->f);
   /* $$$ should check result */
   init_bit_buffer (buf);
@@ -97,16 +89,6 @@ static void write_bits (struct bit_buffer *buf,
 			uint32_t count,
 			uint32_t bits)
 {
-#if (G4_DEBUG >= 2)
-  {
-    int i;
-    fprintf (stderr, "%d %04x:  ", count, bits);
-    for (i = count - 1; i >= 0; i--)
-      fprintf (stderr, "%d", (bits >> i) & 1);
-    fprintf (stderr, "\n");
-  }
-#endif
-
   while (count > buf->bit_idx)
     {
       buf->data [buf->byte_idx] |= bits >> (count - buf->bit_idx);
@@ -163,17 +145,72 @@ static inline int g4_get_pixel (uint8_t *buf, uint32_t x)
 }
 
 
+#define not_aligned(p) (((word_t) p) & (sizeof (word_t) - 1))
+
+
 static uint32_t g4_find_pixel (uint8_t *buf,
 			       uint32_t pos,
 			       uint32_t width,
 			       bool color)
 {
-  while (pos < width)
+  uint8_t *p = buf + pos / 8;
+  int bit = pos & 7;
+  uint8_t *max_p = buf + (width - 1) / 8;
+  uint8_t d;
+
+  /* check first byte (may be partial) */
+  d = *p;
+  if (! color)
+    d = ~d;
+  bit += rle_tab [bit][d];
+  if (bit < 8)
+    goto done;
+  p++;
+
+  /* check individual bytes until we hit word alignment */
+  while ((p <= max_p) && not_aligned (p))
     {
-      if (g4_get_pixel (buf, pos) == color)
-	return (pos);
-      pos++;
+      d = *p;
+      if (! color)
+	d = ~d;
+      if (d != 0)
+	goto found;
+      p++;
     }
+
+  /* check aligned words in middle */
+  while ((p <= (max_p - sizeof (word_t))))
+    {
+      word_t w = *((word_t *) p);
+      if (! color)
+	w = ~w;
+      if (w != 0)
+	break;
+      p += sizeof (word_t);
+    }
+
+  /* check trailing bytes */
+  while (p <= max_p)
+    {
+      d = *p;
+      if (! color)
+	d = ~d;
+      if (d)
+	goto found;
+      p++;
+    }
+
+  goto not_found;
+
+ found:
+  bit = rle_tab [0][d];
+
+ done:
+  pos = ((p - buf) << 3) + bit;
+  if (pos < width)
+    return (pos);
+
+ not_found:
   return (width);
 }
 
@@ -194,7 +231,7 @@ static void g4_encode_row (struct bit_buffer *buf,
 
   b1 = g4_find_pixel (ref, 0, width, 1);
 
-#if G4_DEBUG
+#if (G4_DEBUG & 1)
   fprintf (stderr, "start of row\n");
   if ((a1 != width) || (b1 != width))
     {
@@ -211,7 +248,7 @@ static void g4_encode_row (struct bit_buffer *buf,
 	  /* pass mode - 0001 */
 	  write_bits (buf, 4, 0x1);
 	  a0 = b2;
-#if G4_DEBUG
+#if (G4_DEBUG & 1)
 	  fprintf (stderr, "pass\n");
 #endif
 	}
@@ -222,7 +259,7 @@ static void g4_encode_row (struct bit_buffer *buf,
 		      g4_vert_code [3 + a1 - b1].count,
 		      g4_vert_code [3 + a1 - b1].bits);
 	  a0 = a1;
-#if G4_DEBUG
+#if (G4_DEBUG & 1)
 	  fprintf (stderr, "vertical %d\n", a1 - b1);
 #endif
 	}
@@ -233,7 +270,7 @@ static void g4_encode_row (struct bit_buffer *buf,
 	  write_bits (buf, 3, 0x1);
 	  g4_encode_horizontal_run (buf,   a0_c, a1 - a0);
 	  g4_encode_horizontal_run (buf, ! a0_c, a2 - a1);
-#if G4_DEBUG
+#if (G4_DEBUG & 1)
 	  fprintf (stderr, "horizontal %d %s, %d %s\n",
 		   a1 - a0, a0_c ? "black" : "white",
 		   a2 - a1, a0_c ? "white" : "black");
@@ -250,7 +287,7 @@ static void g4_encode_row (struct bit_buffer *buf,
       b1 = g4_find_pixel (ref, a0 + 1, width, ! g4_get_pixel (ref, a0));
       if (g4_get_pixel (ref, b1) == a0_c)
 	b1 = g4_find_pixel (ref, b1 + 1, width, ! a0_c);
-#if G4_DEBUG
+#if (G4_DEBUG & 1)
       fprintf (stderr, "a1 = %u, b1 = %u\n", a1, b1);
 #endif
     }
@@ -263,17 +300,13 @@ void bitblt_write_g4 (Bitmap *bitmap, FILE *f)
   uint32_t row;
   struct bit_buffer bb;
 
-  word_type *temp_buffer;
+  word_t *temp_buffer;
 
-  word_type *cur_line;
-  word_type *ref_line;  /* reference (previous) row */
-
-#if G4_DEBUG
-  fprintf (stderr, "width %u\n", width);
-#endif
+  word_t *cur_line;
+  word_t *ref_line;  /* reference (previous) row */
 
   temp_buffer = pdf_calloc ((width + BITS_PER_WORD - 1) / BITS_PER_WORD,
-			    sizeof (word_type));
+			    sizeof (word_t));
 
   cur_line = bitmap->bits;
   ref_line = temp_buffer;
