@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "libpdf.h"
-#include "libpdf_util.h"
+#include "pdf.h"
+#include "pdf_util.h"
 
 
 void pdf_fatal (char *fmt, ...)

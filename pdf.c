@@ -2,10 +2,10 @@
 #include <stdlib.h>
 
 
-#include "libpdf.h"
-#include "libpdf_util.h"
-#include "libpdf_prim.h"
-#include "libpdf_private.h"
+#include "pdf.h"
+#include "pdf_util.h"
+#include "pdf_prim.h"
+#include "pdf_private.h"
 
 
 static void pdf_set_info (pdf_file_handle pdf_file, char *key, char *val)
@@ -56,7 +56,7 @@ pdf_file_handle pdf_create (char *filename)
   pdf_set_dict_entry (pdf_file->catalog, "PageMode", pdf_new_name ("UseNone"));
 
   pdf_file->info    = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
-  pdf_set_info (pdf_file, "Producer", "libpdf, Copyright 2003 Eric Smith <eric@brouhaha.com>");
+  pdf_set_info (pdf_file, "Producer", "t2p, Copyright 2003 Eric Smith <eric@brouhaha.com>");
 
   pdf_file->trailer_dict = pdf_new_obj (PT_DICTIONARY);
   /* Size key will be added later */

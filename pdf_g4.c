@@ -2,10 +2,10 @@
 #include <string.h>
 
 
-#include "libpdf.h"
-#include "libpdf_util.h"
-#include "libpdf_prim.h"
-#include "libpdf_private.h"
+#include "pdf.h"
+#include "pdf_util.h"
+#include "pdf_prim.h"
+#include "pdf_private.h"
 
 
 struct pdf_g4_image
