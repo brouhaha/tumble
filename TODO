@@ -1,5 +1,5 @@
 t2p TODO list
-$Id: TODO,v 1.17 2003/03/19 17:08:05 eric Exp $
+$Id: TODO,v 1.18 2003/03/19 23:06:35 eric Exp $
 
 No particular order.
 
@@ -7,7 +7,8 @@ No particular order.
 
 t2p:
 
-* support JPEG (JFIF, EXIF)
+* input handlers shouldn't use globals, use pointer to private structure
+  instead.
 
 * multiple "-b" options on command line
 
