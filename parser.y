@@ -164,10 +164,13 @@ pdf_file_attribute:
 	| SUBJECT STRING { output_set_subject ($2); }
 	| KEYWORDS STRING { output_set_keywords ($2); } ;
 
+pdf_file_attribute_list:
+	pdf_file_attribute
+	| pdf_file_attribute_list pdf_file_attribute ;
+
 pdf_file_attributes:
 	/* empty */
-	| pdf_file_attribute
-	| pdf_file_attributes pdf_file_attribute ;
+	| pdf_file_attribute_list ;
 
 output_file_clause:
 	FILE_KEYWORD STRING { output_set_file ($2); }
