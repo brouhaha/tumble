@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Semantic routines for spec file parser
- * $Id: semantics.h,v 1.14 2003/03/14 00:24:37 eric Exp $
+ * $Id: semantics.h,v 1.15 2003/03/16 05:58:26 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -100,5 +100,5 @@ void output_pages (range_t range);
 
 
 /* functions to be called from main program: */
-bool parse_spec_file (char *fn);
-bool process_specs (void);
+bool parse_control_file (char *fn);
+bool process_controls (void);

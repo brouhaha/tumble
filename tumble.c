@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.35 2003/03/14 00:57:40 eric Exp $
+ * $Id: tumble.c,v 1.36 2003/03/16 05:58:26 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -80,11 +80,11 @@ void usage (void)
   fprintf (stderr, "http://tumble.brouhaha.com/\n");
   fprintf (stderr, "\n");
   fprintf (stderr, "usage:\n");
-  fprintf (stderr, "    %s [options] -s spec\n", progname);
+  fprintf (stderr, "    %s [options] -c <control.tum>\n", progname);
   fprintf (stderr, "    %s [options] <input.tif>... -o <output.pdf>\n", progname);
   fprintf (stderr, "options:\n");
-  fprintf (stderr, "    -v   verbose\n");
-  fprintf (stderr, "    -b fmt  create bookmarks\n");
+  fprintf (stderr, "    -v        verbose\n");
+  fprintf (stderr, "    -b <fmt>  create bookmarks\n");
   fprintf (stderr, "bookmark format:\n");
   fprintf (stderr, "    %%F  file name (sans suffix)\n");
   fprintf (stderr, "    %%p  page number\n");
@@ -635,18 +635,18 @@ void main_args (char *out_fn,
 }
 
 
-void main_spec (char *spec_fn)
+void main_control (char *control_fn)
 {
-  if (! parse_spec_file (spec_fn))
-    fatal (2, "error parsing spec file\n");
-  if (! process_specs ())
-    fatal (3, "error processing spec file\n");
+  if (! parse_control_file (control_fn))
+    fatal (2, "error parsing control file\n");
+  if (! process_controls ())
+    fatal (3, "error processing control file\n");
 }
 
 
 int main (int argc, char *argv[])
 {
-  char *spec_fn = NULL;
+  char *control_fn = NULL;
   char *out_fn = NULL;
   char *bookmark_fmt = NULL;
   int inf_count = 0;
@@ -673,13 +673,13 @@ int main (int argc, char *argv[])
 	      else
 		fatal (1, "missing filename after \"-o\" option\n");
 	    }
-	  else if (strcmp (argv [1], "-s") == 0)
+	  else if (strcmp (argv [1], "-c") == 0)
 	    {
 	      if (argc)
 		{
 		  argc--;
 		  argv++;
-		  spec_fn = argv [1];
+		  control_fn = argv [1];
 		}
 	      else
 		fatal (1, "missing filename after \"-s\" option\n");
@@ -705,17 +705,17 @@ int main (int argc, char *argv[])
       argv++;
     }
 
-  if (! ((! out_fn) ^ (! spec_fn)))
-    fatal (1, "either a spec file or an output file (but not both) must be specified\n");
+  if (! ((! out_fn) ^ (! control_fn)))
+    fatal (1, "either a control file or an output file (but not both) must be specified\n");
 
   if (out_fn && ! inf_count)
     fatal (1, "no input files specified\n");
 
-  if (spec_fn && inf_count)
-    fatal (1, "if spec file is provided, input files can't be specified as arguments\n");
+  if (control_fn && inf_count)
+    fatal (1, "if control file is provided, input files can't be specified as arguments\n");
 
-  if (spec_fn)
-    main_spec (spec_fn);
+  if (control_fn)
+    main_control (control_fn);
   else
     main_args (out_fn, inf_count, in_fn, bookmark_fmt);
   
