@@ -1,5 +1,5 @@
 t2p TODO list
-$Id: TODO,v 1.11 2003/03/07 02:16:08 eric Exp $
+$Id: TODO,v 1.12 2003/03/10 01:58:34 eric Exp $
 
 No particular order.
 
@@ -7,13 +7,7 @@ No particular order.
 
 t2p:
 
-* bookmark format string processing
-
-* bitblt library:
-    * run length encoding (needed for G4 compression)
-    * optimize
-        * replace inner loops in flip_h and flip_v with Duff's Device
-    * check for endian problems
+* page labels
 
 * crop
 
@@ -22,8 +16,6 @@ t2p:
     * check page size, if off by too much, generate warning message and
       use actual scan size
     * multiple page sizes, pick the right one?
-
-* sort out use of float and double types
 
 * range checking
     * rotation (0, 90, 180, or 270)
@@ -39,13 +31,11 @@ t2p:
 
 * overlay G4 images in different colors - use ImageMask and the fill color
 
-* thresholding of color and grey scale input
+* bilevel thresholding of color and grey scale input
 
 * automatic separation using timify code from Tim Shoppa?
 
 * automatic image detection using DCT or FFT
-
-* bilevel thresholding
 
 * downsampling
 
@@ -56,7 +46,14 @@ t2p:
 
 bitblt routines:
 
+* G4 fax encoding
+
 * finish optimized bitblt code
+
+* optimize
+    * replace inner loops in flip_h and flip_v with Duff's Device
+
+* check for endian problems
 
 -----------------------------------------------------------------------------
 
@@ -65,17 +62,10 @@ PDF routines:
 [Page numbers refer to _Portable Document Format Reference Manual_ by
 Adobe Systems Incorporated, Addison-Wesley, 1993.]
 
-* G4 fax encoding
-
 * proper output of real numbers - variable precision, no exponent
 
-* bookmarks (outline)
-    * alternate destination specs (only is /Fit currently supported)
-
-* name trees, number trees
-    * when finalize is called, set flag and allow no further changes
-
-* page labels
+* bookmarks (outline) should allow alternate destination specs, currently
+  only /Fit is supported
 
 * balance pages tree - currently a degenerate single-level tree, but the
   PDF spec recommends max. of 6 children per parent
@@ -84,13 +74,14 @@ Adobe Systems Incorporated, Addison-Wesley, 1993.]
 
 * PDF Page rotate attribute (p. 53)?
 
-* fix array element ordering
-
 * memory management - need to reference count all structures and free
   them as appropriate - not necessary for t2p program
 
 * when an object is written to the file, set a flag to indicate that
   it is now immutable
+
+* name trees, number trees - when finalize is called, set immutable flag
+  and allow no further changes
 
 * buffered streams (vs. current callback mechanism for unbuffered streams)
 
