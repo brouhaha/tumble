@@ -1,5 +1,5 @@
 t2p TODO list
-$Id: TODO,v 1.15 2003/03/12 02:59:37 eric Exp $
+$Id: TODO,v 1.16 2003/03/12 23:57:35 eric Exp $
 
 No particular order.
 
@@ -76,6 +76,10 @@ PDF routines:
 
 [Page numbers refer to _Portable Document Format Reference Manual_ by
 Adobe Systems Incorporated, Addison-Wesley, 1993.]
+
+* ModDate and CreationDate keys in Info dict
+
+* ID key in trailer dict
 
 * proper output of real numbers - variable precision, no exponent
 
