@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_prim.c,v 1.12 2003/03/13 00:57:05 eric Exp $
+ * $Id: pdf_prim.c,v 1.13 2003/03/19 23:44:53 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -536,7 +536,8 @@ void pdf_write_stream (pdf_file_handle pdf_file, struct pdf_obj *stream)
 			       stream,
 			       stream->val.stream.app_data);
   end_pos = ftell (pdf_file->f);
-  fprintf (pdf_file->f, "endstream\r\n");
+
+  fprintf (pdf_file->f, "\r\nendstream\r\n");
 
   pdf_set_integer (stream->val.stream.length, end_pos - begin_pos);
 }

@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_g4.c,v 1.15 2003/03/13 00:57:05 eric Exp $
+ * $Id: pdf_g4.c,v 1.16 2003/03/19 23:44:53 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -76,7 +76,6 @@ static void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
   struct pdf_g4_image *image = app_data;
 
   bitblt_write_g4 (image->bitmap, pdf_file->f);
-  pdf_stream_printf (pdf_file, stream, "\r\n");
 }
 
 

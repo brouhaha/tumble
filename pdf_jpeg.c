@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_jpeg.c,v 1.3 2003/03/19 07:39:55 eric Exp $
+ * $Id: pdf_jpeg.c,v 1.4 2003/03/19 23:44:53 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -90,8 +90,6 @@ static void pdf_write_jpeg_image_callback (pdf_file_handle pdf_file,
       if (ferror (image->f))
 	pdf_fatal ("error on input file\n");
     }
-
-  pdf_stream_printf (pdf_file, stream, "\r\n");
 }
 
 
