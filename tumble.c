@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.36 2003/03/16 05:58:26 eric Exp $
+ * $Id: tumble.c,v 1.37 2003/03/19 07:39:55 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -60,8 +60,18 @@ typedef struct output_file_t
 int verbose;
 
 
+typedef enum
+  {
+    INPUT_FILE_TYPE_NONE,
+    INPUT_FILE_TYPE_TIFF,
+    INPUT_FILE_TYPE_JPEG
+  } input_file_type_t;
+
+
 char *in_filename;
-TIFF *in;
+input_file_type_t in_type;
+FILE *in;
+TIFF *tiff_in;
 output_file_t *output_files;
 output_file_t *out;
 
@@ -92,6 +102,8 @@ void usage (void)
 
 
 /* generate fatal error message to stderr, doesn't return */
+void fatal (int ret, char *format, ...) __attribute__ ((noreturn));
+
 void fatal (int ret, char *format, ...)
 {
   va_list ap;
@@ -108,7 +120,7 @@ void fatal (int ret, char *format, ...)
     fprintf (stderr, "\n");
   if (ret == 1)
     usage ();
-  close_tiff_input_file ();
+  close_input_file ();
   close_pdf_output_files ();
   exit (ret);
 }
@@ -116,24 +128,49 @@ void fatal (int ret, char *format, ...)
 
 bool close_tiff_input_file (void)
 {
-  if (in)
-    {
-      free (in_filename);
-      TIFFClose (in);
-    }
-  in = NULL;
-  in_filename = NULL;
+  TIFFClose (tiff_in);
   return (1);
 }
 
 
-bool open_tiff_input_file (char *name)
+bool open_tiff_input_file (FILE *f, char *name)
 {
+  tiff_in = TIFFFdOpen (fileno (f), name, "r");
+  if (! tiff_in)
+    {
+      fprintf (stderr, "can't open input file '%s'\n", name);
+      free (in_filename);
+      return (0);
+    }
+  in_type = INPUT_FILE_TYPE_TIFF;
+  return (1);
+}
+
+
+bool close_jpeg_input_file (void)
+{
+  return (1);
+}
+
+
+bool open_jpeg_input_file (FILE *f, char *name)
+{
+  in_type = INPUT_FILE_TYPE_JPEG;
+  return (1);
+}
+
+
+bool open_input_file (char *name)
+{
+  bool result;
+  uint8_t buf [2];
+  size_t l;
+
   if (in)
     {
       if (strcmp (name, in_filename) == 0)
 	return (1);
-      close_tiff_input_file ();
+      close_input_file ();
     }
   in_filename = strdup (name);
   if (! in_filename)
@@ -141,14 +178,87 @@ bool open_tiff_input_file (char *name)
       fprintf (stderr, "can't strdup input filename '%s'\n", name);
       return (0);
     }
-  in = TIFFOpen (name, "r");
+
+  in = fopen (name, "rb");
   if (! in)
+    return (0);
+
+  l = fread (& buf [0], 1, sizeof (buf), in);
+  if (l != sizeof (buf))
+    return (0);
+
+  rewind (in);
+
+  if ((buf [0] == 0x49) && (buf [1] == 0x49))
+    result = open_tiff_input_file (in, name);
+  else if ((buf [0] == 0xff) && (buf [1] == 0xd8))
+    result = open_jpeg_input_file (in, name);
+  else
     {
-      fprintf (stderr, "can't open input file '%s'\n", name);
-      free (in_filename);
-      return (0);
+      fprintf (stderr, "unrecognized file header in file '%s'\n", name);
+      result = 0;
     }
+  if (! result)
+    {
+      if (in)
+	fclose (in);
+      in = NULL;
+      in_type = INPUT_FILE_TYPE_NONE;
+    }
+  return (result);
+}
+
+
+bool close_input_file (void)
+{
+  bool result;
+
+  switch (in_type)
+    {
+    case INPUT_FILE_TYPE_NONE:
+      return (1);
+    case INPUT_FILE_TYPE_TIFF:
+      result = close_tiff_input_file ();
+      break;
+    case INPUT_FILE_TYPE_JPEG:
+      result = close_jpeg_input_file ();
+      break;
+    default:
+      fatal (3, "internal error: bad input file type\n");
+    }
+
+  if (in_filename)
+    free (in_filename);
+  fclose (in);
+  in = NULL;
+
+  return (result);
+}
+
+
+bool last_tiff_input_page (void)
+{
+  return (TIFFLastDirectory (tiff_in));
+}
+
+
+bool last_jpeg_input_page (void)
+{
   return (1);
+}
+
+
+bool last_input_page (void)
+{
+  switch (in_type)
+    {
+    case INPUT_FILE_TYPE_TIFF:
+      return (last_tiff_input_page ());
+    case INPUT_FILE_TYPE_JPEG:
+      return (last_jpeg_input_page ());
+    default:
+      fatal (3, "internal error: bad input file type\n");
+    }
 }
 
 
@@ -271,12 +381,6 @@ static void rotate_bitmap (Bitmap *src,
 #define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
 
 
-bool last_tiff_page (void)
-{
-  return (TIFFLastDirectory (in));
-}
-
-
 static pdf_page_handle process_tiff_page (int image,  /* range 1 .. n */
 					  input_attributes_t input_attributes)
 {
@@ -304,50 +408,50 @@ static pdf_page_handle process_tiff_page (int image,  /* range 1 .. n */
 
   pdf_page_handle page = NULL;
 
-  if (! TIFFSetDirectory (in, image - 1))
+  if (! TIFFSetDirectory (tiff_in, image - 1))
     {
       fprintf (stderr, "can't find page %d of input file\n", image);
       goto fail;
     }
-  if (1 != TIFFGetField (in, TIFFTAG_IMAGELENGTH, & image_length))
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_IMAGELENGTH, & image_length))
     {
       fprintf (stderr, "can't get image length\n");
       goto fail;
     }
-  if (1 != TIFFGetField (in, TIFFTAG_IMAGEWIDTH, & image_width))
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_IMAGEWIDTH, & image_width))
     {
       fprintf (stderr, "can't get image width\n");
       goto fail;
     }
 
-  if (1 != TIFFGetField (in, TIFFTAG_SAMPLESPERPIXEL, & samples_per_pixel))
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_SAMPLESPERPIXEL, & samples_per_pixel))
     {
       fprintf (stderr, "can't get samples per pixel\n");
       goto fail;
     }
 
 #ifdef CHECK_DEPTH
-  if (1 != TIFFGetField (in, TIFFTAG_IMAGEDEPTH, & image_depth))
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_IMAGEDEPTH, & image_depth))
     {
       fprintf (stderr, "can't get image depth\n");
       goto fail;
     }
 #endif
 
-  if (1 != TIFFGetField (in, TIFFTAG_BITSPERSAMPLE, & bits_per_sample))
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_BITSPERSAMPLE, & bits_per_sample))
     {
       fprintf (stderr, "can't get bits per sample\n");
       goto fail;
     }
 
-  if (1 != TIFFGetField (in, TIFFTAG_PLANARCONFIG, & planar_config))
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_PLANARCONFIG, & planar_config))
     planar_config = 1;
 
-  if (1 != TIFFGetField (in, TIFFTAG_RESOLUTIONUNIT, & resolution_unit))
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_RESOLUTIONUNIT, & resolution_unit))
     resolution_unit = 2;
-  if (1 != TIFFGetField (in, TIFFTAG_XRESOLUTION, & x_resolution))
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_XRESOLUTION, & x_resolution))
     x_resolution = 300;
-  if (1 != TIFFGetField (in, TIFFTAG_YRESOLUTION, & y_resolution))
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_YRESOLUTION, & y_resolution))
     y_resolution = 300;
 
   if (samples_per_pixel != 1)
@@ -412,7 +516,7 @@ static pdf_page_handle process_tiff_page (int image,  /* range 1 .. n */
     }
 
   for (row = 0; row < image_length; row++)
-    if (1 != TIFFReadScanline (in,
+    if (1 != TIFFReadScanline (tiff_in,
 			       bitmap->bits + row * bitmap->row_words,
 			       row,
 			       0))
@@ -472,27 +576,26 @@ static pdf_page_handle process_tiff_page (int image,  /* range 1 .. n */
 }
 
 
-#if 0
 pdf_page_handle process_jpeg_page (int image,  /* range 1 .. n */
 				   input_attributes_t input_attributes)
 {
-  FILE *f;
   pdf_page_handle page;
+  double width_points, height_points;  /* really 1/72 inch units rather than
+					  points */
 
-  f = fopen (filename, "rb");
-  if (! f)
-    fatal ("error opening input file '%s'\n", filename);
+  /* $$$ need to get these from somewhere else, hardcoded for now */
+  width_points = 4 * 72.0;
+  height_points = 4 * 72.0;
 
   page = pdf_new_page (out->pdf, width_points, height_points);
 
   pdf_write_jpeg_image (page,
 			0, 0,  /* x, y */
 			width_points, height_points,
-			f);
+			in);
 
   return (page);
 }
-#endif
 
 
 bool process_page (int image,  /* range 1 .. n */
@@ -502,7 +605,17 @@ bool process_page (int image,  /* range 1 .. n */
 {
   pdf_page_handle page;
 
-  page = process_tiff_page (image, input_attributes);
+  switch (in_type)
+    {
+    case INPUT_FILE_TYPE_TIFF:
+      page = process_tiff_page (image, input_attributes);
+      break;
+    case INPUT_FILE_TYPE_JPEG:
+      page = process_jpeg_page (image, input_attributes);
+      break;
+    default:
+      fatal (3, "internal error: bad input file type\n");
+    }
 
   while (bookmarks)
     {
@@ -608,7 +721,7 @@ void main_args (char *out_fn,
     fatal (3, "error opening output file \"%s\"\n", out_fn);
   for (i = 0; i < inf_count; i++)
     {
-      if (! open_tiff_input_file (in_fn [i]))
+      if (! open_input_file (in_fn [i]))
 	fatal (3, "error opening input file \"%s\"\n", in_fn [i]);
       for (ip = 1;; ip++)
 	{
@@ -622,12 +735,12 @@ void main_args (char *out_fn,
 			      bookmark_fmt ? & bookmark : NULL,
 			      NULL))
 	    fatal (3, "error processing page %d of input file \"%s\"\n", ip, in_fn [i]);
-	  if (last_tiff_page ())
+	  if (last_input_page ())
 	    break;
 	}
       if (verbose)
 	fprintf (stderr, "processed %d pages of input file \"%s\"\n", ip, in_fn [i]);
-      if (! close_tiff_input_file ())
+      if (! close_input_file ())
 	fatal (3, "error closing input file \"%s\"\n", in_fn [i]);
     }
   if (! close_pdf_output_files ())
@@ -719,7 +832,7 @@ int main (int argc, char *argv[])
   else
     main_args (out_fn, inf_count, in_fn, bookmark_fmt);
   
-  close_tiff_input_file ();
+  close_input_file ();
   close_pdf_output_files ();
   exit (0);
 }

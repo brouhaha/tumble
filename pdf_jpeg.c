@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_jpeg.c,v 1.2 2003/03/13 00:57:05 eric Exp $
+ * $Id: pdf_jpeg.c,v 1.3 2003/03/19 07:39:55 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -40,9 +40,9 @@ struct pdf_jpeg_image
 {
   double width, height;
   double x, y;
+  bool color;  /* false for grayscale */
+  uint32_t width_samples, height_samples;
   FILE *f;
-  unsigned long Columns;
-  unsigned long Rows;
   char XObject_name [4];
 };
 
@@ -69,14 +69,13 @@ static void pdf_write_jpeg_image_callback (pdf_file_handle pdf_file,
 					   void *app_data)
 {
   struct pdf_jpeg_image *image = app_data;
-  FILE *f;
   int rlen, wlen;
   uint8_t *wp;
   uint8_t buffer [8192];
 
   while (! feof (image->f))
     {
-      rlen = fread (& buffer [0], 1, JPEG_BUFFER_SIZE, f);
+      rlen = fread (& buffer [0], 1, JPEG_BUFFER_SIZE, image->f);
       wp = & buffer [0];
       while (rlen)
 	{
@@ -88,9 +87,11 @@ static void pdf_write_jpeg_image_callback (pdf_file_handle pdf_file,
 	  rlen -= wlen;
 	  wp += wlen;
 	}
-      if (ferror (f))
+      if (ferror (image->f))
 	pdf_fatal ("error on input file\n");
     }
+
+  pdf_stream_printf (pdf_file, stream, "\r\n");
 }
 
 
@@ -105,7 +106,6 @@ void pdf_write_jpeg_image (pdf_page_handle pdf_page,
 
   struct pdf_obj *stream;
   struct pdf_obj *stream_dict;
-  struct pdf_obj *decode_parms;
 
   struct pdf_obj *content_stream;
 
@@ -117,10 +117,14 @@ void pdf_write_jpeg_image (pdf_page_handle pdf_page,
   image->y = y;
 
   image->f = f;
-#if 0
-  image->Columns = bitmap->rect.max.x - bitmap->rect.min.x;
-  image->Rows = bitmap->rect.max.y - bitmap->rect.min.y;
-#endif
+
+  /* $$$ quick hack, should read these from file! */
+  image->color = 1;
+  image->width_samples = 71;
+  image->height_samples = 88;
+
+  pdf_add_array_elem_unique (pdf_page->procset,
+			     pdf_new_name (image->color ? "ImageC" : "ImageB"));
 
   stream_dict = pdf_new_obj (PT_DICTIONARY);
 
@@ -135,26 +139,14 @@ void pdf_write_jpeg_image (pdf_page_handle pdf_page,
 
   pdf_set_dict_entry (stream_dict, "Type",    pdf_new_name ("XObject"));
   pdf_set_dict_entry (stream_dict, "Subtype", pdf_new_name ("Image"));
-  pdf_set_dict_entry (stream_dict, "Name",    pdf_new_name (& image->XObject_name [0]));
-  pdf_set_dict_entry (stream_dict, "Width",   pdf_new_integer (image->Columns));
-  pdf_set_dict_entry (stream_dict, "Height",  pdf_new_integer (image->Rows));
+// Name is required in PDF 1.0 but obsoleted in later PDF versions
+//  pdf_set_dict_entry (stream_dict, "Name",    pdf_new_name (& image->XObject_name [0]));
+  pdf_set_dict_entry (stream_dict, "Width",   pdf_new_integer (image->width_samples));
+  pdf_set_dict_entry (stream_dict, "Height",  pdf_new_integer (image->height_samples));
+  pdf_set_dict_entry (stream_dict, "ColorSpace", pdf_new_name (image->color ? "DeviceRGB" : "DeviceGray"));
   pdf_set_dict_entry (stream_dict, "BitsPerComponent", pdf_new_integer (8));
 
-  decode_parms = pdf_new_obj (PT_DICTIONARY);
-
-  pdf_set_dict_entry (decode_parms,
-		      "K",
-		      pdf_new_integer (-1));
-
-  pdf_set_dict_entry (decode_parms,
-		      "Columns",
-		      pdf_new_integer (image->Columns));
-
-  pdf_set_dict_entry (decode_parms,
-		      "Rows",
-		      pdf_new_integer (image->Rows));
-
-  pdf_stream_add_filter (stream, "DCTDecode", decode_parms);
+  pdf_stream_add_filter (stream, "DCTDecode", NULL);
 
   /* the following will write the stream, using our callback function to
      get the actual data */
@@ -170,4 +162,3 @@ void pdf_write_jpeg_image (pdf_page_handle pdf_page,
 
   pdf_write_ind_obj (pdf_page->pdf_file, content_stream);
 }
-

@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble.h,v 1.15 2003/03/14 00:57:40 eric Exp $
+ * $Id: tumble.h,v 1.16 2003/03/19 07:39:55 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -39,8 +39,9 @@ typedef struct
   crop_t crop;
 } input_attributes_t;
 
-bool open_tiff_input_file (char *name);
-bool close_tiff_input_file (void);
+
+bool open_input_file (char *name);
+bool close_input_file (void);
 
 
 typedef struct

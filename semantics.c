@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Semantic routines for spec file parser
- * $Id: semantics.c,v 1.22 2003/03/16 05:58:25 eric Exp $
+ * $Id: semantics.c,v 1.23 2003/03/19 07:39:55 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -667,10 +667,10 @@ bool process_controls (void)
 	  i = 0;
 	  input_fn = get_input_filename (image->input_context);
 	  if (verbose)
-	    fprintf (stderr, "opening TIFF file '%s'\n", input_fn);
-	  if (! open_tiff_input_file (input_fn))
+	    fprintf (stderr, "opening input file '%s'\n", input_fn);
+	  if (! open_input_file (input_fn))
 	    {
-	      fprintf (stderr, "error opening TIFF file '%s'\n", input_fn);
+	      fprintf (stderr, "error opening input file '%s'\n", input_fn);
 	      return (0);
 	    }
 	}
