@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.h,v 1.7 2003/03/10 01:49:50 eric Exp $
+ * $Id: pdf_prim.h,v 1.8 2003/03/11 23:43:56 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -137,3 +137,7 @@ void pdf_write_all_ind_obj (pdf_file_handle pdf_file);
 
 /* Write the cross reference table, and return the maximum object number */
 unsigned long pdf_write_xref (pdf_file_handle pdf_file);
+
+
+/* this isn't really a PDF primitive data type */
+char pdf_new_XObject (pdf_page_handle pdf_page, struct pdf_obj *ind_ref);

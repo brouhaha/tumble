@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_g4.c,v 1.10 2003/03/11 23:38:57 eric Exp $
+ * $Id: pdf_g4.c,v 1.11 2003/03/11 23:43:56 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -50,24 +50,6 @@ struct pdf_g4_image
   Bitmap *bitmap;
   char XObject_name [4];
 };
-
-
-char pdf_new_XObject (pdf_page_handle pdf_page, struct pdf_obj *ind_ref)
-{
-  char XObject_name [4] = "Im ";
-
-  XObject_name [2] = ++pdf_page->last_XObject_name;
-  
-  if (! pdf_page->XObject_dict)
-    {
-      pdf_page->XObject_dict = pdf_new_obj (PT_DICTIONARY);
-      pdf_set_dict_entry (pdf_page->resources, "XObject", pdf_page->XObject_dict);
-    }
-
-  pdf_set_dict_entry (pdf_page->XObject_dict, & XObject_name [0], ind_ref);
-
-  return (pdf_page->last_XObject_name);
-}
 
 
 void pdf_write_g4_content_callback (pdf_file_handle pdf_file,

@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_prim.c,v 1.8 2003/03/10 01:49:50 eric Exp $
+ * $Id: pdf_prim.c,v 1.9 2003/03/11 23:43:56 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -594,6 +594,25 @@ unsigned long pdf_write_xref (pdf_file_handle pdf_file)
   for (ind_obj = pdf_file->first_ind_obj; ind_obj; ind_obj = ind_obj->next)
     fprintf (pdf_file->f, "%010ld 00000 n\r\n", ind_obj->file_offset);
   return (pdf_file->last_ind_obj->obj_num + 1);
+}
+
+
+/* this isn't really a PDF primitive data type */
+char pdf_new_XObject (pdf_page_handle pdf_page, struct pdf_obj *ind_ref)
+{
+  char XObject_name [4] = "Im ";
+
+  XObject_name [2] = ++pdf_page->last_XObject_name;
+  
+  if (! pdf_page->XObject_dict)
+    {
+      pdf_page->XObject_dict = pdf_new_obj (PT_DICTIONARY);
+      pdf_set_dict_entry (pdf_page->resources, "XObject", pdf_page->XObject_dict);
+    }
+
+  pdf_set_dict_entry (pdf_page->XObject_dict, & XObject_name [0], ind_ref);
+
+  return (pdf_page->last_XObject_name);
 }
 
 
