@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * bitblt routines
- * $Id: bitblt.c,v 1.13 2003/02/23 09:40:41 eric Exp $
+ * $Id: bitblt.c,v 1.14 2003/03/11 22:02:46 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -726,87 +726,3 @@ void rot_270 (Bitmap *src)  /* transpose + flip_v */
 }
 
 
-int32_t get_row_run_lengths (Bitmap *src,
-			     int32_t y,
-			     int32_t min_x, int32_t max_x,
-			     int32_t max_runs,
-			     run_t *runs)
-{
-  uint8_t *byte_ptr;
-  uint8_t byte;
-  int bit_pos;
-
-  uint32_t byte_cnt;
-  int last_bits;
-  bool last_flag = 0;
-
-  uint8_t pol = 0x00;  /* 0x00 = counting zeros (white),
-			  0xff = counting ones (black) */
-  int32_t left = 0;  /* left x coordinate of current run, relative */
-
-  uint32_t rl;
-  int32_t i = 0;
-
-  /* adjust coordinate system */
-  y -= src->rect.min.y;
-  min_x -= src->rect.min.x;
-  max_x -= src->rect.min.x;
-
-  byte_ptr = (uint8_t *) (src->bits + y * src->row_words);
-  byte_cnt = (max_x / 8) + 1 - (min_x / 8);
-  last_bits = max_x % 8;
-
-  rl = 0;
-  pol = 0x00;  /* initially count white pixels */
-
-  byte_ptr += min_x / 8;
-  bit_pos = min_x % 8;
-  byte = *(byte_ptr++);
-
-  /* is the first byte also the last? */
-  if (--byte_cnt == 0)
-    {
-      byte <<= (7 - last_bits);	  /* last byte may be partial */
-      bit_pos += (7 - last_bits);
-      last_flag = 1;
-    }
-
-  for (;;)
-    {
-      int b2 = rle_tab [bit_pos] [pol ^ byte];
-      rl += b2;
-      bit_pos += b2;
-      if (bit_pos == 8)
-	{
-	  if (last_flag)
-	    {
-	      if (rl)
-		{
-		  runs [i].value = pol;
-		  runs [i].left = left;
-		  runs [i++].width = rl;
-		}
-	      return (i);
-	    }
-	  bit_pos = 0;
-	  byte = *(byte_ptr++);
-	  if (--byte_cnt == 0)
-	    {
-	      byte <<= (7 - last_bits);	  /* last byte may be partial */
-	      bit_pos += (7 - last_bits);
-	      last_flag = 1;
-	    }
-	}
-      else
-	{
-	  runs [i].value = pol;
-	  runs [i].left = left;
-	  runs [i++].width = rl;
-	  left += rl;
-	  if (i == max_runs)
-	    return (-i);
-	  rl = 0;
-	  pol ^= 0xff;
-	}
-    }
-}
