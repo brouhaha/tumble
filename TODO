@@ -1,46 +1,49 @@
 tiff2pdf TODO list
-$Id: TODO,v 1.2 2002/01/02 02:48:07 eric Exp $
+$Id: TODO,v 1.3 2002/01/02 04:49:55 eric Exp $
 
 No particular order.  Page numbers refer to _Portable Document Format
 Reference Manual_ by Adobe Systems Incorporated, Addison-Wesley, 1993.
 
-optimize bitmap rotation
+-----------------------------------------------------------------------------
+* optimize bitmap rotation
 
-crop
+* crop
 
-page sizes
-    metric
-    check page size, if off by too much, generate warning message and use actual scan size
-    multiple page sizes, pick the right one?
+* page sizes
+    * metric
+    * check page size, if off by too much, generate warning message and
+      use actual scan size
+    * multiple page sizes, pick the right one?
 
-sort out use of float and double types
+* sort out use of float and double types
 
-range checking
-    rotation (0, 90, 180, or 270)
-    page number style (D, r, R, a, A)
+* range checking
+    * rotation (0, 90, 180, or 270)
+    * page number style (D, r, R, a, A)
 
-no control file mode - just grab all images from TIFF files
+* no control file mode - just grab all images from TIFF files
 
-enhance Panda
-    bookmarks (outline)
-    page labels
-    in-memory images
-    page tree balancing
-    imagemask
-    thumbnails
+* enhance Panda
+    * bookmarks (outline)
+    * name trees, number trees
+    * page labels
+    * in-memory images
+    * page tree balancing
+    * imagemask
+    * thumbnails
 
-PDF Page rotate attribute (p. 53)?
+* PDF Page rotate attribute (p. 53)?
 
-watermarking - in image?
+* watermarking - in image?
 
-? split into two tools, one to process TIFF files,
-    and one to convert a single multipage TIFF into a PDF
+* ??? split into two tools, one to process TIFF files,
+  and one to convert a single multipage TIFF into a PDF
 
-support flip, transpose
+* support flip, transpose
 
-support JPEG, PNG, and other input file formats
+* support JPEG, PNG, and other input file formats
 
-generate text, line art - option to embed fonts
+* generate text, line art - option to embed fonts
 
-overlay G4 images in different colors - automatic separation?
-  draw images with ImageMask set, using the fill color (p. 79)
+* overlay G4 images in different colors - automatic separation?
+  draw overlay images with ImageMask set, using the fill color (p. 79)
