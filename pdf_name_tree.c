@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_name_tree.c,v 1.6 2003/03/08 01:23:05 eric Exp $
+ * $Id: pdf_name_tree.c,v 1.7 2003/03/08 01:31:23 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -116,6 +116,12 @@ static void pdf_split_name_tree_node (struct pdf_name_tree *tree,
       tree->root = new_root_node;
     }
 
+  if (parent->count == MAX_NAME_TREE_NODE_ENTRIES)
+    {
+      pdf_split_name_tree_node (tree, parent);
+      parent = node->parent;
+    }
+
   new_node = pdf_calloc (1, sizeof (struct pdf_name_tree_node));
   new_node->parent = parent;
   new_node->leaf = node->leaf;
@@ -133,8 +139,13 @@ static void pdf_split_name_tree_node (struct pdf_name_tree *tree,
   memcpy (& new_node->values [0],
 	  & node->values [i],
 	  j * sizeof (struct pdf_obj *));
+
   node->count = i;
   new_node->count = j;
+
+  if (! new_node->leaf)
+    for (i = 0; i < j; i++)
+      new_node->kids [i]->parent = new_node;
 
   /* set max_key of the old node */
   if (node->leaf)
