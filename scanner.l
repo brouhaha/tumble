@@ -25,6 +25,7 @@ input		{ return (INPUT); }
 odd		{ return (ODD); }
 output		{ return (OUTPUT); }
 page		{ return (PAGE); }
+pages		{ return (PAGES); }
 rotate		{ return (ROTATE); }
 size		{ return (SIZE); }
 

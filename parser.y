@@ -26,6 +26,7 @@
 %token INPUT
 
 %token PAGE
+%token PAGES
 %token BOOKMARK
 %token OUTPUT
 
@@ -81,17 +82,22 @@ input_clause_list:
 	'{' input_clauses '}' ;
 
 input_statement:
-	INPUT input_clause ;
+	INPUT input_clauses ;
 
 page_clause:
-	PAGE ranges ';'
-	| PAGE ranges ',' STRING ';' ;
+	PAGE INTEGER ';'
+	| PAGE INTEGER ',' STRING ';' ;
+
+pages_clause:
+	PAGES ranges ';'
+	| PAGES ranges ',' STRING ';' ;
 
 bookmark_clause:
-	BOOKMARK STRING ';' ;
+	BOOKMARK INTEGER ',' STRING ';'
+	| BOOKMARK STRING ';' ;
 
 output_clause:
-	page_clause | bookmark_clause
+	page_clause | pages_clause | bookmark_clause
 	| output_clause_list ;
 
 output_clauses:
@@ -102,5 +108,4 @@ output_clause_list:
 	'{' output_clauses '}' ;
 
 output_statement:
-	OUTPUT output_clause ;
-
+	OUTPUT output_clauses ;
