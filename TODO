@@ -1,5 +1,5 @@
 tumble TODO list
-$Id: TODO,v 1.19 2003/03/20 07:26:16 eric Exp $
+$Id: TODO,v 1.20 2003/03/25 01:36:56 eric Exp $
 
 No particular order.
 
@@ -80,6 +80,8 @@ PDF routines:
 
 [Page numbers refer to _Portable Document Format Reference Manual_ by
 Adobe Systems Incorporated, Addison-Wesley, 1993.]
+
+* Flate compression - including predictors
 
 * ModDate and CreationDate keys in Info dict
 
