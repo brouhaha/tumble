@@ -4,8 +4,8 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_bookmark.c,v 1.3 2003/03/05 12:39:50 eric Exp $
- * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ * $Id: pdf_bookmark.c,v 1.4 2003/03/05 12:44:33 eric Exp $
+ * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

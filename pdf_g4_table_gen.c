@@ -4,8 +4,8 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * G4 table generator
- * $Id: pdf_g4_table_gen.c,v 1.1 2003/02/22 02:02:06 eric Exp $
- * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ * $Id: pdf_g4_table_gen.c,v 1.2 2003/03/05 12:44:33 eric Exp $
+ * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

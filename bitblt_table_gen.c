@@ -4,8 +4,8 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * bitblt table generator
- * $Id: bitblt_table_gen.c,v 1.3 2003/02/20 04:11:35 eric Exp $
- * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ * $Id: bitblt_table_gen.c,v 1.4 2003/03/05 12:44:33 eric Exp $
+ * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
