@@ -5,7 +5,7 @@
  *           encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.13 2002/01/02 02:18:13 eric Exp $
+ * $Id: t2p.c,v 1.14 2002/01/02 08:39:39 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -179,53 +179,46 @@ void process_page_numbers (int page_index,
 }
 
 
-static Bitmap *rotate_bitmap (Bitmap *src,
+/* frees original! */
+static Bitmap *resize_bitmap (Bitmap *src,
 			      float x_resolution,
 			      float y_resolution,
 			      input_attributes_t input_attributes)
 {
   Rect src_rect;
-  Point dest_upper_left;
-  int scan;
+  Point dest_min;
+  Bitmap *dest;
 
-  if (input_attributes.has_page_size)
-    {
-      int width_pixels = input_attributes.page_size.width * x_resolution;
-      int height_pixels = input_attributes.page_size.height * y_resolution;
+  int width_pixels = input_attributes.page_size.width * x_resolution;
+  int height_pixels = input_attributes.page_size.height * y_resolution;
 
-      src_rect.upper_left.x = (src->width - width_pixels) / 2;
-      src_rect.upper_left.y = (src->height - height_pixels) / 2;
-      src_rect.lower_right.x = src_rect.upper_left.x + width_pixels;
-      src_rect.lower_right.y = src_rect.upper_left.y + height_pixels;
-    }
-  else
-    {
-      src_rect.upper_left.x = 0;
-      src_rect.upper_left.y = 0;
-      src_rect.lower_right.x = src->width;
-      src_rect.lower_right.y = src->height;
-    }
+  src_rect.min.x = (rect_width (& src->rect) - width_pixels) / 2;
+  src_rect.min.y = (rect_height (& src->rect) - height_pixels) / 2;
+  src_rect.max.x = src_rect.min.x + width_pixels;
+  src_rect.max.y = src_rect.min.y + height_pixels;
 
-  dest_upper_left.x = 0;
-  dest_upper_left.y = 0;
+  dest_min.x = 0;
+  dest_min.y = 0;
 
+  dest = bitblt (src, & src_rect, NULL, & dest_min, TF_SRC);
+  free_bitmap (src);
+  return (dest);
+}
+
+
+/* "in place" rotation */
+static void rotate_bitmap (Bitmap *src,
+			   input_attributes_t input_attributes)
+{
   switch (input_attributes.rotation)
     {
-    case 0: scan = ROT_0; break;
-    case 90: scan = ROT_90; break;
-    case 180: scan = ROT_180; break;
-    case 270: scan = ROT_270; break;
+    case 0: break;
+    case 90: rot_90 (src); break;
+    case 180: rot_180 (src); break;
+    case 270: rot_270 (src); break;
     default:
       fprintf (stderr, "rotation must be 0, 90, 180, or 270\n");
-      return (NULL);
     }
-
-  return (bitblt (src,
-		  src_rect,
-		  NULL,  /* dest_bitmap */
-		  dest_upper_left,
-		  scan,
-		  TF_SRC));
 }
 
 
@@ -256,8 +249,9 @@ boolean process_page (int image,  /* range 1 .. n */
   int width_points, height_points;  /* really 1/72 inch units rather than
 				       points */
 
-  Bitmap *src_bitmap;
-  Bitmap *dest_bitmap;
+  Rect rect;
+  Bitmap *bitmap;
+
   int row;
 
   panda_page *page;
@@ -366,29 +360,35 @@ boolean process_page (int image,  /* range 1 .. n */
 
   scanline_size = TIFFScanlineSize (in);
 
-  src_bitmap = create_bitmap (image_width, image_length);
-  if (! src_bitmap)
+  rect.min.x = 0;
+  rect.min.y = 0;
+  rect.max.x = image_width;
+  rect.max.y = image_length;
+
+  bitmap = create_bitmap (& rect);
+
+  if (! bitmap)
     {
       fprintf (stderr, "can't allocate bitmap\n");
       goto fail;
     }
 
-  if (src_bitmap->rowbytes != scanline_size)
+  if (bitmap->rowbytes != scanline_size)
     {
       printf ("image_width %d\n", image_width);
-      printf ("rowbytes %d\n", src_bitmap->rowbytes);
+      printf ("rowbytes %d\n", bitmap->rowbytes);
       printf ("TIFFScanlineSize %d\n", scanline_size);
     }
 
   for (row = 0; row < image_length; row++)
     TIFFReadScanline (in,
-		      src_bitmap->bits + row * src_bitmap->rowbytes,
+		      bitmap->bits + row * bitmap->rowbytes,
 		      row,
 		      0);
 
   for (row = 0; row < dest_image_length; row++)
     if (1 != TIFFReadScanline (in,
-			       src_bitmap->bits + row * src_bitmap->rowbytes,
+			       bitmap->bits + row * bitmap->rowbytes,
 			       row,
 			       0))
       {
@@ -396,15 +396,13 @@ boolean process_page (int image,  /* range 1 .. n */
 	goto fail;
       }
 
-  dest_bitmap = rotate_bitmap (src_bitmap,
-			       x_resolution,
-			       y_resolution,
-			       input_attributes);
-  if (! dest_bitmap)
-    {
-      fprintf (stderr, "can't allocate bitmap\n");
-      goto fail;
-    }
+  bitmap = resize_bitmap (bitmap,
+			      x_resolution,
+			      y_resolution,
+			      input_attributes);
+
+  rotate_bitmap (bitmap,
+		 input_attributes);
 
   tiff_temp_fd = mkstemp (tiff_temp_fn);
   if (tiff_temp_fd < 0)
@@ -420,11 +418,11 @@ boolean process_page (int image,  /* range 1 .. n */
       goto fail;
     }
 
-  TIFFSetField (tiff_temp, TIFFTAG_IMAGELENGTH, dest_bitmap->height);
-  TIFFSetField (tiff_temp, TIFFTAG_IMAGEWIDTH, dest_bitmap->width);
+  TIFFSetField (tiff_temp, TIFFTAG_IMAGELENGTH, rect_height (& bitmap->rect));
+  TIFFSetField (tiff_temp, TIFFTAG_IMAGEWIDTH, rect_width (& bitmap->rect));
   TIFFSetField (tiff_temp, TIFFTAG_PLANARCONFIG, planar_config);
 
-  TIFFSetField (tiff_temp, TIFFTAG_ROWSPERSTRIP, dest_bitmap->height);
+  TIFFSetField (tiff_temp, TIFFTAG_ROWSPERSTRIP, rect_height (& bitmap->rect));
 
   TIFFSetField (tiff_temp, TIFFTAG_RESOLUTIONUNIT, resolution_unit);
   TIFFSetField (tiff_temp, TIFFTAG_XRESOLUTION, dest_x_resolution);
@@ -435,9 +433,9 @@ boolean process_page (int image,  /* range 1 .. n */
   TIFFSetField (tiff_temp, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
   TIFFSetField (tiff_temp, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
 
-  for (row = 0; row < dest_bitmap->height; row++)
+  for (row = 0; row < rect_height (& bitmap->rect); row++)
     if (1 != TIFFWriteScanline (tiff_temp,
-				dest_bitmap->bits + row * dest_bitmap->rowbytes,
+				bitmap->bits + row * bitmap->rowbytes,
 				row,
 				0))
       {
@@ -447,11 +445,10 @@ boolean process_page (int image,  /* range 1 .. n */
 
   TIFFClose (tiff_temp);
 
-  width_points = (dest_bitmap->width / dest_x_resolution) * POINTS_PER_INCH;
-  height_points = (dest_bitmap->height / dest_y_resolution) * POINTS_PER_INCH;
+  width_points = (rect_width (& bitmap->rect) / dest_x_resolution) * POINTS_PER_INCH;
+  height_points = (rect_height (& bitmap->rect) / dest_y_resolution) * POINTS_PER_INCH;
 
-  free_bitmap (dest_bitmap);
-  free_bitmap (src_bitmap);
+  free_bitmap (bitmap);
 
   if ((height_points > PAGE_MAX_POINTS) || (width_points > PAGE_MAX_POINTS))
     {

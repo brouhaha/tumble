@@ -6,15 +6,24 @@ typedef struct Point
 
 typedef struct Rect
 {
-  Point upper_left;
-  Point lower_right;
+  Point min;
+  Point max;
 } Rect;
+
+static inline s32 rect_width (Rect *r)
+{
+  return (r->max.x - r->min.x);
+}
+
+static inline s32 rect_height (Rect *r)
+{
+  return (r->max.y - r->min.y);
+}
 
 typedef struct Bitmap
 {
   u8 *bits;
-  s32 width;
-  s32 height;
+  Rect rect;
   u32 rowbytes;
 } Bitmap;
 
@@ -25,24 +34,28 @@ typedef struct Bitmap
 #define TF_XOR 0x6
 
 
-#define FLIP_H    0x1
-#define FLIP_V    0x2
-#define TRANSPOSE 0x4
-
-#define ROT_0     0x0
-#define ROT_90    (TRANSPOSE + FLIP_H)
-#define ROT_180   (FLIP_H + FLIP_V)
-#define ROT_270   (TRANSPOSE + FLIP_V)
-
-
-Bitmap *create_bitmap (s32 width, s32 height);
+Bitmap *create_bitmap (Rect *rect);
 void free_bitmap (Bitmap *bitmap);
+
 boolean get_pixel (Bitmap *bitmap, Point coord);
 void set_pixel (Bitmap *bitmap, Point coord, boolean value);
 
+
 Bitmap *bitblt (Bitmap *src_bitmap,
-		Rect src_rect,
+		Rect   *src_rect,
 		Bitmap *dest_bitmap,
-		Point dest_upper_left,
-		int scan,
+		Point  *dest_min,
 		int tfn);
+
+
+/* in-place transformations */
+void flip_h (Bitmap *src);
+void flip_v (Bitmap *src);
+
+void rot_180 (Bitmap *src);  /* combination of flip_h and flip_v */
+
+/* "in-place" transformations - will allocate new memory and free old */
+void transpose (Bitmap *src);
+
+void rot_90 (Bitmap *src);   /* transpose + flip_h */
+void rot_270 (Bitmap *src);  /* transpose + flip_v */
