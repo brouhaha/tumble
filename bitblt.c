@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * bitblt routines
- * $Id: bitblt.c,v 1.12 2003/02/20 04:11:06 eric Exp $
+ * $Id: bitblt.c,v 1.13 2003/02/23 09:40:41 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -730,7 +730,7 @@ int32_t get_row_run_lengths (Bitmap *src,
 			     int32_t y,
 			     int32_t min_x, int32_t max_x,
 			     int32_t max_runs,
-			     uint32_t *run_length)
+			     run_t *runs)
 {
   uint8_t *byte_ptr;
   uint8_t byte;
@@ -742,6 +742,7 @@ int32_t get_row_run_lengths (Bitmap *src,
 
   uint8_t pol = 0x00;  /* 0x00 = counting zeros (white),
 			  0xff = counting ones (black) */
+  int32_t left = 0;  /* left x coordinate of current run, relative */
 
   uint32_t rl;
   int32_t i = 0;
@@ -780,7 +781,11 @@ int32_t get_row_run_lengths (Bitmap *src,
 	  if (last_flag)
 	    {
 	      if (rl)
-		run_length [i++] = rl;
+		{
+		  runs [i].value = pol;
+		  runs [i].left = left;
+		  runs [i++].width = rl;
+		}
 	      return (i);
 	    }
 	  bit_pos = 0;
@@ -794,7 +799,10 @@ int32_t get_row_run_lengths (Bitmap *src,
 	}
       else
 	{
-	  run_length [i++] = rl;
+	  runs [i].value = pol;
+	  runs [i].left = left;
+	  runs [i++].width = rl;
+	  left += rl;
 	  if (i == max_runs)
 	    return (-i);
 	  rl = 0;
