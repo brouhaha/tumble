@@ -1,5 +1,5 @@
 /*
-$Id: scanner.l,v 1.14 2002/01/01 02:16:50 eric Exp $
+$Id: scanner.l,v 1.15 2002/01/02 02:17:24 eric Exp $
 */
 
 %option case-insensitive
@@ -29,8 +29,13 @@ dot [\.]
 [\,;{}]		{ return (yytext [0]); }
 {dot}{dot}	{ LDBG(("elipsis\n")); return (ELIPSIS); }
 
+  /* decimal integer */
 {digit}+	{ yylval.integer = atoi (yytext); LDBG(("integer %d\n", yylval.integer)); return (INTEGER); }
-{digit}+\.{digit}+ { yylval.fp = atof (yytext); return (FLOAT); }
+
+  /* floating point number - tricky to make sure it doesn't grab an integer
+     followed by an elipsis */
+-?{digit}+\.{digit}+ { yylval.fp = atof (yytext); return (FLOAT); }
+-?{digit}+\./[^.] { yylval.fp = atof (yytext); return (FLOAT); }
 
 a		{ yylval.size.width = 8.5;
 		  yylval.size.height = 11.0;
