@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: tumble.c,v 1.16 2002/01/30 00:55:34 eric Exp $
+ * $Id: tumble.c,v 1.17 2002/08/25 05:22:42 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -377,10 +377,11 @@ boolean process_page (int image,  /* range 1 .. n */
 	goto fail;
       }
 
-  bitmap = resize_bitmap (bitmap,
-			      x_resolution,
-			      y_resolution,
-			      input_attributes);
+  if (input_attributes.has_page_size)
+    bitmap = resize_bitmap (bitmap,
+			    x_resolution,
+			    y_resolution,
+			    input_attributes);
 
   rotate_bitmap (bitmap,
 		 input_attributes);
