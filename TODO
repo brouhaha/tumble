@@ -1,0 +1,37 @@
+tiff2pdf TODO list
+$Id: TODO,v 1.1 2002/01/02 02:30:37 eric Exp $
+
+optimize bitmap rotation
+
+crop
+
+check page size, if off by too much, generate warning message and use actual scan size
+
+sort out use of float and double types
+
+range checking
+    rotation (0, 90, 180, or 270)
+    page number style (D, r, R, a, A)
+
+enhance Panda
+    bookmarks (outline)
+    page labels
+    in-memory images
+    page tree balancing
+    imagemask
+
+PDF page rotate attribute?
+
+watermarking - in image?
+
+split into two tools, one to process TIFF files,
+    and one to convert a single multipage TIFF into a PDF
+
+support flip, transpose
+
+support JPEG, PNG, and other input file formats
+
+generate text, line art - option to embed fonts
+
+overlay G4 images in different colors - automatic separation?
+  draw images with ImageMask set, using the fill color
