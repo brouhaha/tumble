@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Input handler dispatch
- * $Id: tumble_input.c,v 1.1 2003/03/19 22:54:08 eric Exp $
+ * $Id: tumble_input.c,v 1.2 2003/03/19 23:02:28 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -106,8 +106,11 @@ bool close_input_file (void)
   result = current_input_handler->close_input_file ();
   if (in_filename)
     free (in_filename);
-  fclose (in);
-  in = NULL;
+  if (in)
+    {
+      fclose (in);
+      in = NULL;
+    }
 
   return (result);
 }

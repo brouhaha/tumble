@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_tiff.c,v 1.1 2003/03/19 22:54:08 eric Exp $
+ * $Id: tumble_tiff.c,v 1.2 2003/03/19 23:02:28 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -65,8 +65,6 @@ bool open_tiff_input_file (FILE *f, char *name)
   if ((buf [0] != 0x49) || (buf [1] != 0x49))
     return (0);
 
-  /* $$$ should we dup the file descriptor here, so that later closing f
-     won't cause problems? */
   tiff_in = TIFFFdOpen (fileno (f), name, "r");
   if (! tiff_in)
     {
