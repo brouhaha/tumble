@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.26 2003/03/04 18:09:49 eric Exp $
+ * $Id: t2p.c,v 1.27 2003/03/10 01:58:09 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -237,8 +237,8 @@ void process_page_numbers (int page_index,
 
 /* frees original! */
 static Bitmap *resize_bitmap (Bitmap *src,
-			      float x_resolution,
-			      float y_resolution,
+			      double x_resolution,
+			      double y_resolution,
 			      input_attributes_t input_attributes)
 {
   Rect src_rect;
@@ -304,8 +304,8 @@ bool process_page (int image,  /* range 1 .. n */
   uint16_t planar_config;
 
   uint16_t resolution_unit;
-  float x_resolution, y_resolution;
-  float dest_x_resolution, dest_y_resolution;
+  double x_resolution, y_resolution;
+  double dest_x_resolution, dest_y_resolution;
 
   double width_points, height_points;  /* really 1/72 inch units rather than
 					  points */
