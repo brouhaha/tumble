@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.38 2003/03/19 22:54:07 eric Exp $
+ * $Id: tumble.c,v 1.39 2003/03/20 00:26:18 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -225,7 +225,9 @@ static int filename_length_without_suffix (char *in_fn)
 
   p = strrchr (in_fn, '.');
   if (p && ((strcasecmp (p, ".tif") == 0) ||
-	    (strcasecmp (p, ".tiff") == 0)))
+	    (strcasecmp (p, ".tiff") == 0) ||
+	    (strcasecmp (p, ".jpg") == 0) ||
+	    (strcasecmp (p, ".jpeg") == 0)))
     return (p - in_fn);
   return (len);
 }
