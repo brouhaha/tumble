@@ -1,11 +1,15 @@
 t2p TODO list
-$Id: TODO,v 1.12 2003/03/10 01:58:34 eric Exp $
+$Id: TODO,v 1.13 2003/03/12 00:18:04 eric Exp $
 
 No particular order.
 
 -----------------------------------------------------------------------------
 
 t2p:
+
+* pages containing multiple images
+
+* support JPEG (JFIF, EXIF)
 
 * page labels
 
@@ -25,7 +29,7 @@ t2p:
 
 * flip, transpose
 
-* support JPEG, PNG, and other input file formats
+* support PNG, BMP, and other input file formats
 
 * generate text, line art - option to embed fonts
 
@@ -39,19 +43,15 @@ t2p:
 
 * downsampling
 
-* ??? split into two tools, one to process TIFF files,
-  and one to convert a single multipage TIFF into a PDF
-
 -----------------------------------------------------------------------------
 
 bitblt routines:
 
-* G4 fax encoding
+* optimize G4 fax encoding
 
 * finish optimized bitblt code
 
-* optimize
-    * replace inner loops in flip_h and flip_v with Duff's Device
+* optimize inner loops in flip_h and flip_v with Duff's Device
 
 * check for endian problems
 
@@ -86,3 +86,5 @@ Adobe Systems Incorporated, Addison-Wesley, 1993.]
 * buffered streams (vs. current callback mechanism for unbuffered streams)
 
 * add support for streams with multiple filters
+
+* linearize ("optimize")
