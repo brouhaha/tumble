@@ -1,7 +1,11 @@
 /*
- * tiffg4: reencode a bilevel TIFF file as a single-strip TIFF Class F Group 4
+ * tiff2pdf: Create a PDF file from the contents of one or more
+ *           TIFF bilevel image files.  The images in the resulting
+ *           PDF file will be compressed using ITU-T T.6 (G4) fax
+ *           encoding.
+ *
  * Main program
- * $Id: t2p.c,v 1.9 2001/12/31 21:02:44 eric Exp $
+ * $Id: t2p.c,v 1.10 2001/12/31 21:41:03 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -123,7 +127,7 @@ boolean open_pdf_output_file (char *name)
 	return (1);
       }
   o = calloc (1, sizeof (output_file_t));
-  if (! 0)
+  if (! o)
     {
       fprintf (stderr, "can't calloc output file struct for '%s'\n", name);
       return (0);
@@ -167,10 +171,14 @@ boolean process_page (int image,  /* range 1 .. n */
 		      input_attributes_t input_attributes,
 		      bookmark_t *bookmarks)
 {
+  int result = 0;
+
   u32 image_length, image_width;
 #ifdef CHECK_DEPTH
   u32 image_depth;
 #endif
+
+  u16 samples_per_pixel;
   u16 bits_per_sample;
   u16 planar_config;
   u16 resolution_unit;
@@ -207,6 +215,13 @@ boolean process_page (int image,  /* range 1 .. n */
       fprintf (stderr, "can't get image width\n");
       goto fail;
     }
+
+  if (1 != TIFFGetField (in, TIFFTAG_SAMPLESPERPIXEL, & samples_per_pixel))
+    {
+      fprintf (stderr, "can't get samples per pixel\n");
+      goto fail;
+    }
+
 #ifdef CHECK_DEPTH
   if (1 != TIFFGetField (in, TIFFTAG_IMAGEDEPTH, & image_depth))
     {
@@ -244,6 +259,12 @@ boolean process_page (int image,  /* range 1 .. n */
 
   printf ("resolution unit %u, x resolution %f, y resolution %f\n",
 	  resolution_unit, x_resolution, y_resolution);
+
+  if (samples_per_pixel != 1)
+    {
+      fprintf (stderr, "samples per pixel %u, must be 1\n", samples_per_pixel);
+      goto fail;
+    }
 
 #ifdef CHECK_DEPTH
   if (image_depth != 1)
@@ -289,6 +310,7 @@ boolean process_page (int image,  /* range 1 .. n */
   TIFFSetField (tiff_temp, TIFFTAG_XRESOLUTION, x_resolution);
   TIFFSetField (tiff_temp, TIFFTAG_YRESOLUTION, y_resolution);
 
+  TIFFSetField (tiff_temp, TIFFTAG_SAMPLESPERPIXEL, samples_per_pixel);
   TIFFSetField (tiff_temp, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
   TIFFSetField (tiff_temp, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
   TIFFSetField (tiff_temp, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
@@ -309,8 +331,8 @@ boolean process_page (int image,  /* range 1 .. n */
   _TIFFfree (buffer);
   TIFFClose (tiff_temp);
 
-  height_points = (image_width / x_resolution) * POINTS_PER_INCH;
-  width_points = (image_length / y_resolution) * POINTS_PER_INCH;
+  width_points = (image_width / x_resolution) * POINTS_PER_INCH;
+  height_points = (image_length / y_resolution) * POINTS_PER_INCH;
 
   if ((height_points > PAGE_MAX_POINTS) || (width_points > PAGE_MAX_POINTS))
     {
@@ -332,12 +354,12 @@ boolean process_page (int image,  /* range 1 .. n */
 		  tiff_temp_fn,
 		  panda_image_tiff);
 
-  unlink (tiff_temp_fn);
-
-  return (1);
+  result = 1;
 
  fail:
-  return (0);
+  if (tiff_temp_fd)
+    unlink (tiff_temp_fn);
+  return (result);
 }
 
 
