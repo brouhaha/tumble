@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * bitblt table generator
- * $Id: bitblt_table_gen.c,v 1.5 2003/03/11 22:39:22 eric Exp $
+ * $Id: bitblt_table_gen.c,v 1.6 2003/03/11 22:40:34 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,6 +27,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 
 void gen_bit_reverse_table (bool header)
 {
