@@ -1,0 +1,69 @@
+tumble: build a PDF file from image files
+Copyright 2003 Eric Smith <eric@brouhaha.com>
+$Id: README,v 1.1 2003/03/16 07:37:16 eric Exp $
+
+Tumble is a utility to construct PDF files from one or more image
+files.  Currently the only input image format supported is black &
+white TIFF files, which may be either single- or multi-page files.  In
+the future additional file formats will be supported, including gray
+scale and color.  Black and white images will be encoded in the PDF
+output using lossless Group 4 fax compression (ITU-T recommendation
+T.6).  This provides a very good compression ratio for text and line
+art.
+
+The current version of Tumble will only work on little-endian systems,
+such as x86, VAX, and Alpha.  The byte order dependencies will be fixed
+in a later release.
+
+The input and output files can be specified on the command line.
+Alternatively, a control file, typically with a ".tum" suffix, may be
+used which allows for more control over the files and options.
+
+The general command line syntax is:
+
+    tumble [options] <input.tif>... -o <output.pdf>
+
+The options in this mode are:
+
+    -v        verbose
+    -b <fmt>  create bookmarks
+
+If the "-b" option is given, bookmarks will be created using the
+format string, which may contain arbitrary text and/or the following
+format specifiers:
+
+    %F  file name, sans suffix  e.g., "foo.tif" will just appear as "foo"
+    %p  page number of input file, useful for multipage TIFF files
+
+There is currently no documentation for the control file syntax, as it
+is still being refined, and many of the options planned for use in
+control files are not yet fully implemented.  Features that will be
+available in control files include:
+
+    image resolution specification - useful for input files with
+        unspecified resolution, or to override
+    image rotation, in units of 90 degrees
+    image cropping
+    grouping to allow different specifications for individual pages
+        or groups of consecutive pages (e.g., chapters)
+    ability to control operations independently on even and odd pages
+        (e.g., different rotation or cropping)
+    more flexible bookmark control
+    page labels, so that the PDF file can present the actual document
+        page numbers such as xvii or 3-27
+
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.  Note that permission is
+not granted to redistribute this program under the terms of any other
+version of the General Public License.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA

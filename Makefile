@@ -1,6 +1,6 @@
 # tumble: build a PDF file from image files
 # Makefile
-# $Id: Makefile,v 1.32 2003/03/14 00:24:37 eric Exp $
+# $Id: Makefile,v 1.33 2003/03/16 07:37:16 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -35,6 +35,8 @@ LDLIBS = -ltiff -ljpeg -lz -lm
 ifdef DEBUG
 CFLAGS := $(CFLAGS) -g
 LDFLAGS := $(LDFLAGS) -g
+else
+CFLAGS := $(CFLAGS) -O3
 endif
 
 ifdef EFENCE
@@ -55,7 +57,7 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.27
+VERSION = 0.28
 
 PACKAGE = tumble
 
@@ -69,7 +71,7 @@ CSRCS = tumble.c semantics.c \
 OSRCS = scanner.l parser.y
 HDRS = tumble.h semantics.h bitblt.h bitblt_tables.h \
 	pdf.h pdf_private.h pdf_util.h pdf_prim.h pdf_name_tree.h
-MISC = COPYING Makefile
+MISC = COPYING README INSTALL Makefile
 
 DISTFILES = $(MISC) $(HDRS) $(CSRCS) $(OSRCS)
 DISTNAME = $(PACKAGE)-$(VERSION)

@@ -1,0 +1,18 @@
+tumble: build a PDF file from image files
+Copyright 2003 Eric Smith <eric@brouhaha.com>
+$Id: INSTALL,v 1.1 2003/03/16 07:37:16 eric Exp $
+
+Tumble requires libtiff, which in turn requires libjpeg and libz:
+
+    http://www.libtiff.org/
+    http://www.???.org */
+
+Building Tumble requires GNU Make, GCC, Bison, and Flex, all of which are
+free software provided by the Free Software Foundation.  These are provided
+as part of most Linux distributions, and are also avaiable for many other
+operatng systems.  See the FSF web site for more information
+
+    http://www.gnu.org/
+
+The supplied Makefile should work on most systems with only minor
+modifications.
