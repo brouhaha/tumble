@@ -1,6 +1,6 @@
 # t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.24 2003/03/12 02:57:06 eric Exp $
+# $Id: Makefile,v 1.25 2003/03/12 03:08:10 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,7 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.11
+VERSION = 0.20
 
 PACKAGE = t2p
 
