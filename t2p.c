@@ -5,7 +5,7 @@
  *           encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.11 2001/12/31 22:11:43 eric Exp $
+ * $Id: t2p.c,v 1.12 2002/01/01 02:16:50 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -179,6 +179,42 @@ void process_page_numbers (int page_index,
 }
 
 
+static Bitmap *rotate_bitmap (Bitmap *src, int rotation)
+{
+  Rect src_rect;
+  Point dest_upper_left;
+  int scan;
+
+  src_rect.upper_left.x = 0;
+  src_rect.upper_left.y = 0;
+  src_rect.lower_right.x = src->width;
+  src_rect.lower_right.y = src->height;
+
+  dest_upper_left.x = 0;
+  dest_upper_left.y = 0;
+
+  switch (rotation)
+    {
+    case 0: scan = ROT_0; break;
+    case 90: scan = ROT_90; break;
+    case 180: scan = ROT_180; break;
+    case 270: scan = ROT_270; break;
+    default:
+      fprintf (stderr, "rotation must be 0, 90, 180, or 270\n");
+      return (NULL);
+    }
+
+  return (bitblt (src,
+		  src_rect,
+		  NULL,  /* dest_bitmap */
+		  dest_upper_left,
+		  scan,
+		  TF_SRC));
+}
+
+
+#define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
+
 boolean process_page (int image,  /* range 1 .. n */
 		      input_attributes_t input_attributes,
 		      bookmark_t *bookmarks)
@@ -186,6 +222,7 @@ boolean process_page (int image,  /* range 1 .. n */
   int result = 0;
 
   u32 image_length, image_width;
+  u32 dest_image_length, dest_image_width;
 #ifdef CHECK_DEPTH
   u32 image_depth;
 #endif
@@ -193,14 +230,19 @@ boolean process_page (int image,  /* range 1 .. n */
   u16 samples_per_pixel;
   u16 bits_per_sample;
   u16 planar_config;
+
   u16 resolution_unit;
   float x_resolution, y_resolution;
+  float dest_x_resolution, dest_y_resolution;
+
+  int scanline_size;
+
   int width_points, height_points;  /* really 1/72 inch units rather than
 				       points */
 
-
-  char *buffer;
-  u32 row;
+  Bitmap *src_bitmap;
+  Bitmap *dest_bitmap;
+  int row;
 
   panda_page *page;
 
@@ -298,6 +340,17 @@ boolean process_page (int image,  /* range 1 .. n */
       goto fail;
     }
 
+  width_points = (image_width / x_resolution) * POINTS_PER_INCH;
+  height_points = (image_length / y_resolution) * POINTS_PER_INCH;
+
+  if ((height_points > PAGE_MAX_POINTS) || (width_points > PAGE_MAX_POINTS))
+    {
+      fprintf (stdout, "image too large (max %d inches on a side\n", PAGE_MAX_INCHES);
+      goto fail;
+    }
+
+  printf ("height_points %d, width_points %d\n", height_points, width_points);
+
   tiff_temp_fd = mkstemp (tiff_temp_fn);
   if (tiff_temp_fd < 0)
     {
@@ -312,47 +365,92 @@ boolean process_page (int image,  /* range 1 .. n */
       goto fail;
     }
 
-  TIFFSetField (tiff_temp, TIFFTAG_IMAGELENGTH, image_length);
-  TIFFSetField (tiff_temp, TIFFTAG_IMAGEWIDTH, image_width);
+  printf ("rotation %d\n", input_attributes.rotation);
+
+  if ((input_attributes.rotation == 90) || (input_attributes.rotation == 270))
+    {
+      dest_image_width  = image_length;
+      dest_image_length = image_width;
+      dest_x_resolution = y_resolution;
+      dest_y_resolution = x_resolution;
+      SWAP (int, width_points, height_points);
+    }
+  else
+    {
+      dest_image_width = image_width;
+      dest_image_length = image_length;
+      dest_x_resolution = x_resolution;
+      dest_y_resolution = y_resolution;
+    }
+
+  TIFFSetField (tiff_temp, TIFFTAG_IMAGELENGTH, dest_image_length);
+  TIFFSetField (tiff_temp, TIFFTAG_IMAGEWIDTH, dest_image_width);
   TIFFSetField (tiff_temp, TIFFTAG_PLANARCONFIG, planar_config);
 
-  TIFFSetField (tiff_temp, TIFFTAG_ROWSPERSTRIP, image_length);
+  TIFFSetField (tiff_temp, TIFFTAG_ROWSPERSTRIP, dest_image_length);
 
   TIFFSetField (tiff_temp, TIFFTAG_RESOLUTIONUNIT, resolution_unit);
-  TIFFSetField (tiff_temp, TIFFTAG_XRESOLUTION, x_resolution);
-  TIFFSetField (tiff_temp, TIFFTAG_YRESOLUTION, y_resolution);
+  TIFFSetField (tiff_temp, TIFFTAG_XRESOLUTION, dest_x_resolution);
+  TIFFSetField (tiff_temp, TIFFTAG_YRESOLUTION, dest_y_resolution);
 
   TIFFSetField (tiff_temp, TIFFTAG_SAMPLESPERPIXEL, samples_per_pixel);
   TIFFSetField (tiff_temp, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
   TIFFSetField (tiff_temp, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
   TIFFSetField (tiff_temp, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
 
-  buffer = _TIFFmalloc (TIFFScanlineSize (in));
-  if (! buffer)
+  scanline_size = TIFFScanlineSize (in);
+
+  src_bitmap = create_bitmap (image_width, image_length);
+  if (! src_bitmap)
     {
-      fprintf (stderr, "failed to allocate buffer\n");
+      fprintf (stderr, "can't allocate bitmap\n");
       goto fail;
+    }
+
+  if (src_bitmap->rowbytes != scanline_size)
+    {
+      printf ("image_width %d\n", image_width);
+      printf ("rowbytes %d\n", src_bitmap->rowbytes);
+      printf ("TIFFScanlineSize %d\n", scanline_size);
     }
 
   for (row = 0; row < image_length; row++)
+    TIFFReadScanline (in,
+		      src_bitmap->bits + row * src_bitmap->rowbytes,
+		      row,
+		      0);
+
+  for (row = 0; row < dest_image_length; row++)
+    if (1 != TIFFReadScanline (in,
+			       src_bitmap->bits + row * src_bitmap->rowbytes,
+			       row,
+			       0))
+      {
+	fprintf (stderr, "can't read TIFF scanline\n");
+	goto fail;
+      }
+
+  dest_bitmap = rotate_bitmap (src_bitmap, input_attributes.rotation);
+  if (! dest_bitmap)
     {
-      TIFFReadScanline (in, buffer, row, 0);
-      TIFFWriteScanline (tiff_temp, buffer, row, 0);
-    }
-
-  _TIFFfree (buffer);
-  TIFFClose (tiff_temp);
-
-  width_points = (image_width / x_resolution) * POINTS_PER_INCH;
-  height_points = (image_length / y_resolution) * POINTS_PER_INCH;
-
-  if ((height_points > PAGE_MAX_POINTS) || (width_points > PAGE_MAX_POINTS))
-    {
-      fprintf (stdout, "image too large (max %d inches on a side\n", PAGE_MAX_INCHES);
+      fprintf (stderr, "can't allocate bitmap\n");
       goto fail;
     }
 
-  printf ("height_points %d, width_points %d\n", height_points, width_points);
+  for (row = 0; row < dest_bitmap->height; row++)
+    if (1 != TIFFWriteScanline (tiff_temp,
+				dest_bitmap->bits + row * dest_bitmap->rowbytes,
+				row,
+				0))
+      {
+	fprintf (stderr, "can't write TIFF scanline\n");
+	goto fail;
+      }
+
+  TIFFClose (tiff_temp);
+
+  free_bitmap (dest_bitmap);
+  free_bitmap (src_bitmap);
 
   sprintf (pagesize, "[0 0 %d %d]", width_points, height_points);
 

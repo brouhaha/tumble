@@ -59,9 +59,11 @@
 
 %type <fp> unit
 
-
-
 %type <fp> length
+
+%type <integer> orientation
+
+%type <size> page_size
 
 %%
 
@@ -96,9 +98,9 @@ rotate_clause:
 	ROTATE INTEGER ';' { input_set_rotation ($2) } ;
 
 unit:
-	/* empty */  /* default to INCH */ { $$ = 25.4; }
-	| CM { $$ = 1.0; }
-	| INCH { $$ = 25.4; } ;
+	/* empty */  /* default to INCH */ { $$ = 1.0; }
+	| CM { $$ = (1.0 / 25.4); }
+	| INCH { $$ = 1.0; } ;
 
 length:
 	FLOAT unit { $$ = $1 * $2; } ;
@@ -110,13 +112,23 @@ crop_clause:
 	| CROP length ',' length ',' length ',' length ';' ;
 
 orientation:
-	PORTRAIT
-	| LANDSCAPE ;
+	PORTRAIT { $$ = 0; }
+	| LANDSCAPE { $$ = 1; } ;
+
+page_size:
+	PAGE_SIZE { $$ = $1; }
+	| PAGE_SIZE orientation { if ($2)
+                                    {
+                                      $$.width = $1.height;
+				      $$.height = $1.width;
+                                    }
+                                  else
+                                    $$ = $1;
+                                }
+	| length ',' length { $$.width = $1; $$.height = $3; } ;
 
 size_clause:
-	SIZE PAGE_SIZE ';'
-	| SIZE PAGE_SIZE orientation ';'
-	| SIZE length ',' length ';' ;
+	SIZE page_size ';' { input_set_page_size ($2); } ;
 
 resolution_clause:
 	RESOLUTION FLOAT unit ;

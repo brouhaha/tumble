@@ -52,6 +52,7 @@ void input_pop_context (void);
 void input_set_modifier_context (input_modifier_type_t type);
 void input_set_file (char *name);
 void input_set_rotation (int rotation);
+void input_set_page_size (page_size_t size);
 void input_images (range_t range);
 
 /* semantic routines for output statements */

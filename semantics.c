@@ -10,8 +10,8 @@
 
 typedef struct
 {
-  boolean has_size;
-  page_size_t size;
+  boolean has_page_size;
+  page_size_t page_size;
 
   boolean has_rotation;
   int rotation;
@@ -182,6 +182,14 @@ void input_set_rotation (int rotation)
   last_input_context->modifiers [current_modifier_context].has_rotation = 1;
   last_input_context->modifiers [current_modifier_context].rotation = rotation;
   SDBG(("rotation %d\n", rotation));
+}
+
+void input_set_page_size (page_size_t size)
+{
+  last_input_context->modifiers [current_modifier_context].has_page_size = 1;
+  last_input_context->modifiers [current_modifier_context].page_size = size;
+  printf ("page size %f, %f\n", size.width, size.height);
+  SDBG(("page size %f, %f\n", size.width, size.height));
 }
 
 static void increment_input_image_count (int count)
@@ -423,14 +431,42 @@ static char *get_input_file (input_context_t *context)
   exit (2);
 }
 
-static int get_input_rotation (input_context_t *context, input_modifier_type_t type)
+static boolean get_input_rotation (input_context_t *context,
+				   input_modifier_type_t type,
+				   int *rotation)
 {
   for (; context; context = context->parent)
     {
       if (context->modifiers [type].has_rotation)
-	return (context->modifiers [type].rotation);
+	{
+	  * rotation = context->modifiers [type].rotation;
+	  return (1);
+	}
       if (context->modifiers [INPUT_MODIFIER_ALL].has_rotation)
-	return (context->modifiers [INPUT_MODIFIER_ALL].rotation);
+	{
+	  * rotation = context->modifiers [INPUT_MODIFIER_ALL].rotation;
+	  return (1);
+	}
+    }
+  return (0);  /* default */
+}
+
+static boolean get_input_page_size (input_context_t *context,
+				    input_modifier_type_t type,
+				    page_size_t *page_size)
+{
+  for (; context; context = context->parent)
+    {
+      if (context->modifiers [type].has_page_size)
+	{
+	  * page_size = context->modifiers [type].page_size;
+	  return (1);
+	}
+      if (context->modifiers [INPUT_MODIFIER_ALL].has_page_size)
+	{
+	  * page_size = context->modifiers [INPUT_MODIFIER_ALL].page_size;
+	  return (1);
+	}
     }
   return (0);  /* default */
 }
@@ -473,10 +509,24 @@ void dump_input_tree (void)
     for (i = image->range.first; i <= image->range.last; i++)
       {
 	input_modifier_type_t parity = (i % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
-	printf ("file '%s' image %d, rotation %d\n",
+	boolean has_rotation, has_page_size;
+	int rotation;
+	page_size_t page_size;
+
+	has_rotation = get_input_rotation (image->input_context,
+					   parity,
+					   & rotation);
+	has_page_size = get_input_page_size (image->input_context,
+					     parity,
+					     & page_size);
+	printf ("file '%s' image %d",
 	        get_input_file (image->input_context),
-		i, 
-		get_input_rotation (image->input_context, parity));
+		i);
+	if (has_rotation)
+	  printf (" rotation %d", rotation);
+	if (has_page_size)
+	  printf (" size %f, %f", page_size.width, page_size.height);
+	printf ("\n");
       }
 }
 
@@ -611,8 +661,15 @@ boolean process_specs (void)
       parity = ((image->range.first + i) % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
 
       memset (& input_attributes, 0, sizeof (input_attributes));
-      input_attributes.rotation = get_input_rotation (image->input_context,
-						      parity);;
+
+      input_attributes.rotation = 0;
+      input_attributes.has_rotation = get_input_rotation (image->input_context,
+							  parity,
+							  & input_attributes.rotation);
+
+      input_attributes.has_page_size = get_input_page_size (image->input_context,
+							    parity,
+							    & input_attributes.page_size);
 
       process_page (image->range.first + i,
 		    input_attributes,

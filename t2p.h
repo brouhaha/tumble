@@ -1,7 +1,12 @@
 typedef struct
 {
-  page_size_t size;
+  boolean has_page_size;
+  page_size_t page_size;
+
+  boolean has_rotation;
   int rotation;
+
+  boolean has_crop;
   crop_t crop;
 } input_attributes_t;
 

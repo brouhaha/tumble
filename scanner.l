@@ -1,5 +1,5 @@
 /*
-$Id: scanner.l,v 1.13 2001/12/31 22:11:43 eric Exp $
+$Id: scanner.l,v 1.14 2002/01/01 02:16:50 eric Exp $
 */
 
 %option case-insensitive
@@ -32,20 +32,20 @@ dot [\.]
 {digit}+	{ yylval.integer = atoi (yytext); LDBG(("integer %d\n", yylval.integer)); return (INTEGER); }
 {digit}+\.{digit}+ { yylval.fp = atof (yytext); return (FLOAT); }
 
-a		{ yylval.size.width = 8.5 * 25.4;
-		  yylval.size.height = 11.0 * 25.4;
+a		{ yylval.size.width = 8.5;
+		  yylval.size.height = 11.0;
                   return (PAGE_SIZE); }
-b		{ yylval.size.width = 11.0 * 25.4;
-                  yylval.size.height = 17.0 * 25.4;
+b		{ yylval.size.width = 11.0;
+                  yylval.size.height = 17.0;
                   return (PAGE_SIZE); }
-c		{ yylval.size.width = 17.0 * 25.4;
-                  yylval.size.height = 22.0 * 25.4;
+c		{ yylval.size.width = 17.0;
+                  yylval.size.height = 22.0;
                   return (PAGE_SIZE); }
-d		{ yylval.size.width = 22.0 * 25.4;
-                  yylval.size.height = 34.0 * 25.4;
+d		{ yylval.size.width = 22.0;
+                  yylval.size.height = 34.0;
                   return (PAGE_SIZE); }
-e		{ yylval.size.width = 34.0 * 25.4;
-                   yylval.size.height = 44.0 * 25.4;
+e		{ yylval.size.width = 34.0;
+                   yylval.size.height = 44.0;
                   return (PAGE_SIZE); }
 
 all		{ return (ALL); }
