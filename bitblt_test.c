@@ -6,20 +6,20 @@
 #include "bitblt.h"
 
 
-#define WIDTH 20
+#define WIDTH 44
 #define HEIGHT 9
 
 char test_data [HEIGHT][WIDTH] =
 {
-  ".....XXXXXXXXXX.....",
-  ".....XX.......X.....",
-  "XXXXXX.X......XXXXXX",
-  ".....X..X.....X.....",
-  ".....X...X....X.....",
-  ".....X....X...X.....",
-  ".....X.....X..X.....",
-  ".....XXXXXXXXXX.....",
-  ".....X.X.X.X.X......"
+  ".....XXXXXXXXXX.......XX............X......X",
+  ".....XX.......X.......X.X..........X......X.",
+  "XXXXXX.X......XXXXXX..X..X........X......X..",
+  ".....X..X.....X.......XX.........X......X...",
+  ".....X...X....X.......X.X.......X......X....",
+  ".....X....X...X.......X..X.....X......X.....",
+  ".....X.....X..X.......XX..... X......X......",
+  ".....XXXXXXXXXX.......X.X....X......X.......",
+  ".....X.X.X.X.X........X..X..X......X........"
 };
 
 Bitmap *setup (void)
@@ -71,11 +71,13 @@ int main (int argc, char *argv[])
 
   flip_v (b);
 
+  printf ("flipped vertically:\n");
   print_bitmap (stdout, b);
   printf ("\n");
 
   flip_h (b);
 
+  printf ("flipped horizontally:\n");
   print_bitmap (stdout, b);
   printf ("\n");
 
@@ -102,6 +104,7 @@ int main (int argc, char *argv[])
       exit (2);
     }
 
+  printf ("after bitblt\n");
   print_bitmap (stdout, b2);
 #endif
 
