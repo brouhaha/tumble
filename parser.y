@@ -12,6 +12,8 @@
 %token <fp> FLOAT
 %token <string> STRING
 
+%token ELIPSIS
+
 %token EVEN
 %token ODD
 %token ALL
@@ -32,16 +34,16 @@
 
 %%
 
-statements: statement | statements statement;
+statements: statement | statements statement ;
 
-statement: input_statement | output_statement;
+statement: input_statement | output_statement ;
 
 
-range:	INTEGER ".." INTEGER
-	| INTEGER;
+range:	INTEGER ELIPSIS INTEGER
+	| INTEGER ;
 
 ranges:	range
-	| ranges ',' range;
+	| ranges ',' range ;
 
 
 file_clause:
@@ -60,23 +62,26 @@ size_clause:
 	SIZE FLOAT ',' FLOAT ';' ;
 
 part:
-	EVEN | ODD | ALL;
+	EVEN | ODD | ALL ;
 
 part_clause:
-	part ';' ;
+	part input_clause ;
 
 input_clause:
 	part_clause
 	| file_clause | image_clause | rotate_clause
-	| crop_clause | size_clause;
+	| crop_clause | size_clause
+	| input_clause_list ;
 
 input_clauses:
 	input_clause
-	| input_clauses input_clause;
+	| input_clauses input_clause ;
+
+input_clause_list:
+	'{' input_clauses '}' ;
 
 input_statement:
-	INPUT '{' input_clauses '}' ;
-
+	INPUT input_clause ;
 
 page_clause:
 	PAGE ranges ';'
@@ -86,12 +91,16 @@ bookmark_clause:
 	BOOKMARK STRING ';' ;
 
 output_clause:
-	page_clause | bookmark_clause;
+	page_clause | bookmark_clause
+	| output_clause_list ;
 
 output_clauses:
 	output_clause
-	| output_clauses output_clause;
+	| output_clauses output_clause ;
+
+output_clause_list:
+	'{' output_clauses '}' ;
 
 output_statement:
-	OUTPUT '{' output_clauses '}' ;
+	OUTPUT output_clause ;
 

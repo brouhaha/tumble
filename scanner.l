@@ -11,6 +11,8 @@ alpha [a-zA-Z]
 
 %%
 
+\.\.		{ return (ELIPSIS); }
+
 {digit}+	{ yylval.integer = atoi (yytext); return (INTEGER); }
 
 all		{ return (ALL); }
