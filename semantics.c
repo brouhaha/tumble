@@ -7,6 +7,72 @@
 #include "parser.tab.h"
 
 
+typedef struct
+{
+  boolean has_size;
+  page_size_t size;
+
+  boolean has_rotation;
+  int rotation;
+
+  boolean has_crop;
+  crop_t crop;
+} input_modifiers_t;
+
+
+typedef struct input_context_t
+{
+  struct input_context_t *parent;
+  struct input_context_t *next;
+
+  int image_count;  /* how many pages reference this context,
+		      including those from subcontexts */
+
+  char *input_file;
+
+  input_modifiers_t modifiers [INPUT_MODIFIER_TYPE_COUNT];
+} input_context_t;
+
+
+typedef struct input_image_t
+{
+  struct input_image_t *next;
+  input_context_t *input_context;
+  range_t range;
+} input_image_t;
+
+
+typedef struct bookmark_t
+{
+  struct bookmark_t *next;
+  char *name;
+} bookmark_t;
+
+
+typedef struct output_context_t
+{
+  struct output_context_t *parent;
+  struct output_context_t *next;
+
+  int page_count;  /* how many pages reference this context,
+		      including those from subcontexts */
+
+  char *output_file;
+  bookmark_t *first_bookmark;
+  bookmark_t *last_bookmark;
+  char *page_number_format;
+} output_context_t;
+
+
+typedef struct output_page_t
+{
+  struct output_page_t *next;
+  output_context_t *output_context;
+  range_t range;
+  bookmark_t *bookmark_list;
+} output_page_t;
+
+
 #define SEMANTIC_DEBUG
 #ifdef SEMANTIC_DEBUG
 #define SDBG(x) printf x
@@ -87,7 +153,7 @@ void input_set_modifier_context (input_modifier_type_t type)
 #endif /* SEMANTIC_DEBUG */
 }
 
-void input_clone (void)
+static void input_clone (void)
 {
   input_context_t *new_input_context;
 
@@ -119,7 +185,7 @@ void input_set_rotation (int rotation)
   SDBG(("rotation %d\n", rotation));
 }
 
-void increment_input_image_count (int count)
+static void increment_input_image_count (int count)
 {
   input_context_t *context;
 
@@ -199,7 +265,7 @@ void output_pop_context (void)
   last_output_context = last_output_context->parent;
 };
 
-void output_clone (void)
+static void output_clone (void)
 {
   output_context_t *new_output_context;
 
@@ -257,7 +323,7 @@ void output_set_page_number_format (char *format)
   last_output_context->page_number_format = format;
 }
 
-void increment_output_page_count (int count)
+static void increment_output_page_count (int count)
 {
   output_context_t *context;
 
@@ -317,7 +383,7 @@ void yyerror (char *s)
 }
 
 
-char *get_input_file (input_context_t *context)
+static char *get_input_file (input_context_t *context)
 {
   for (; context; context = context->parent)
     if (context->input_file)
@@ -326,7 +392,7 @@ char *get_input_file (input_context_t *context)
   exit (2);
 }
 
-int get_input_rotation (input_context_t *context, input_modifier_type_t type)
+static int get_input_rotation (input_context_t *context, input_modifier_type_t type)
 {
   for (; context; context = context->parent)
     {
@@ -338,7 +404,7 @@ int get_input_rotation (input_context_t *context, input_modifier_type_t type)
   return (0);  /* default */
 }
 
-char *get_output_file (output_context_t *context)
+static char *get_output_file (output_context_t *context)
 {
   for (; context; context = context->parent)
     if (context->output_file)
@@ -347,7 +413,7 @@ char *get_output_file (output_context_t *context)
   exit (2);
 }
 
-char *get_output_page_number_format (output_context_t *context)
+static char *get_output_page_number_format (output_context_t *context)
 {
   for (; context; context = context->parent)
     if (context->page_number_format)
