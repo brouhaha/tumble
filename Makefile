@@ -1,6 +1,6 @@
 # t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.19 2003/03/07 23:23:49 eric Exp $
+# $Id: Makefile,v 1.20 2003/03/08 02:02:13 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -19,9 +19,13 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111  USA
 
 
+# Conditionals:  uncomment the following defines as nessary.  Note that a
+# "0" value is considered true by make, so to disable conditionals comment
+# them out or set them to a null string.
 
-DEBUG=1
-# STATIC=1
+#DEBUG=1
+#EFENCE=1
+#STATIC=1
 
 
 CFLAGS = -Wall
@@ -31,6 +35,9 @@ LDLIBS = -ltiff -ljpeg -lz -lm
 ifdef DEBUG
 CFLAGS := $(CFLAGS) -g
 LDFLAGS := $(LDFLAGS) -g
+endif
+
+ifdef EFENCE
 LDLIBS := $(LDLIBS) -lefence -lpthread
 endif
 
@@ -52,10 +59,10 @@ VERSION = 0.11
 
 PACKAGE = t2p
 
-TARGETS = t2p bitblt_test
+TARGETS = t2p
 
 CSRCS = t2p.c semantics.c \
-	bitblt.c bitblt_test.c bitblt_table_gen.c \
+	bitblt.c bitblt_table_gen.c \
 	pdf_g4.c pdf_g4_table_gen.c \
 	pdf.c pdf_util.c pdf_prim.c pdf_bookmark.c pdf_name_tree.c
 OSRCS = scanner.l parser.y
@@ -72,7 +79,10 @@ AUTO_HDRS = parser.tab.h bitblt_tables.h pdf_g4_tables.h
 AUTO_MISC = parser.output
 
 
-all: $(TARGETS)
+-include Maketest
+
+
+all: $(TARGETS) $(TEST_TARGETS)
 
 
 t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o \
@@ -88,8 +98,6 @@ bitblt_tables.h: bitblt_table_gen
 	./bitblt_table_gen >bitblt_tables.h
 
 bitblt_table_gen: bitblt_table_gen.o
-
-bitblt_test: bitblt_test.o bitblt.o
 
 pdf_g4_tables.h: pdf_g4_table_gen
 	./pdf_g4_table_gen >pdf_g4_tables.h
@@ -123,7 +131,7 @@ ls-lt:
 	$(YACC) $(YFLAGS) $<
 
 
-ALL_CSRCS = $(CSRCS) $(AUTO_CSRCS)
+ALL_CSRCS = $(CSRCS) $(AUTO_CSRCS) $(TEST_CSRCS)
 
 DEPENDS = $(ALL_CSRCS:.c=.d)
 
