@@ -77,16 +77,13 @@ input_file_clause:
 	FILE_KEYWORD STRING  ';'  { input_set_file ($2) } ;
 
 image_clause:
-	IMAGE INTEGER ';' { input_images ($2, $2); }
-	| IMAGE INTEGER modifier_clause_list ';' { input_images ($2, $2); } ;
+	IMAGE INTEGER ';' { input_images ($2, $2); } ;
 
 images_clause:
-	IMAGES image_ranges ';'
-	| IMAGES image_ranges modifier_clause_list ';'
-	| IMAGES image_ranges part_clauses ';' ;
+	IMAGES image_ranges ';' ;
 
 rotate_clause:
-	ROTATE INTEGER ';' ;
+	ROTATE INTEGER ';' { input_set_rotation ($2) };
 
 unit:
 	/* empty */  /* default to INCH */ { $$ = 25.4; }
@@ -124,20 +121,19 @@ modifier_clauses:
 modifier_clause_list:
 	'{' modifier_clauses '}' ;
 
-part:
-	EVEN | ODD | ALL ;
-
 part_clause:
-	part modifier_clause_list;
-
-part_clauses:
-	part_clause
-	| part_clauses part_clause;
+	ODD { input_set_modifier_context (INPUT_MODIFIER_ODD); }
+          modifier_clause_list ';'
+          { input_set_modifier_context (INPUT_MODIFIER_ALL); }
+	| EVEN { input_set_modifier_context (INPUT_MODIFIER_ODD); }
+	  modifier_clause_list ';'
+          { input_set_modifier_context (INPUT_MODIFIER_ALL); } ;
 
 input_clause:
 	input_file_clause
 	| image_clause
 	| images_clause
+	| part_clause
 	| modifier_clause
 	| input_clause_list ;
 

@@ -7,6 +7,14 @@
 #include "parser.tab.h"
 
 
+#define SEMANTIC_DEBUG
+#ifdef SEMANTIC_DEBUG
+#define SDBG(x) printf x
+#else
+#define SDBG(x)
+#endif
+
+
 FILE *yyin;
 int line;  /* line number in spec file */
 
@@ -16,9 +24,10 @@ int output_page_count;  /* total output pages in spec */
 
 
 input_context_t *current_input_context;
+input_modifier_type_t current_modifier_context;
 
 
-void input_push_context (input_context_type_t type)
+void input_push_context (void)
 {
   input_context_t *new_input_context;
 
@@ -52,17 +61,42 @@ void input_pop_context (void)
   current_input_context = current_input_context->parent_input_context;
 };
 
+void input_set_modifier_context (input_modifier_type_t type)
+{
+  current_modifier_context = type;
+#ifdef SEMANTIC_DEBUG
+  SDBG(("modifier type "));
+  switch (type)
+    {
+    case INPUT_MODIFIER_ALL: SDBG(("all")); break;
+    case INPUT_MODIFIER_ODD: SDBG(("odd")); break;
+    case INPUT_MODIFIER_EVEN: SDBG(("even")); break;
+    default: SDBG(("unknown %d", type));
+    }
+  SDBG(("\n"));
+#endif /* SEMANTIC_DEBUG */
+}
+
 void input_set_file (char *name)
 {
 };
 
+void input_set_rotation (int rotation)
+{
+  current_input_context->modifiers [current_modifier_context].has_rotation = 1;
+  current_input_context->modifiers [current_modifier_context].rotation = rotation;
+  SDBG(("rotation %d\n", rotation));
+}
+
 void input_images (int first, int last)
 {
   input_page_count += ((last - first) + 1);
+#ifdef SEMANTIC_DEBUG
   if (first == last)
-    printf ("image %d\n", first);
+    SDBG(("image %d\n", first));
   else
-    printf ("images %d..%d\n", first, last);
+    SDBG(("images %d..%d\n", first, last));
+#endif /* SEMANTIC_DEBUG */
 }
 
 
@@ -77,10 +111,12 @@ void output_set_file (char *name)
 void output_pages (int first, int last)
 {
   output_page_count += ((last - first) + 1);
+#ifdef SEMANTIC_DEBUG
   if (first == last)
-    printf ("page %d\n", first);
+    SDBG(("page %d\n", first));
   else
-    printf ("pages %d..%d\n", first, last);
+    SDBG(("pages %d..%d\n", first, last));
+#endif /* SEMANTIC_DEBUG */
 }
 
 
@@ -103,7 +139,7 @@ boolean parse_spec_file (char *fn)
 
   line = 1;
 
-  input_push_context (INPUT_CONTEXT_ALL);  /* create initial input context */
+  input_push_context ();  /* create initial input context */
   output_push_context ();  /* create initial output context */
 
   yyparse ();

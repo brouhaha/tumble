@@ -18,14 +18,6 @@ typedef struct
   double bottom;
 } crop_t;
 
-typedef enum
-{
-  INPUT_CONTEXT_ALL,
-  INPUT_CONTEXT_ODD,
-  INPUT_CONTEXT_EVEN
-} input_context_type_t;
-
-
 typedef struct
 {
   boolean has_size;
@@ -70,9 +62,11 @@ boolean parse_spec_file (char *fn);
 
 
 /* semantic routines for input statements */
-void input_push_context (input_context_type_t type);
+void input_push_context (void);
 void input_pop_context (void);
+void input_set_modifier_context (input_modifier_type_t type);
 void input_set_file (char *name);
+void input_set_rotation (int rotation);
 void input_images (int first, int last);
 
 /* semantic routines for output statements */
