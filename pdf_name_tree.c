@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_name_tree.c,v 1.4 2003/03/07 22:52:09 eric Exp $
+ * $Id: pdf_name_tree.c,v 1.5 2003/03/07 23:45:46 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -90,9 +90,12 @@ struct pdf_name_tree *pdf_new_name_tree (pdf_file_handle pdf_file,
 static void pdf_split_name_tree_node (struct pdf_name_tree *tree,
 				      struct pdf_name_tree_node *node)
 {
+  struct pdf_name_tree_node *parent;
   struct pdf_name_tree_node *new_node;
+  int i, j;
 
-  if (node == tree->root)
+  parent = node->parent;
+  if (! parent)
     {
       /* create new root above current root */
       struct pdf_name_tree_node *new_root_node;
@@ -108,15 +111,71 @@ static void pdf_split_name_tree_node (struct pdf_name_tree *tree,
       new_root_node->min_key = node->min_key;
       new_root_node->max_key = node->max_key;
 
+      parent = new_root_node;
       node->parent = new_root_node;
       tree->root = new_root_node;
     }
 
   new_node = pdf_calloc (1, sizeof (struct pdf_name_tree_node));
-  new_node->parent = node->parent;
+  new_node->parent = parent;
   new_node->leaf = node->leaf;
 
-  /* $$$ insert new node in parent's kids array */
+  /* move half the node's entries into the new node */
+  i = node->count / 2;
+  j = node->count - i;
+
+  memcpy (& new_node->kids [0],
+	  & node->kids [i],
+	  j * sizeof (struct pdf_name_tree_node *));
+  memcpy (& new_node->keys [0],
+	  & node->keys [i],
+	  j * sizeof (struct pdf_obj *));
+  memcpy (& new_node->values [0],
+	  & node->values [i],
+	  j * sizeof (struct pdf_obj *));
+  node->count = i;
+  new_node->count = j;
+
+  /* set max_key of the old node */
+  if (node->leaf)
+    node->max_key = node->keys [node->count - 1];
+  else
+    node->max_key = node->kids [node->count - 1]->max_key;
+
+  /* set min_key and max_key in the new node */
+  if (new_node->leaf)
+    {
+      new_node->min_key = new_node->keys [0];
+      new_node->max_key = new_node->keys [new_node->count - 1];
+    }
+  else
+    {
+      new_node->min_key = new_node->kids [0]->min_key;
+      new_node->max_key = new_node->kids [new_node->count - 1]->max_key;
+    }
+
+  /* insert new node in parent's kids array */
+  /* find entry of old node */
+  for (i = 0; i < parent->count; i++)
+    if (parent->kids [i] == node)
+      break;
+
+  /* it had better have been there! */
+  pdf_assert (i < parent->count);
+
+  /* the new node goes in the slot to the right of the old node */
+  i++;
+
+  /* move other entries right one position */
+  if (i != node->count)
+    {
+      memmove (& parent->kids [i+1],
+	       & parent->kids [i],
+	       (parent->count - i) * sizeof (struct pdf_name_tree_node *));
+    }
+
+  parent->kids [i] = new_node;
+  parent->count++;
 }
 
 
