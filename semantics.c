@@ -170,6 +170,7 @@ static void input_clone (void)
   memcpy (new_input_context, last_input_context, sizeof (input_context_t));
   new_input_context->image_count = 0;
   last_input_context->next = new_input_context;
+  last_input_context = new_input_context;
 }
 
 void input_set_file (char *name)
@@ -527,6 +528,7 @@ void dump_input_tree (void)
 	if (has_page_size)
 	  printf (" size %f, %f", page_size.width, page_size.height);
 	printf ("\n");
+	printf ("context: %08x\n", image->input_context);
       }
 }
 
