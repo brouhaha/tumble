@@ -1,6 +1,6 @@
 # tumble: build a PDF file from image files
 # Makefile
-# $Id: Makefile,v 1.35 2003/03/19 22:54:07 eric Exp $
+# $Id: Makefile,v 1.36 2003/03/19 23:03:29 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 # "0" value is considered true by make, so to disable conditionals comment
 # them out or set them to a null string.
 
-DEBUG=1
+#DEBUG=1
 #EFENCE=1
 #STATIC=1
 
