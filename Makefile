@@ -1,6 +1,6 @@
 # tiffg4: reencode a bilevel TIFF file as a single-strip TIFF Class F Group 4
 # Makefile
-# $Id: Makefile,v 1.2 2001/08/12 03:03:16 eric Exp $
+# $Id: Makefile,v 1.3 2001/12/27 20:44:15 eric Exp $
 # Copyright 2001 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -19,6 +19,22 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111  USA
 
 
-LDLIBS = -ltiff -lm
+CFLAGS = -g -I/usr/local/include/panda
+LDLIBS = -g -ltiff -lm -L/usr/local/lib/panda -lpanda -lpng
+YACC = bison
+YFLAGS = -d -v
 
-tiffg4: tiffg4.o
+bitblt_test: bitblt_test.o bitblt.o
+
+bitblt.o: bitblt.c
+
+tiff2pdf: tiff2pdf.o scanner.o parser.tab.o
+
+pandamain: pandamain.o
+
+
+%.tab.c %.tab.h: %.y
+	$(YACC) $(YFLAGS) $<
+
+# %.c: %.l
+# 	$(LEX) $(LFLAGS) $<
