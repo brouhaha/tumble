@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_tiff.c,v 1.2 2003/03/19 23:02:28 eric Exp $
+ * $Id: tumble_tiff.c,v 1.3 2003/03/20 00:20:52 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -255,6 +255,7 @@ bool process_tiff_image (int image,  /* range 1 .. n */
 			 image_info_t *image_info,
 			 pdf_page_handle page)
 {
+  bool result = 0;
   Rect rect;
   Bitmap *bitmap = NULL;
 
@@ -321,15 +322,12 @@ bool process_tiff_image (int image,  /* range 1 .. n */
 			  0); /* BlackIs1 */
 #endif
 
-  if (bitmap)
-    free_bitmap (bitmap);
-  return (page);
+  result = 1;
 
  fail:
   if (bitmap)
     free_bitmap (bitmap);
-
-  return (NULL);
+  return (result);
 }
 
 

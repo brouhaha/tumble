@@ -1,6 +1,6 @@
 # tumble: build a PDF file from image files
 # Makefile
-# $Id: Makefile,v 1.37 2003/03/19 23:52:25 eric Exp $
+# $Id: Makefile,v 1.38 2003/03/20 00:20:52 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -57,7 +57,7 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.30
+VERSION = 0.31
 
 PACKAGE = tumble
 
