@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_util.h,v 1.4 2003/03/04 17:58:36 eric Exp $
+ * $Id: pdf_util.h,v 1.5 2003/03/07 03:02:12 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,7 @@
 #include <assert.h>
 
 
-void pdf_fatal (char *fmt, ...);
+void pdf_fatal (char *fmt, ...) __attribute__ ((noreturn));
 
 void *pdf_calloc (size_t nmemb, size_t size);
 
