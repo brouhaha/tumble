@@ -1,6 +1,6 @@
 # tiff2pdf: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.5 2001/12/29 10:59:17 eric Exp $
+# $Id: Makefile,v 1.6 2001/12/29 20:16:46 eric Exp $
 # Copyright 2001 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -28,14 +28,33 @@ SRCS = bitblt.c bitblt_test.c tiff2pdf.c
 HDRS = type.h bitblt.h tiff2pdf.h
 MISC = Makefile scanner.l parser.y
 
+TARGETS = tiff2pdf bitblt_test
+
+AUTO_SRCS = scanner.c parser.tab.c
+AUTO_HDRS = parser.tab.h
+AUTO_MISC = parser.output
+
 tiff2pdf: tiff2pdf.o scanner.o parser.tab.o
 
 bitblt_test: bitblt_test.o bitblt.o
 
 
-%.tab.c %.tab.h: %.y
+clean:
+	rm -f *.o *.d $(TARGETS) $(AUTO_SRCS) $(AUTO_HDRS) $(AUTO_MISC) 
+
+
+%.tab.c %.tab.h %.output: %.y
 	$(YACC) $(YFLAGS) $<
 
 # %.c: %.l
 # 	$(LEX) $(LFLAGS) $<
 
+
+ALL_SRCS = $(SRCS) $(AUTO_SRCS)
+
+DEPENDS = $(ALL_SRCS:.c=.d)
+
+%.d: %.c
+	$(CC) -M -MG $(CFLAGS) $< | sed -e 's@ /[^ ]*@@g' -e 's@^\(.*\)\.o:@\1.d \1.o:@' > $@
+
+include $(DEPENDS)

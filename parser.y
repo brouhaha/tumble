@@ -69,16 +69,16 @@ range:
 	| INTEGER { $$.first = $1; $$.last = $1; } ;
 
 image_ranges:
-	range
-	| image_ranges ',' range ;
+	range { input_images ($1.first, $1.last); }
+	| image_ranges ',' range { input_images ($3.first, $3.last); } ;
 
 
 input_file_clause:
 	FILE_KEYWORD STRING  ';'  { open_tiff_input_file ($2) } ;
 
 image_clause:
-	IMAGE INTEGER ';'
-	| IMAGE INTEGER modifier_clause_list ';' ;
+	IMAGE INTEGER ';' { input_images ($2, $2); }
+	| IMAGE INTEGER modifier_clause_list ';' { input_images ($2, $2); } ;
 
 images_clause:
 	IMAGES image_ranges ';'
@@ -155,12 +155,12 @@ output_file_clause:
 	FILE_KEYWORD STRING  ';' { open_pdf_output_file ($2) } ;
 
 page_ranges:
-	range
-	| page_ranges ',' range ;
+	range { output_pages ($1.first, $1.last); }
+	| page_ranges ',' range { output_pages ($3.first, $3.last); } ;
 
 page_clause:
-	PAGE INTEGER ';'
-	| PAGE STRING ',' INTEGER ';' ;
+	PAGE INTEGER ';' { output_pages ($2, $2); }
+	| PAGE STRING ',' INTEGER ';' { output_pages ($4, $4); } ;
 
 pages_clause:
 	PAGES page_ranges ';'

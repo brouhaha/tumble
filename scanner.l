@@ -1,25 +1,36 @@
 /*
-$Id: scanner.l,v 1.7 2001/12/29 17:54:43 eric Exp $
+$Id: scanner.l,v 1.8 2001/12/29 20:16:46 eric Exp $
 */
 
 %option case-insensitive
 %option noyywrap
 
 %{
+#include <stdio.h>
 #include <string.h>
 #include "parser.tab.h"
+#include "type.h"
+#include "tiff2pdf.h"
+
+#ifdef SCANNER_DEBUG
+#define LDBG(x) printf x
+#else
+#define LDBG(x)
+#endif
 %}
 
 
 digit [0-9]
 alpha [a-zA-Z]
+dot [\.]
 
 %%
 
-\.\.		{ return (ELIPSIS); }
+[\,;{}]		{ return (yytext [0]); }
+{dot}{dot}	{ LDBG(("elipsis\n")); return (ELIPSIS); }
 
-{digit}+	{ yylval.integer = atoi (yytext); return (INTEGER); }
-{digit}+.{digit}* { yylval.fp = atof (yytext); return (FLOAT); }
+{digit}+	{ yylval.integer = atoi (yytext); LDBG(("integer %d\n", yylval.integer)); return (INTEGER); }
+{digit}+\.{digit}+ { yylval.fp = atof (yytext); return (FLOAT); }
 
 a		{ yylval.size.width = 8.5 * 25.4;
 		  yylval.size.height = 11.0 * 25.4;
@@ -57,12 +68,21 @@ resolution	{ return (RESOLUTION) ; }
 rotate		{ return (ROTATE); }
 size		{ return (SIZE); }
 
-\".*\"		{ yylval.string = strdup (yytext); return (STRING); }
+\".*\"		{ 
+                  int len = strlen (yytext) - 2;
+                  yylval.string = malloc (len + 1);
+                  memcpy (yylval.string, yytext + 1, len);
+                  yylval.string [len] = '\0';
+		  LDBG (("string \"%s\"\n", yylval.string));
+                  return (STRING);
+                }
 
-[ \t\n]+	/* whitespace */
+[ \t]+		/* whitespace */
+\n		{ line++; }
 
 --.*		/* Ada/VHDL style one-line comment */
+#.*		/* shell-style one-line comment */
 
-.		{ printf( "Unrecognized character: %s\n", yytext ); }
+.		{ fprintf (stderr, "Unrecognized character: %s\n", yytext); }
 
 %%
