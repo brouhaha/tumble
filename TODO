@@ -1,5 +1,5 @@
 t2p TODO list
-$Id: TODO,v 1.10 2003/03/04 17:58:36 eric Exp $
+$Id: TODO,v 1.11 2003/03/07 02:16:08 eric Exp $
 
 No particular order.
 
@@ -73,6 +73,7 @@ Adobe Systems Incorporated, Addison-Wesley, 1993.]
     * alternate destination specs (only is /Fit currently supported)
 
 * name trees, number trees
+    * when finalize is called, set flag and allow no further changes
 
 * page labels
 
