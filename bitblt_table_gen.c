@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * bitblt table generator
- * $Id: bitblt_table_gen.c,v 1.2 2003/02/19 02:34:35 eric Exp $
+ * $Id: bitblt_table_gen.c,v 1.3 2003/02/20 04:11:35 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -111,9 +111,7 @@ int main (int argc, char *argv[])
   gen_bit_reverse_table ();
   printf ("\n");
 
-  gen_run_length_table (0, "white_rle_tab");
-  printf ("\n");
-  gen_run_length_table (1, "black_rle_tab");
+  gen_run_length_table (0, "rle_tab");
   printf ("\n");
 
   return (0);
