@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf.h,v 1.11 2003/03/14 00:57:40 eric Exp $
+ * $Id: pdf.h,v 1.12 2003/03/19 22:54:07 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
  */
+
+
+#define POINTS_PER_INCH 72
+
+/* page size limited by Acrobat Reader to 45 inches on a side */
+#define PAGE_MAX_INCHES 45
+#define PAGE_MAX_POINTS (PAGE_MAX_INCHES * POINTS_PER_INCH)
 
 
 typedef struct pdf_file *pdf_file_handle;

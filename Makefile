@@ -1,6 +1,6 @@
 # tumble: build a PDF file from image files
 # Makefile
-# $Id: Makefile,v 1.34 2003/03/16 07:40:00 eric Exp $
+# $Id: Makefile,v 1.35 2003/03/19 22:54:07 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 # "0" value is considered true by make, so to disable conditionals comment
 # them out or set them to a null string.
 
-#DEBUG=1
+DEBUG=1
 #EFENCE=1
 #STATIC=1
 
@@ -57,19 +57,20 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.28
+VERSION = 0.29
 
 PACKAGE = tumble
 
 TARGETS = tumble
 
 CSRCS = tumble.c semantics.c \
+	tumble_input.c tumble_tiff.c tumble_jpeg.c \
 	bitblt.c bitblt_table_gen.c bitblt_g4.c g4_table_gen.c \
 	pdf.c pdf_util.c pdf_prim.c pdf_name_tree.c \
 	pdf_bookmark.c pdf_page_label.c \
 	pdf_text.c pdf_g4.c pdf_jpeg.c
 OSRCS = scanner.l parser.y
-HDRS = tumble.h semantics.h bitblt.h bitblt_tables.h \
+HDRS = tumble.h tumble_input.h semantics.h bitblt.h bitblt_tables.h \
 	pdf.h pdf_private.h pdf_util.h pdf_prim.h pdf_name_tree.h
 MISC = COPYING README INSTALL Makefile
 
@@ -90,7 +91,9 @@ AUTO_MISC = parser.output
 all: $(TARGETS) $(TEST_TARGETS)
 
 
-tumble: tumble.o scanner.o semantics.o parser.tab.o \
+tumble: tumble.o semantics.o \
+		tumble_input.o tumble_tiff.o tumble_jpeg.o \
+		scanner.o parser.tab.o \
 		bitblt.o bitblt_g4.o bitblt_tables.o g4_tables.o \
 		pdf.o pdf_util.o pdf_prim.o pdf_name_tree.o \
 		pdf_bookmark.o pdf_page_label.o \

@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.37 2003/03/19 07:39:55 eric Exp $
+ * $Id: tumble.c,v 1.38 2003/03/19 22:54:07 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -30,24 +30,16 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <tiffio.h>
-#define TIFF_REVERSE_BITS
 
-#include "bitblt.h"
 #include "semantics.h"
 #include "parser.tab.h"
 #include "tumble.h"
+#include "bitblt.h"
 #include "pdf.h"
+#include "tumble_input.h"
 
 
 #define MAX_INPUT_FILES 5000
-
-#define POINTS_PER_INCH 72
-
-/* page size limited by Acrobat Reader to 45 inches on a side */
-#define PAGE_MAX_INCHES 45
-#define PAGE_MAX_POINTS (PAGE_MAX_INCHES * POINTS_PER_INCH)
-
 
 typedef struct output_file_t
 {
@@ -60,18 +52,6 @@ typedef struct output_file_t
 int verbose;
 
 
-typedef enum
-  {
-    INPUT_FILE_TYPE_NONE,
-    INPUT_FILE_TYPE_TIFF,
-    INPUT_FILE_TYPE_JPEG
-  } input_file_type_t;
-
-
-char *in_filename;
-input_file_type_t in_type;
-FILE *in;
-TIFF *tiff_in;
 output_file_t *output_files;
 output_file_t *out;
 
@@ -79,7 +59,6 @@ output_file_t *out;
 char *progname;
 
 
-bool close_tiff_input_file (void);
 bool close_pdf_output_files (void);
 
 
@@ -123,142 +102,6 @@ void fatal (int ret, char *format, ...)
   close_input_file ();
   close_pdf_output_files ();
   exit (ret);
-}
-
-
-bool close_tiff_input_file (void)
-{
-  TIFFClose (tiff_in);
-  return (1);
-}
-
-
-bool open_tiff_input_file (FILE *f, char *name)
-{
-  tiff_in = TIFFFdOpen (fileno (f), name, "r");
-  if (! tiff_in)
-    {
-      fprintf (stderr, "can't open input file '%s'\n", name);
-      free (in_filename);
-      return (0);
-    }
-  in_type = INPUT_FILE_TYPE_TIFF;
-  return (1);
-}
-
-
-bool close_jpeg_input_file (void)
-{
-  return (1);
-}
-
-
-bool open_jpeg_input_file (FILE *f, char *name)
-{
-  in_type = INPUT_FILE_TYPE_JPEG;
-  return (1);
-}
-
-
-bool open_input_file (char *name)
-{
-  bool result;
-  uint8_t buf [2];
-  size_t l;
-
-  if (in)
-    {
-      if (strcmp (name, in_filename) == 0)
-	return (1);
-      close_input_file ();
-    }
-  in_filename = strdup (name);
-  if (! in_filename)
-    {
-      fprintf (stderr, "can't strdup input filename '%s'\n", name);
-      return (0);
-    }
-
-  in = fopen (name, "rb");
-  if (! in)
-    return (0);
-
-  l = fread (& buf [0], 1, sizeof (buf), in);
-  if (l != sizeof (buf))
-    return (0);
-
-  rewind (in);
-
-  if ((buf [0] == 0x49) && (buf [1] == 0x49))
-    result = open_tiff_input_file (in, name);
-  else if ((buf [0] == 0xff) && (buf [1] == 0xd8))
-    result = open_jpeg_input_file (in, name);
-  else
-    {
-      fprintf (stderr, "unrecognized file header in file '%s'\n", name);
-      result = 0;
-    }
-  if (! result)
-    {
-      if (in)
-	fclose (in);
-      in = NULL;
-      in_type = INPUT_FILE_TYPE_NONE;
-    }
-  return (result);
-}
-
-
-bool close_input_file (void)
-{
-  bool result;
-
-  switch (in_type)
-    {
-    case INPUT_FILE_TYPE_NONE:
-      return (1);
-    case INPUT_FILE_TYPE_TIFF:
-      result = close_tiff_input_file ();
-      break;
-    case INPUT_FILE_TYPE_JPEG:
-      result = close_jpeg_input_file ();
-      break;
-    default:
-      fatal (3, "internal error: bad input file type\n");
-    }
-
-  if (in_filename)
-    free (in_filename);
-  fclose (in);
-  in = NULL;
-
-  return (result);
-}
-
-
-bool last_tiff_input_page (void)
-{
-  return (TIFFLastDirectory (tiff_in));
-}
-
-
-bool last_jpeg_input_page (void)
-{
-  return (1);
-}
-
-
-bool last_input_page (void)
-{
-  switch (in_type)
-    {
-    case INPUT_FILE_TYPE_TIFF:
-      return (last_tiff_input_page ());
-    case INPUT_FILE_TYPE_JPEG:
-      return (last_jpeg_input_page ());
-    default:
-      fatal (3, "internal error: bad input file type\n");
-    }
 }
 
 
@@ -335,287 +178,23 @@ bool open_pdf_output_file (char *name,
 }
 
 
-/* frees original! */
-static Bitmap *resize_bitmap (Bitmap *src,
-			      double x_resolution,
-			      double y_resolution,
-			      input_attributes_t input_attributes)
-{
-  Rect src_rect;
-  Point dest_min;
-  Bitmap *dest;
-
-  int width_pixels = input_attributes.page_size.width * x_resolution;
-  int height_pixels = input_attributes.page_size.height * y_resolution;
-
-  src_rect.min.x = (rect_width (& src->rect) - width_pixels) / 2;
-  src_rect.min.y = (rect_height (& src->rect) - height_pixels) / 2;
-  src_rect.max.x = src_rect.min.x + width_pixels;
-  src_rect.max.y = src_rect.min.y + height_pixels;
-
-  dest_min.x = 0;
-  dest_min.y = 0;
-
-  dest = bitblt (src, & src_rect, NULL, & dest_min, TF_SRC, 0);
-  free_bitmap (src);
-  return (dest);
-}
-
-
-/* "in place" rotation */
-static void rotate_bitmap (Bitmap *src,
-			   input_attributes_t input_attributes)
-{
-  switch (input_attributes.rotation)
-    {
-    case 0: break;
-    case 90: rot_90 (src); break;
-    case 180: rot_180 (src); break;
-    case 270: rot_270 (src); break;
-    default:
-      fprintf (stderr, "rotation must be 0, 90, 180, or 270\n");
-    }
-}
-
-
-#define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
-
-
-static pdf_page_handle process_tiff_page (int image,  /* range 1 .. n */
-					  input_attributes_t input_attributes)
-{
-  uint32_t image_length, image_width;
-  uint32_t dest_image_length, dest_image_width;
-#ifdef CHECK_DEPTH
-  uint32_t image_depth;
-#endif
-
-  uint16_t samples_per_pixel;
-  uint16_t bits_per_sample;
-  uint16_t planar_config;
-
-  uint16_t resolution_unit;
-  float x_resolution, y_resolution;
-  double dest_x_resolution, dest_y_resolution;
-
-  double width_points, height_points;  /* really 1/72 inch units rather than
-					  points */
-
-  Rect rect;
-  Bitmap *bitmap = NULL;
-
-  int row;
-
-  pdf_page_handle page = NULL;
-
-  if (! TIFFSetDirectory (tiff_in, image - 1))
-    {
-      fprintf (stderr, "can't find page %d of input file\n", image);
-      goto fail;
-    }
-  if (1 != TIFFGetField (tiff_in, TIFFTAG_IMAGELENGTH, & image_length))
-    {
-      fprintf (stderr, "can't get image length\n");
-      goto fail;
-    }
-  if (1 != TIFFGetField (tiff_in, TIFFTAG_IMAGEWIDTH, & image_width))
-    {
-      fprintf (stderr, "can't get image width\n");
-      goto fail;
-    }
-
-  if (1 != TIFFGetField (tiff_in, TIFFTAG_SAMPLESPERPIXEL, & samples_per_pixel))
-    {
-      fprintf (stderr, "can't get samples per pixel\n");
-      goto fail;
-    }
-
-#ifdef CHECK_DEPTH
-  if (1 != TIFFGetField (tiff_in, TIFFTAG_IMAGEDEPTH, & image_depth))
-    {
-      fprintf (stderr, "can't get image depth\n");
-      goto fail;
-    }
-#endif
-
-  if (1 != TIFFGetField (tiff_in, TIFFTAG_BITSPERSAMPLE, & bits_per_sample))
-    {
-      fprintf (stderr, "can't get bits per sample\n");
-      goto fail;
-    }
-
-  if (1 != TIFFGetField (tiff_in, TIFFTAG_PLANARCONFIG, & planar_config))
-    planar_config = 1;
-
-  if (1 != TIFFGetField (tiff_in, TIFFTAG_RESOLUTIONUNIT, & resolution_unit))
-    resolution_unit = 2;
-  if (1 != TIFFGetField (tiff_in, TIFFTAG_XRESOLUTION, & x_resolution))
-    x_resolution = 300;
-  if (1 != TIFFGetField (tiff_in, TIFFTAG_YRESOLUTION, & y_resolution))
-    y_resolution = 300;
-
-  if (samples_per_pixel != 1)
-    {
-      fprintf (stderr, "samples per pixel %u, must be 1\n", samples_per_pixel);
-      goto fail;
-    }
-
-#ifdef CHECK_DEPTH
-  if (image_depth != 1)
-    {
-      fprintf (stderr, "image depth %u, must be 1\n", image_depth);
-      goto fail;
-    }
-#endif
-
-  if (bits_per_sample != 1)
-    {
-      fprintf (stderr, "bits per sample %u, must be 1\n", bits_per_sample);
-      goto fail;
-    }
-
-  if (planar_config != 1)
-    {
-      fprintf (stderr, "planar config %u, must be 1\n", planar_config);
-      goto fail;
-    }
-
-  if (input_attributes.has_resolution)
-    {
-      x_resolution = input_attributes.x_resolution;
-      y_resolution = input_attributes.y_resolution;
-    }
-
-  if ((input_attributes.rotation == 90) || (input_attributes.rotation == 270))
-    {
-      dest_image_width  = image_length;
-      dest_image_length = image_width;
-      dest_x_resolution = y_resolution;
-      dest_y_resolution = x_resolution;
-      SWAP (double, width_points, height_points);  /* $$$ not yet set!!! */
-    }
-  else
-    {
-      dest_image_width = image_width;
-      dest_image_length = image_length;
-      dest_x_resolution = x_resolution;
-      dest_y_resolution = y_resolution;
-    }
-
-  rect.min.x = 0;
-  rect.min.y = 0;
-  rect.max.x = image_width;
-  rect.max.y = image_length;
-
-  bitmap = create_bitmap (& rect);
-
-  if (! bitmap)
-    {
-      fprintf (stderr, "can't allocate bitmap\n");
-      goto fail;
-    }
-
-  for (row = 0; row < image_length; row++)
-    if (1 != TIFFReadScanline (tiff_in,
-			       bitmap->bits + row * bitmap->row_words,
-			       row,
-			       0))
-      {
-	fprintf (stderr, "can't read TIFF scanline\n");
-	goto fail;
-      }
-
-#ifdef TIFF_REVERSE_BITS
-  reverse_bits ((uint8_t *) bitmap->bits,
-		image_length * bitmap->row_words * sizeof (word_t));
-#endif /* TIFF_REVERSE_BITS */
-
-#if 0
-  if (input_attributes.has_page_size)
-    bitmap = resize_bitmap (bitmap,
-			    x_resolution,
-			    y_resolution,
-			    input_attributes);
-#endif
-
-  rotate_bitmap (bitmap,
-		 input_attributes);
-
-  width_points = (rect_width (& bitmap->rect) / dest_x_resolution) * POINTS_PER_INCH;
-  height_points = (rect_height (& bitmap->rect) / dest_y_resolution) * POINTS_PER_INCH;
-
-  if ((height_points > PAGE_MAX_POINTS) || (width_points > PAGE_MAX_POINTS))
-    {
-      fprintf (stdout, "image too large (max %d inches on a side\n", PAGE_MAX_INCHES);
-      goto fail;
-    }
-
-  page = pdf_new_page (out->pdf, width_points, height_points);
-
-#if 0
-  pdf_write_text (page);
-#else
-  pdf_write_g4_fax_image (page,
-			  0, 0,  /* x, y */
-			  width_points, height_points,
-			  bitmap,
-			  0, /* ImageMask */
-			  0, 0, 0,  /* r, g, b */
-			  0); /* BlackIs1 */
-#endif
-
-  if (bitmap)
-    free_bitmap (bitmap);
-  return (page);
-
- fail:
-  if (bitmap)
-    free_bitmap (bitmap);
-
-  return (NULL);
-}
-
-
-pdf_page_handle process_jpeg_page (int image,  /* range 1 .. n */
-				   input_attributes_t input_attributes)
-{
-  pdf_page_handle page;
-  double width_points, height_points;  /* really 1/72 inch units rather than
-					  points */
-
-  /* $$$ need to get these from somewhere else, hardcoded for now */
-  width_points = 4 * 72.0;
-  height_points = 4 * 72.0;
-
-  page = pdf_new_page (out->pdf, width_points, height_points);
-
-  pdf_write_jpeg_image (page,
-			0, 0,  /* x, y */
-			width_points, height_points,
-			in);
-
-  return (page);
-}
-
-
 bool process_page (int image,  /* range 1 .. n */
 		   input_attributes_t input_attributes,
 		   bookmark_t *bookmarks,
 		   page_label_t *page_label)
 {
   pdf_page_handle page;
+  image_info_t image_info;
+  
+  if (! get_image_info (image, input_attributes, & image_info))
+    return (0);
 
-  switch (in_type)
-    {
-    case INPUT_FILE_TYPE_TIFF:
-      page = process_tiff_page (image, input_attributes);
-      break;
-    case INPUT_FILE_TYPE_JPEG:
-      page = process_jpeg_page (image, input_attributes);
-      break;
-    default:
-      fatal (3, "internal error: bad input file type\n");
-    }
+  page = pdf_new_page (out->pdf,
+		       image_info.width_points,
+		       image_info.height_points);
+
+  if (! process_image (image, input_attributes, & image_info, page))
+    return (0);
 
   while (bookmarks)
     {
@@ -768,6 +347,9 @@ int main (int argc, char *argv[])
   progname = argv [0];
 
   pdf_init ();
+
+  init_tiff_handler ();
+  init_jpeg_handler ();
 
   while (--argc)
     {

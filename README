@@ -1,15 +1,14 @@
 tumble: build a PDF file from image files
 Copyright 2003 Eric Smith <eric@brouhaha.com>
-$Id: README,v 1.1 2003/03/16 07:37:16 eric Exp $
+$Id: README,v 1.2 2003/03/19 22:54:07 eric Exp $
 
 Tumble is a utility to construct PDF files from one or more image
-files.  Currently the only input image format supported is black &
-white TIFF files, which may be either single- or multi-page files.  In
-the future additional file formats will be supported, including gray
-scale and color.  Black and white images will be encoded in the PDF
-output using lossless Group 4 fax compression (ITU-T recommendation
-T.6).  This provides a very good compression ratio for text and line
-art.
+files.  Supported input image file formats are JPEG, and black and
+white TIFF (single- or multi-page).  Black and white images will be
+encoded in the PDF output using lossless Group 4 fax compression
+(ITU-T recommendation T.6).  This provides a very good compression
+ratio for text and line art.  JPEG images will be preserved with the
+original coding.
 
 The current version of Tumble will only work on little-endian systems,
 such as x86, VAX, and Alpha.  The byte order dependencies will be fixed
@@ -21,7 +20,7 @@ used which allows for more control over the files and options.
 
 The general command line syntax is:
 
-    tumble [options] <input.tif>... -o <output.pdf>
+    tumble [options] <input>... -o <output.pdf>
 
 The options in this mode are:
 
