@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf.h,v 1.7 2003/03/12 02:57:55 eric Exp $
+ * $Id: pdf.h,v 1.8 2003/03/12 23:57:21 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -55,6 +55,9 @@ pdf_page_handle pdf_new_page (pdf_file_handle pdf_file,
 			      double height);
 
 void pdf_close_page (pdf_page_handle pdf_page);
+
+
+void pdf_write_text (pdf_page_handle pdf_page);
 
 
 /* The length of the data must be Rows * rowbytes.
