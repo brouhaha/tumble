@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_name_tree.c,v 1.1 2003/03/07 02:16:08 eric Exp $
+ * $Id: pdf_name_tree.c,v 1.2 2003/03/07 03:28:45 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -120,9 +120,17 @@ static void pdf_add_tree_element (struct pdf_name_tree *tree,
 				  struct pdf_obj *val)
 {
   struct pdf_name_tree_node *node;
+  int i;
 
   /* find node which should contain element */
   node = tree->root;
+  while (! node->leaf)
+    {
+      for (i = 0; i < (node->count - 1); i++)
+	if (pdf_compare_obj (key, node->kids [i + 1]->min_key) < 0)
+	  break;
+      node = node->kids [i];
+    }
 
   /* if node is full, split, recursing to root if necessary */
   if (node->count == MAX_NAME_TREE_NODE_ENTRIES)
@@ -131,6 +139,29 @@ static void pdf_add_tree_element (struct pdf_name_tree *tree,
       pdf_add_tree_element (tree, key, val);
       return;
     }
+
+  /* $$$ figure out in which slot to insert it */
+
+  /* update limits, recursing upwards if necessary */
+  if (i == 0)
+    {
+      node->min_key = key;
+      while (node->parent && (node->parent->kids [0] == node))
+	{
+	  node = node->parent;
+	  node->min_key = key;
+	}
+    }
+  else if (i == (node->count - 1))
+    {
+      node->max_key = key;
+      while (node->parent && (node->parent->kids [node->parent->count - 1] == node))
+	{
+	  node = node->parent;
+	  node->max_key = key;
+	}
+    }
+    
 }
 
 
