@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_g4.c,v 1.11 2003/03/11 23:43:56 eric Exp $
+ * $Id: pdf_g4.c,v 1.12 2003/03/11 23:53:55 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -52,9 +52,9 @@ struct pdf_g4_image
 };
 
 
-void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
-				    struct pdf_obj *stream,
-				    void *app_data)
+static void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
+					   struct pdf_obj *stream,
+					   void *app_data)
 {
   struct pdf_g4_image *image = app_data;
 
@@ -71,9 +71,9 @@ void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
 }
 
 
-void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
-				      struct pdf_obj *stream,
-				      void *app_data)
+static void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
+					     struct pdf_obj *stream,
+					     void *app_data)
 {
   struct pdf_g4_image *image = app_data;
 
