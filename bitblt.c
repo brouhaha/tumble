@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * bitblt routines
- * $Id: bitblt.c,v 1.14 2003/03/11 22:02:46 eric Exp $
+ * $Id: bitblt.c,v 1.15 2003/03/12 02:59:09 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -49,7 +49,7 @@ void reverse_bits (uint8_t *p, int byte_count)
 }
 
 
-static word_type bit_reverse_word (word_type d)
+static word_t bit_reverse_word (word_t d)
 {
   return (bit_reverse_byte [d >> 24] |
 	  (bit_reverse_byte [(d >> 16) & 0xff] << 8) |
@@ -58,8 +58,8 @@ static word_type bit_reverse_word (word_type d)
 }
 
 
-static word_type *temp_buffer;
-static word_type temp_buffer_size;
+static word_t *temp_buffer;
+static word_t temp_buffer_size;
 
 static void realloc_temp_buffer (uint32_t size)
 {
@@ -75,10 +75,10 @@ static void realloc_temp_buffer (uint32_t size)
 }
 
 
-static inline word_type pixel_mask (int x)
+static inline word_t pixel_mask (int x)
 {
 #if defined (MIXED_ENDIAN)  /* disgusting hack for mixed-endian */
-  word_type m;
+  word_t m;
   m = 0x80 >> (x & 7);
   m <<= (x & 24);
   return (m);
@@ -91,9 +91,9 @@ static inline word_type pixel_mask (int x)
 
 
 /* mask for range of bits left..right, inclusive */
-static inline word_type pixel_range_mask (int left, int right)
+static inline word_t pixel_range_mask (int left, int right)
 {
-  word_type m1, m2, val;
+  word_t m1, m2, val;
 
   /* $$$ one of these cases is wrong! */
 #if defined (LSB_RIGHT)
@@ -124,7 +124,7 @@ Bitmap *create_bitmap (Rect *rect)
     return (NULL);
   bitmap->rect = * rect;
   bitmap->row_words = DIV_ROUND_UP (width, BITS_PER_WORD);
-  bitmap->bits = calloc (1, height * bitmap->row_words * sizeof (word_type));
+  bitmap->bits = calloc (1, height * bitmap->row_words * sizeof (word_t));
   if (! bitmap->bits)
     {
       free (bitmap);
@@ -141,7 +141,7 @@ void free_bitmap (Bitmap *bitmap)
 
 bool get_pixel (Bitmap *bitmap, Point coord)
 {
-  word_type *p;
+  word_t *p;
   int w,b;
 
   if ((coord.x < bitmap->rect.min.x) ||
@@ -159,7 +159,7 @@ bool get_pixel (Bitmap *bitmap, Point coord)
 
 void set_pixel (Bitmap *bitmap, Point coord, bool value)
 {
-  word_type *p;
+  word_t *p;
   int w,b;
 
   if ((coord.x < bitmap->rect.min.x) ||
@@ -216,10 +216,10 @@ static void blt_background (Bitmap *dest_bitmap,
 			    Rect dest_rect)
 {
   uint32_t y;
-  word_type *rp;
+  word_t *rp;
   uint32_t left_bit, left_word;
   uint32_t right_bit, right_word;
-  word_type left_mask, right_mask;
+  word_t left_mask, right_mask;
   int32_t word_count;
 
   /* This function requires a non-null dest rect */
@@ -272,7 +272,7 @@ static void blt_background (Bitmap *dest_bitmap,
 
   for (y = 0; y < rect_height (& dest_rect); y++)
     {
-      word_type *wp = rp;
+      word_t *wp = rp;
 
       /* partial word at left, if any */
       if (left_mask)
@@ -316,7 +316,7 @@ static void blt (Bitmap *src_bitmap,
 		 Rect *dest_rect)
 {
   int32_t y;
-  word_type *rp;
+  word_t *rp;
 
   /* This function requires a non-null src rect */
   assert (dest_rect->min.x < dest_rect->max.x);
@@ -628,20 +628,20 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 /* in-place transformations */
 void flip_h (Bitmap *src)
 {
-  word_type *rp;  /* row pointer */
-  word_type *p1;  /* work src ptr */
-  word_type *p2;  /* work dest ptr */
+  word_t *rp;  /* row pointer */
+  word_t *p1;  /* work src ptr */
+  word_t *p2;  /* work dest ptr */
   int32_t y;
   int shift1, shift2;
 
-  realloc_temp_buffer ((src->row_words + 1) * sizeof (word_type));
+  realloc_temp_buffer ((src->row_words + 1) * sizeof (word_t));
 
   rp = src->bits;
   if ((rect_width (& src->rect) & 7) == 0)
     {
       for (y = src->rect.min.y; y < src->rect.max.y; y++)
 	{
-	  memcpy (temp_buffer, rp, src->row_words * sizeof (word_type));
+	  memcpy (temp_buffer, rp, src->row_words * sizeof (word_t));
 	  p1 = temp_buffer + src->row_words;
 	  p2 = rp;
 
@@ -659,9 +659,9 @@ void flip_h (Bitmap *src)
 
   for (y = src->rect.min.y; y < src->rect.max.y; y++)
     {
-      word_type d1, d2;
+      word_t d1, d2;
 
-      memcpy (temp_buffer + 1, rp, src->row_words * sizeof (word_type));
+      memcpy (temp_buffer + 1, rp, src->row_words * sizeof (word_t));
       p1 = temp_buffer + src->row_words;
       p2 = rp;
 
@@ -680,17 +680,17 @@ void flip_h (Bitmap *src)
 
 void flip_v (Bitmap *src)
 {
-  word_type *p1, *p2;
+  word_t *p1, *p2;
 
-  realloc_temp_buffer (src->row_words * sizeof (word_type));
+  realloc_temp_buffer (src->row_words * sizeof (word_t));
 
   p1 = src->bits;
   p2 = src->bits + src->row_words * (rect_height (& src->rect) - 1);
   while (p1 < p2)
     {
-      memcpy (temp_buffer, p1, src->row_words * sizeof (word_type));
-      memcpy (p1, p2, src->row_words * sizeof (word_type));
-      memcpy (p2, temp_buffer, src->row_words * sizeof (word_type));
+      memcpy (temp_buffer, p1, src->row_words * sizeof (word_t));
+      memcpy (p1, p2, src->row_words * sizeof (word_t));
+      memcpy (p2, temp_buffer, src->row_words * sizeof (word_t));
       p1 += src->row_words;
       p2 -= src->row_words;
     }
@@ -706,9 +706,9 @@ void rot_180 (Bitmap *src)  /* combination of flip_h and flip_v */
 void transpose (Bitmap *src)
 {
   uint32_t new_row_words = DIV_ROUND_UP (rect_height (& src->rect), 32);
-  word_type *new_bits;
+  word_t *new_bits;
 
-  new_bits = calloc (1, new_row_words * rect_width (& src->rect) * sizeof (word_type));
+  new_bits = calloc (1, new_row_words * rect_width (& src->rect) * sizeof (word_t));
 
   /* $$$ more code needed here */
 }
