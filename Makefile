@@ -1,6 +1,6 @@
 # t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.22 2003/03/11 22:39:22 eric Exp $
+# $Id: Makefile,v 1.23 2003/03/11 22:57:46 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -73,9 +73,9 @@ DISTFILES = $(MISC) $(HDRS) $(CSRCS) $(OSRCS)
 DISTNAME = $(PACKAGE)-$(VERSION)
 
 
-AUTO_CSRCS = scanner.c parser.tab.c bitblt_tables.c
-AUTO_HDRS = parser.tab.h g4_tables.h
-AUTO_MISC = parser.output bitblt_tables.h
+AUTO_CSRCS = scanner.c parser.tab.c bitblt_tables.c g4_tables.c
+AUTO_HDRS = parser.tab.h  bitblt_tables.h g4_tables.h
+AUTO_MISC = parser.output
 
 
 -include Maketest
@@ -85,7 +85,7 @@ all: $(TARGETS) $(TEST_TARGETS)
 
 
 t2p: t2p.o scanner.o semantics.o parser.tab.o \
-		bitblt.o bitblt_g4.o bitblt_tables.o \
+		bitblt.o bitblt_g4.o bitblt_tables.o g4_tables.o \
 		pdf.o pdf_util.o pdf_prim.o pdf_bookmark.o pdf_name_tree.o \
 		pdf_g4.o
 	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
@@ -103,7 +103,10 @@ bitblt_tables.c: bitblt_table_gen
 bitblt_table_gen: bitblt_table_gen.o
 
 g4_tables.h: g4_table_gen
-	./g4_table_gen >g4_tables.h
+	./g4_table_gen -h >g4_tables.h
+
+g4_tables.c: g4_table_gen
+	./g4_table_gen -c >g4_tables.c
 
 g4_table_gen: g4_table_gen.o
 
