@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * bitblt routines
- * $Id: bitblt.h,v 1.10 2003/02/19 02:14:44 eric Exp $
+ * $Id: bitblt.h,v 1.11 2003/02/20 04:11:06 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -98,3 +98,25 @@ void rot_270 (Bitmap *src);  /* transpose + flip_v */
 
 
 void reverse_bits (uint8_t *p, int byte_count);
+
+
+/*
+ * get_row_run_lengths counts the runs of 0 and 1 bits in row
+ * y of a bitmap, from min_x through max_x inclusive.  The run lengths
+ * will be stored in the run_length array.  The first entry will be
+ * the length of a zero run (which length may be zero, if the first
+ * bit is a one).  The next entry will the be the length of a run of
+ * ones, and they will alternate from there, with even entries representing
+ * runs of zeros, and odd entries representing runs of ones.
+ *
+ * max_runs should be set to the maximum number of run lengths that
+ * can be stored in the run_length array.
+ *
+ * Returns the actual number of runs counted, or -max_runs if there
+ * was not enough room in the array.
+ */
+int32_t get_row_run_lengths (Bitmap *src,
+			     int32_t y,
+			     int32_t min_x, int32_t max_x,
+			     int32_t max_runs,
+			     uint32_t *run_length);
