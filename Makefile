@@ -1,6 +1,6 @@
 # t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.11 2003/01/21 10:53:48 eric Exp $
+# $Id: Makefile,v 1.12 2003/02/19 02:14:49 eric Exp $
 # Copyright 2001 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -20,24 +20,31 @@
 
 
 CFLAGS = -Wall -g -I/usr/local/include/panda
-LDLIBS = -g -ltiff -lm -L/usr/local/lib/panda -lpanda -lpng
+
+# Panda is not all that common, so we'll statically link it in order to
+# make the t2p binary more portable.
+
+LDFLAGS = -g
+LDLIBS = -Wl,-static -lpanda -Wl,-dy -lpng -ltiff -ljpeg -lz -lm -L/usr/local/lib/panda 
+
 YACC = bison
 YFLAGS = -d -v
+
 
 # -----------------------------------------------------------------------------
 # You shouldn't have to change anything below this point, but if you do please
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.1
+VERSION = 0.10
 
 PACKAGE = t2p
 
 TARGETS = t2p bitblt_test
 
-CSRCS = t2p.c semantics.c bitblt.c bitblt_test.c
+CSRCS = t2p.c semantics.c bitblt.c bitblt_test.c bitblt_table_gen.c
 OSRCS = scanner.l parser.y
-HDRS = t2p.h semantics.h bitblt.h 
+HDRS = t2p.h semantics.h bitblt.h
 MISC = COPYING Makefile
 
 DISTFILES = $(MISC) $(HDRS) $(CSRCS) $(OSRCS)
@@ -45,11 +52,21 @@ DISTNAME = $(PACKAGE)-$(VERSION)
 
 
 AUTO_CSRCS = scanner.c parser.tab.c
-AUTO_HDRS = parser.tab.h
+AUTO_HDRS = parser.tab.h bitblt_tables.h
 AUTO_MISC = parser.output
 
 
 all: $(TARGETS)
+
+
+t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o
+
+bitblt_tables.h: bitblt_table_gen
+	./bitblt_table_gen >bitblt_tables.h
+
+bitblt_table_gen: bitblt_table_gen.o
+
+bitblt_test: bitblt_test.o bitblt.o
 
 
 dist: $(DISTFILES)
@@ -60,16 +77,11 @@ dist: $(DISTFILES)
 	-rm -rf $(DISTNAME)
 
 
-t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o
-
-bitblt_test: bitblt_test.o bitblt.o
-
-
 clean:
-	rm -f *.o *.d $(TARGETS) $(AUTO_SRCS) $(AUTO_HDRS) $(AUTO_MISC)
+	rm -f *.o *.d $(TARGETS) $(AUTO_CSRCS) $(AUTO_HDRS) $(AUTO_MISC)
 
 very_clean:
-	rm -f *.o *.d $(TARGETS) $(AUTO_SRCS) $(AUTO_HDRS) $(AUTO_MISC) \
+	rm -f *.o *.d $(TARGETS) $(AUTO_CSRCS) $(AUTO_HDRS) $(AUTO_MISC) \
 		*~ *.pdf
 
 wc:
@@ -81,9 +93,6 @@ ls-lt:
 
 %.tab.c %.tab.h %.output: %.y
 	$(YACC) $(YFLAGS) $<
-
-# %.c: %.l
-# 	$(LEX) $(LFLAGS) $<
 
 
 ALL_CSRCS = $(CSRCS) $(AUTO_CSRCS)
