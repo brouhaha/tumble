@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * bitblt routines
- * $Id: bitblt.c,v 1.16 2003/03/13 00:57:05 eric Exp $
+ * $Id: bitblt.c,v 1.17 2003/03/16 07:27:06 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -53,6 +53,24 @@ static word_t bit_reverse_word (word_t d)
 	  (bit_reverse_byte [(d >> 16) & 0xff] << 8) |
 	  (bit_reverse_byte [(d >> 8) & 0xff] << 16) |
 	  (bit_reverse_byte [d & 0xff] << 24));
+}
+
+
+static void reverse_range_of_bytes (uint8_t *b, uint32_t count)
+{
+  uint8_t *b2 = b + count - 1;
+  
+  while (b < b2)
+    {
+      uint8_t t = bit_reverse_byte [*b];
+      *b = bit_reverse_byte [*b2];
+      *b2 = t;
+      b++;
+      b2--;
+    }
+
+  if (b == b2)
+    *b = bit_reverse_byte [*b];
 }
 
 
@@ -627,29 +645,21 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 void flip_h (Bitmap *src)
 {
   word_t *rp;  /* row pointer */
-  word_t *p1;  /* work src ptr */
-  word_t *p2;  /* work dest ptr */
   int32_t y;
   int shift1, shift2;
-
-  realloc_temp_buffer ((src->row_words + 1) * sizeof (word_t));
 
   rp = src->bits;
   if ((rect_width (& src->rect) & 7) == 0)
     {
       for (y = src->rect.min.y; y < src->rect.max.y; y++)
 	{
-	  memcpy (temp_buffer, rp, src->row_words * sizeof (word_t));
-	  p1 = temp_buffer + src->row_words;
-	  p2 = rp;
-
-	  while (p1 >= temp_buffer)
-	    *(p2++) = bit_reverse_word (*(p1--));
-      
+          reverse_range_of_bytes ((uint8_t *) rp, rect_width (& src->rect) / 8);
 	  rp += src->row_words;
 	}
       return;
     }
+
+  realloc_temp_buffer ((src->row_words + 1) * sizeof (word_t));
 
   temp_buffer [0] = 0;
   shift1 = rect_width (& src->rect) & (BITS_PER_WORD - 1);
@@ -658,6 +668,8 @@ void flip_h (Bitmap *src)
   for (y = src->rect.min.y; y < src->rect.max.y; y++)
     {
       word_t d1, d2;
+      word_t *p1;  /* work src ptr */
+      word_t *p2;  /* work dest ptr */
 
       memcpy (temp_buffer + 1, rp, src->row_words * sizeof (word_t));
       p1 = temp_buffer + src->row_words;
@@ -667,14 +679,17 @@ void flip_h (Bitmap *src)
 
       while (p1 >= temp_buffer)
 	{
+	  word_t t;
 	  d1 = *(p1--);
-	  *(p2++) = bit_reverse_word ((d1 << shift1) | (d2 >> shift2));
+	  t = (d1 >> shift1) | (d2 << shift2);
+	  *(p2++) = bit_reverse_word (t);
 	  d2 = d1;
 	}      
 
       rp += src->row_words;
     }
 }
+
 
 void flip_v (Bitmap *src)
 {
