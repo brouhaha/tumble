@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_g4.c,v 1.13 2003/03/12 22:56:57 eric Exp $
+ * $Id: pdf_g4.c,v 1.14 2003/03/12 23:59:35 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -78,6 +78,7 @@ static void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
   struct pdf_g4_image *image = app_data;
 
   bitblt_write_g4 (image->bitmap, pdf_file->f);
+  pdf_stream_printf (pdf_file, stream, "\r\n");
 }
 
 
