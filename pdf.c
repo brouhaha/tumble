@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf.c,v 1.11 2003/03/13 03:44:34 eric Exp $
+ * $Id: pdf.c,v 1.12 2003/03/14 00:24:37 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -121,8 +121,14 @@ pdf_file_handle pdf_create (char *filename, int page_mode)
 
 void pdf_close (pdf_file_handle pdf_file)
 {
-  /* finalize all data structures */
+  /* finalize trees, object numbers aren't allocated until this step */
   pdf_finalize_name_trees (pdf_file);
+
+  /* add the page label number tree, if it exists, to the catalog */
+  if (pdf_file->page_label_tree)
+    pdf_set_dict_entry (pdf_file->catalog,
+			"PageLabels",
+			pdf_file->page_label_tree->root->dict);
 
   /* write body */
   pdf_write_all_ind_obj (pdf_file);

@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Semantic routines for spec file parser
- * $Id: semantics.h,v 1.13 2003/03/13 00:57:05 eric Exp $
+ * $Id: semantics.h,v 1.14 2003/03/14 00:24:37 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -46,6 +46,10 @@ typedef struct
 {
   char *prefix;
   char style;
+  /* the following fields are not filled by the parser: */
+  int page_index;
+  int base;
+  int count;
 } page_label_t;
 
 

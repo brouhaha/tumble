@@ -1,7 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble.h,v 1.13 2003/03/13 00:57:05 eric Exp $
+ * $Id: tumble.h,v 1.14 2003/03/14 00:24:37 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -57,13 +57,7 @@ bool open_pdf_output_file (char *name,
 			   pdf_file_attributes_t *attributes);
 
 
-void process_page_numbers (int page_index,
-			   int count,
-			   int base,
-			   page_label_t *page_label);
-
-
-
 bool process_page (int image,  /* range 1 .. n */
 		   input_attributes_t input_attributes,
-		   bookmark_t *bookmarks);
+		   bookmark_t *bookmarks,
+		   page_label_t *page_label);

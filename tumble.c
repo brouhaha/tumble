@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.33 2003/03/13 03:42:46 eric Exp $
+ * $Id: tumble.c,v 1.34 2003/03/14 00:24:37 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -227,14 +227,6 @@ bool open_pdf_output_file (char *name,
 }
 
 
-void process_page_numbers (int page_index,
-			   int count,
-			   int base,
-			   page_label_t *page_label)
-{
-}
-
-
 /* frees original! */
 static Bitmap *resize_bitmap (Bitmap *src,
 			      double x_resolution,
@@ -287,12 +279,9 @@ bool last_tiff_page (void)
 }
 
 
-bool process_tiff_page (int image,  /* range 1 .. n */
-			input_attributes_t input_attributes,
-			bookmark_t *bookmarks)
+static pdf_page_handle process_tiff_page (int image,  /* range 1 .. n */
+					  input_attributes_t input_attributes)
 {
-  int result = 0;
-
   uint32_t image_length, image_width;
   uint32_t dest_image_length, dest_image_width;
 #ifdef CHECK_DEPTH
@@ -315,7 +304,7 @@ bool process_tiff_page (int image,  /* range 1 .. n */
 
   int row;
 
-  pdf_page_handle page;
+  pdf_page_handle page = NULL;
 
   if (! TIFFSetDirectory (in, image - 1))
     {
@@ -473,29 +462,22 @@ bool process_tiff_page (int image,  /* range 1 .. n */
 			  0); /* BlackIs1 */
 #endif
 
-  while (bookmarks)
-    {
-      /* $$$ need to handle level here */
-      pdf_new_bookmark (NULL, bookmarks->name, 0, page);
-      bookmarks = bookmarks->next;
-    }
-
-  result = 1;
+  if (bitmap)
+    free_bitmap (bitmap);
+  return (page);
 
  fail:
   if (bitmap)
     free_bitmap (bitmap);
 
-  return (result);
+  return (NULL);
 }
 
 
 #if 0
-bool process_jpeg_page (int image,  /* range 1 .. n */
-			input_attributes_t input_attributes,
-			bookmark_t *bookmarks)
+pdf_page_handle process_jpeg_page (int image,  /* range 1 .. n */
+				   input_attributes_t input_attributes)
 {
-  int result = 0;
   FILE *f;
   pdf_page_handle page;
 
@@ -510,20 +492,36 @@ bool process_jpeg_page (int image,  /* range 1 .. n */
 			width_points, height_points,
 			f);
 
-  return (result);
+  return (page);
 }
 #endif
 
 
 bool process_page (int image,  /* range 1 .. n */
 		   input_attributes_t input_attributes,
-		   bookmark_t *bookmarks)
+		   bookmark_t *bookmarks,
+		   page_label_t *page_label)
 {
-  int result = 0;
+  pdf_page_handle page;
 
-  result = process_tiff_page (image, input_attributes, bookmarks);
+  page = process_tiff_page (image, input_attributes);
 
-  return (result);
+  while (bookmarks)
+    {
+      /* $$$ need to handle level here */
+      pdf_new_bookmark (NULL, bookmarks->name, 0, page);
+      bookmarks = bookmarks->next;
+    }
+
+  if (page_label)
+    pdf_new_page_label (out->pdf,
+			page_label->page_index,
+			page_label->base,
+			page_label->count,
+			page_label->style,
+			page_label->prefix);
+
+  return (page != NULL);
 }
 
 
@@ -625,7 +623,8 @@ void main_args (char *out_fn,
 				    in_fn [i],
 				    ip);
 	  if (! process_page (ip, input_attributes,
-			      bookmark_fmt ? & bookmark : NULL))
+			      bookmark_fmt ? & bookmark : NULL,
+			      NULL))
 	    fatal (3, "error processing page %d of input file \"%s\"\n", ip, in_fn [i]);
 	  if (last_tiff_page ())
 	    break;

@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf.h,v 1.9 2003/03/13 00:57:05 eric Exp $
+ * $Id: pdf.h,v 1.10 2003/03/14 00:24:37 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -90,3 +90,11 @@ pdf_bookmark_handle pdf_new_bookmark (pdf_bookmark_handle parent,
 				      char *title,
 				      bool open,
 				      pdf_page_handle pdf_page);
+
+
+void pdf_new_page_label (pdf_file_handle pdf_file,
+			 int page_index,
+			 int base,
+			 int count,
+			 char style,
+			 char *prefix);

@@ -1,6 +1,6 @@
 # tumble: build a PDF file from image files
 # Makefile
-# $Id: Makefile,v 1.31 2003/03/13 03:50:59 eric Exp $
+# $Id: Makefile,v 1.32 2003/03/14 00:24:37 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,7 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.26
+VERSION = 0.27
 
 PACKAGE = tumble
 
@@ -63,7 +63,8 @@ TARGETS = tumble
 
 CSRCS = tumble.c semantics.c \
 	bitblt.c bitblt_table_gen.c bitblt_g4.c g4_table_gen.c \
-	pdf.c pdf_util.c pdf_prim.c pdf_bookmark.c pdf_name_tree.c \
+	pdf.c pdf_util.c pdf_prim.c pdf_name_tree.c \
+	pdf_bookmark.c pdf_page_label.c \
 	pdf_text.c pdf_g4.c pdf_jpeg.c
 OSRCS = scanner.l parser.y
 HDRS = tumble.h semantics.h bitblt.h bitblt_tables.h \
@@ -87,7 +88,8 @@ all: $(TARGETS) $(TEST_TARGETS)
 
 tumble: tumble.o scanner.o semantics.o parser.tab.o \
 		bitblt.o bitblt_g4.o bitblt_tables.o g4_tables.o \
-		pdf.o pdf_util.o pdf_prim.o pdf_bookmark.o pdf_name_tree.o \
+		pdf.o pdf_util.o pdf_prim.o pdf_name_tree.o \
+		pdf_bookmark.o pdf_page_label.o \
 		pdf_text.o pdf_g4.o pdf_jpeg.o
 	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
 ifndef DEBUG

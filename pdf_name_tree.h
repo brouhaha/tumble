@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_name_tree.h,v 1.3 2003/03/13 00:57:05 eric Exp $
+ * $Id: pdf_name_tree.h,v 1.4 2003/03/14 00:24:37 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,6 +29,31 @@ struct pdf_name_tree
   bool                      number_tree;   /* false for name tree,
 					      true for number tree */
   struct pdf_name_tree_node *root;
+};
+
+
+#define MAX_NAME_TREE_NODE_ENTRIES 32
+
+
+struct pdf_name_tree_node
+{
+  struct pdf_obj *dict;    /* indirect reference */
+
+  struct pdf_name_tree_node *parent;  /* NULL for root */
+  bool leaf;
+
+  int count;               /* how many kids or names/numbers are
+			      attached to this node */
+
+  struct pdf_name_tree_node *kids [MAX_NAME_TREE_NODE_ENTRIES];  /* non-leaf only */
+
+  struct pdf_obj *min_key;
+  struct pdf_obj *max_key;
+
+  /* following fields valid in leaf nodes only: */
+
+  struct pdf_obj *keys [MAX_NAME_TREE_NODE_ENTRIES];
+  struct pdf_obj *values [MAX_NAME_TREE_NODE_ENTRIES];
 };
 
 

@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_private.h,v 1.7 2003/03/13 00:57:05 eric Exp $
+ * $Id: pdf_private.h,v 1.8 2003/03/14 00:24:37 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -54,5 +54,6 @@ struct pdf_file
   struct pdf_pages     *root;
   struct pdf_bookmark  *outline_root;
   struct pdf_obj       *trailer_dict;
+  struct pdf_name_tree *page_label_tree;
   struct pdf_name_tree *name_tree_list;
 };

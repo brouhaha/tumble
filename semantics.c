@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Semantic routines for spec file parser
- * $Id: semantics.c,v 1.20 2003/03/13 23:08:52 eric Exp $
+ * $Id: semantics.c,v 1.21 2003/03/14 00:24:37 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -692,11 +692,6 @@ bool process_specs (void)
 	      fprintf (stderr, "error opening PDF file '%s'\n", output_fn);
 	      return (0);
 	    }
-	  page_label = get_output_page_label (page->output_context);
-	  process_page_numbers (page_index,
-				range_count (page->range),
-				page->range.first,
-				page_label);
 	}
 
       parity = ((image->range.first + i) % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
@@ -714,9 +709,24 @@ bool process_specs (void)
 
       if (verbose)
 	fprintf (stderr, "processing image %d\n", image->range.first + i);
+
+      if (p)
+	page_label = NULL;
+      else
+	{
+	  page_label = get_output_page_label (page->output_context);
+	  if (page_label)
+	    {
+	      page_label->page_index = page_index;
+	      page_label->base = page->range.first;
+	      page_label->count = range_count (page->range);
+	    }
+	}
+
       if (! process_page (image->range.first + i,
 			  input_attributes,
-			  p ? NULL : page->bookmark_list))
+			  p ? NULL : page->bookmark_list,
+			  page_label))
 	{
 	  fprintf (stderr, "error processing image %d\n", image->range.first + i);
 	  return (0);
