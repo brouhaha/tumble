@@ -175,6 +175,8 @@ void output_push_context (void)
     {
       memcpy (new_output_context, last_output_context, sizeof (output_context_t));
       new_output_context->page_count = 0;
+      new_output_context->first_bookmark = NULL;
+      new_output_context->last_bookmark = NULL;
     }
   else
     {
@@ -263,9 +265,11 @@ void increment_output_page_count (int count)
     context->page_count += count;
 }
 
+
 void output_pages (range_t range)
 {
   output_page_t *new_page;
+  output_context_t *context;
   int count = ((range.last - range.first) + 1);
 
 #ifdef SEMANTIC_DEBUG
@@ -293,10 +297,15 @@ void output_pages (range_t range)
   new_page->range = range;
   new_page->output_context = last_output_context;
 
-  /* transfer bookmarks from context to page */
-  new_page->bookmark_list = last_output_context->first_bookmark;
-  last_output_context->first_bookmark = NULL;
-  last_output_context->last_bookmark = NULL;
+  /* transfer bookmarks from context(s) to page */
+  for (context = last_output_context; context; context = context->parent)
+    if (context->first_bookmark)
+      {
+	context->last_bookmark->next = new_page->bookmark_list;
+	new_page->bookmark_list = context->first_bookmark;
+	context->first_bookmark = NULL;
+	context->last_bookmark = NULL;
+      }
 
   increment_output_page_count (count);
 }
