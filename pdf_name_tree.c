@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_name_tree.c,v 1.7 2003/03/08 01:31:23 eric Exp $
+ * $Id: pdf_name_tree.c,v 1.8 2003/03/12 03:13:28 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -300,11 +300,13 @@ static void pdf_finalize_name_tree_node (struct pdf_name_tree *tree,
     {
       /* finalize the children first so that their dict ind ref is
 	 available */
+      struct pdf_obj *kids;
+
       for (i = 0; i < node->count; i++)
 	pdf_finalize_name_tree_node (tree, node->kids [i]);
 
       /* write Kids array */
-      struct pdf_obj *kids = pdf_new_obj (PT_ARRAY);
+      kids = pdf_new_obj (PT_ARRAY);
       for (i = 0; i < node->count; i++)
 	pdf_add_array_elem (kids, node->kids [i]->dict);
       pdf_set_dict_entry (node->dict, "Kids", kids);
