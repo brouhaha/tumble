@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.40 2003/03/20 06:55:27 eric Exp $
+ * $Id: tumble.c,v 1.41 2003/03/20 08:23:37 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -178,6 +178,10 @@ bool open_pdf_output_file (char *name,
 }
 
 
+#define MAX_BOOKMARK_LEVEL 20
+static pdf_bookmark_handle bookmark_vector [MAX_BOOKMARK_LEVEL + 1] = { NULL };
+
+
 bool process_page (int image,  /* range 1 .. n */
 		   input_attributes_t input_attributes,
 		   bookmark_t *bookmarks,
@@ -198,8 +202,21 @@ bool process_page (int image,  /* range 1 .. n */
 
   while (bookmarks)
     {
-      /* $$$ need to handle level here */
-      pdf_new_bookmark (NULL, bookmarks->name, 0, page);
+      if (bookmarks->level <= MAX_BOOKMARK_LEVEL)
+	{
+	  pdf_bookmark_handle parent = bookmark_vector [bookmarks->level - 1];
+	  bookmark_vector [bookmarks->level] = pdf_new_bookmark (parent,
+								 bookmarks->name,
+								 0,
+								 page);
+	}
+      else
+	{
+	  (void) pdf_new_bookmark (bookmark_vector [MAX_BOOKMARK_LEVEL],
+				   bookmarks->name,
+				   0,
+				   page);
+	}
       bookmarks = bookmarks->next;
     }
 
