@@ -1,7 +1,7 @@
 /*
  * tiffg4: reencode a bilevel TIFF file as a single-strip TIFF Class F Group 4
  * Main program
- * $Id: t2p.c,v 1.7 2001/12/31 08:44:24 eric Exp $
+ * $Id: t2p.c,v 1.8 2001/12/31 19:44:40 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,49 +33,115 @@
 #include "tiff2pdf.h"
 
 
+typedef struct output_file_t
+{
+  struct output_file_t *next;
+  char *name;
+  panda_pdf *pdf;
+} output_file_t;
+
+
+char *in_filename;
 TIFF *in;
-panda_pdf *out;
+output_file_t *output_files;
+output_file_t *out;
+/* panda_pdf *out; */
 
 
 boolean close_tiff_input_file (void)
 {
   if (in)
-    TIFFClose (in);
+    {
+      free (in_filename);
+      TIFFClose (in);
+    }
   in = NULL;
+  in_filename = NULL;
   return (1);
 }
 
 boolean open_tiff_input_file (char *name)
 {
   if (in)
-    close_tiff_input_file ();
+    {
+      if (strcmp (name, in_filename) == 0)
+	return (1);
+      close_tiff_input_file ();
+    }
+  in_filename = strdup (name);
+  if (! in_filename)
+    {
+      fprintf (stderr, "can't strdup input filename '%s'\n", name);
+      return (0);
+    }
   in = TIFFOpen (name, "r");
   if (! in)
     {
       fprintf (stderr, "can't open input file '%s'\n", name);
+      free (in_filename);
       return (0);
     }
   return (1);
 }
 
 
-boolean close_pdf_output_file (void)
+boolean close_pdf_output_files (void)
 {
-  if (out)
-    panda_close (out);
+  output_file_t *o, *n;
+
+  for (o = output_files; o; o = n)
+    {
+      n = o->next;
+      panda_close (o->pdf);
+      free (o->name);
+      free (o);
+    }
   out = NULL;
+  output_files = NULL;
   return (1);
 }
 
 boolean open_pdf_output_file (char *name)
 {
-  if (out)
-    close_pdf_output_file ();
-  out = panda_open (name, "w");
-  if (! out)
+  output_file_t *o;
+
+  if (out && (strcmp (name, out->name) == 0))
+    return (1);
+  for (o = output_files; o; o = o->next)
+    if (strcmp (name, o->name) == 0)
+      {
+	out = o;
+	return (1);
+      }
+  o = calloc (1, sizeof (output_file_t));
+  if (! 0)
     {
+      fprintf (stderr, "can't calloc output file struct for '%s'\n", name);
+      return (0);
+   }
+
+  o->name = strdup (name);
+  if (! o->name)
+    {
+      fprintf (stderr, "can't strdup output filename '%s'\n", name);
+      free (o);
       return (0);
     }
+
+  o->pdf = panda_open (name, "w");
+  if (! o->pdf)
+    {
+      fprintf (stderr, "can't open output file '%s'\n", name);
+      free (o->name);
+      free (o);
+      return (0);
+    }
+
+  /* prepend new output file onto list */
+  o->next = output_files;
+  output_files = o;
+
+  out = o;
   return (1);
 }
 
@@ -178,19 +244,19 @@ boolean process_page (int image,  /* range 1 .. n */
     }
 
 #if 0
-  TIFFSetField (out, TIFFTAG_IMAGELENGTH, image_length);
-  TIFFSetField (out, TIFFTAG_IMAGEWIDTH, image_width);
-  TIFFSetField (out, TIFFTAG_PLANARCONFIG, planar_config);
+  TIFFSetField (out->pdf, TIFFTAG_IMAGELENGTH, image_length);
+  TIFFSetField (out->pdf, TIFFTAG_IMAGEWIDTH, image_width);
+  TIFFSetField (out->pdf, TIFFTAG_PLANARCONFIG, planar_config);
 
-  TIFFSetField (out, TIFFTAG_ROWSPERSTRIP, image_length);
+  TIFFSetField (out->pdf, TIFFTAG_ROWSPERSTRIP, image_length);
 
-  TIFFSetField (out, TIFFTAG_RESOLUTIONUNIT, resolution_unit);
-  TIFFSetField (out, TIFFTAG_XRESOLUTION, x_resolution);
-  TIFFSetField (out, TIFFTAG_YRESOLUTION, y_resolution);
+  TIFFSetField (out->pdf, TIFFTAG_RESOLUTIONUNIT, resolution_unit);
+  TIFFSetField (out->pdf, TIFFTAG_XRESOLUTION, x_resolution);
+  TIFFSetField (out->pdf, TIFFTAG_YRESOLUTION, y_resolution);
 
-  TIFFSetField (out, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
-  TIFFSetField (out, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
-  TIFFSetField (out, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
+  TIFFSetField (out->pdf, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
+  TIFFSetField (out->pdf, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
+  TIFFSetField (out->pdf, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
 #endif
 
   buffer = _TIFFmalloc (TIFFScanlineSize (in));
@@ -204,7 +270,7 @@ boolean process_page (int image,  /* range 1 .. n */
     {
       TIFFReadScanline (in, buffer, row, 0);
 #if 0
-      TIFFWriteScanline (out, buffer, row, 0);
+      TIFFWriteScanline (out->pdf, buffer, row, 0);
 #endif
     }
 
@@ -231,10 +297,19 @@ int main (int argc, char *argv[])
     }
 
   if (! parse_spec_file (argv [1]))
-    goto fail;
+    {
+      result = 2;
+      goto fail;
+    }
+
+  if (! process_specs ())
+    {
+      result = 3;
+      goto fail;
+    }
   
  fail:
   close_tiff_input_file ();
-  close_pdf_output_file ();
+  close_pdf_output_files ();
   return (result);
 }

@@ -9,7 +9,6 @@ boolean open_tiff_input_file (char *name);
 boolean close_tiff_input_file (void);
 
 boolean open_pdf_output_file (char *name);
-boolean close_pdf_output_file (void);
 
 void process_page_numbers (int page_index,
 			   int count,

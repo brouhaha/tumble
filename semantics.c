@@ -478,60 +478,6 @@ static inline int range_count (range_t range)
 }
 
 
-void doit (void)
-{
-  input_image_t *image = NULL;
-  output_page_t *page = NULL;
-  int i = 0;
-  int p = 0;
-  int page_index = 0;
-  input_attributes_t input_attributes;
-  input_modifier_type_t parity;
-  page_label_t *page_label;
-
-  for (;;)
-    {
-      if ((! image) || (i >= range_count (image->range)))
-	{
-	  if (image)
-	    image = image->next;
-	  else
-	    image = first_input_image;
-	  if (! image)
-	    return;
-	  i = 0;
-	}
-
-      if ((! page) || (p >= range_count (page->range)))
-	{
-	  if (page)
-	    page = page->next;
-	  else
-	    page = first_output_page;
-	  p = 0;
-	  page_label = get_output_page_label (page->output_context);
-	  process_page_numbers (page_index,
-				range_count (page->range),
-				page->range.first,
-				page_label);
-	}
-
-      parity = ((image->range.first + i) % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
-
-      memset (& input_attributes, 0, sizeof (input_attributes));
-      input_attributes.rotation = get_input_rotation (image->input_context,
-						      parity);;
-
-      process_page (image->range.first + i,
-		    input_attributes,
-		    page->bookmark_list);
-      i++;
-      p++;
-      page_index++;
-    }
-}
-
-
 boolean parse_spec_file (char *fn)
 {
   boolean result = 0;
@@ -575,4 +521,64 @@ boolean parse_spec_file (char *fn)
     fclose (yyin);
 
   return (result);
+}
+
+
+boolean process_specs (void)
+{
+  input_image_t *image = NULL;
+  output_page_t *page = NULL;
+  int i = 0;
+  int p = 0;
+  int page_index = 0;
+  input_attributes_t input_attributes;
+  input_modifier_type_t parity;
+  page_label_t *page_label;
+
+  for (;;)
+    {
+      if ((! image) || (i >= range_count (image->range)))
+	{
+	  if (image)
+	    image = image->next;
+	  else
+	    image = first_input_image;
+	  if (! image)
+	    return (0);
+	  i = 0;
+	  if (! open_tiff_input_file (get_input_file (image->input_context)))
+	    return (0);
+	}
+
+      if ((! page) || (p >= range_count (page->range)))
+	{
+	  if (page)
+	    page = page->next;
+	  else
+	    page = first_output_page;
+	  p = 0;
+	  if (! open_pdf_output_file (get_output_file (page->output_context)))
+	    return (0);
+	  page_label = get_output_page_label (page->output_context);
+	  process_page_numbers (page_index,
+				range_count (page->range),
+				page->range.first,
+				page_label);
+	}
+
+      parity = ((image->range.first + i) % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
+
+      memset (& input_attributes, 0, sizeof (input_attributes));
+      input_attributes.rotation = get_input_rotation (image->input_context,
+						      parity);;
+
+      process_page (image->range.first + i,
+		    input_attributes,
+		    page->bookmark_list);
+      i++;
+      p++;
+      page_index++;
+    }
+
+  return (1);
 }

@@ -46,9 +46,6 @@ extern int line;  /* line number in spec file */
 extern int bookmark_level;
 
 
-boolean parse_spec_file (char *fn);
-
-
 /* semantic routines for input statements */
 void input_push_context (void);
 void input_pop_context (void);
@@ -64,3 +61,8 @@ void output_set_file (char *name);
 void output_set_bookmark (char *name);
 void output_set_page_label (page_label_t label);
 void output_pages (range_t range);
+
+
+/* functions to be called from main program: */
+boolean parse_spec_file (char *fn);
+boolean process_specs (void);
