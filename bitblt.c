@@ -1,16 +1,17 @@
+#include <stdbool.h>
+#include <stdint.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "type.h"
 #include "bitblt.h"
 
 
 #define DIV_ROUND_UP(count,pow2) (((count) - 1) / (pow2) + 1)
 
 
-static const u8 bit_reverse_byte [0x100] =
+static const uint8_t bit_reverse_byte [0x100] =
 {
   0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
   0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
@@ -47,7 +48,7 @@ static const u8 bit_reverse_byte [0x100] =
 };
 
 
-void reverse_bits (u8 *p, int byte_count)
+void reverse_bits (uint8_t *p, int byte_count)
 {
   while (byte_count--)
     {
@@ -69,7 +70,7 @@ static word_type bit_reverse_word (word_type d)
 static word_type *temp_buffer;
 static word_type temp_buffer_size;
 
-static void realloc_temp_buffer (u32 size)
+static void realloc_temp_buffer (uint32_t size)
 {
   if (size <= temp_buffer_size)
     return;
@@ -121,8 +122,8 @@ static inline word_type pixel_range_mask (int left, int right)
 Bitmap *create_bitmap (Rect *rect)
 {
   Bitmap *bitmap;
-  u32 width = rect_width (rect);
-  u32 height = rect_height (rect);
+  uint32_t width = rect_width (rect);
+  uint32_t height = rect_height (rect);
 
   if ((width <= 0) || (height <= 0))
     return (NULL);
@@ -147,7 +148,7 @@ void free_bitmap (Bitmap *bitmap)
   free (bitmap);
 }
 
-boolean get_pixel (Bitmap *bitmap, Point coord)
+bool get_pixel (Bitmap *bitmap, Point coord)
 {
   word_type *p;
   int w,b;
@@ -165,7 +166,7 @@ boolean get_pixel (Bitmap *bitmap, Point coord)
   return (((*p) & pixel_mask (b)) != 0);
 }
 
-void set_pixel (Bitmap *bitmap, Point coord, boolean value)
+void set_pixel (Bitmap *bitmap, Point coord, bool value)
 {
   word_type *p;
   int w,b;
@@ -189,7 +190,7 @@ void set_pixel (Bitmap *bitmap, Point coord, boolean value)
 
 /* modifies rect1 to be the intersection of rect1 and rect2;
    returns true if intersection is non-null */
-static boolean clip_rect (Rect *rect1, Rect *rect2)
+static bool clip_rect (Rect *rect1, Rect *rect2)
 {
   if (rect1->min.y > rect2->max.y)
     goto empty;
@@ -223,12 +224,12 @@ static boolean clip_rect (Rect *rect1, Rect *rect2)
 static void blt_background (Bitmap *dest_bitmap,
 			    Rect dest_rect)
 {
-  u32 y;
+  uint32_t y;
   word_type *rp;
-  u32 left_bit, left_word;
-  u32 right_bit, right_word;
+  uint32_t left_bit, left_word;
+  uint32_t right_bit, right_word;
   word_type left_mask, right_mask;
-  s32 word_count;
+  int32_t word_count;
 
   /* This function requires a non-null dest rect */
   assert (dest_rect.min.x < dest_rect.max.x);
@@ -289,7 +290,7 @@ static void blt_background (Bitmap *dest_bitmap,
       /* use Duff's Device for the full words */
       if (word_count)
 	{
-	  s32 i = word_count;
+	  int32_t i = word_count;
 	  switch (i % 8)
 	    {
 	      while (i > 0)
@@ -323,7 +324,7 @@ static void blt (Bitmap *src_bitmap,
 		 Bitmap *dest_bitmap,
 		 Rect *dest_rect)
 {
-  s32 y;
+  int32_t y;
   word_type *rp;
 
   /* This function requires a non-null src rect */
@@ -402,18 +403,18 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 {
   Rect sr, dr;     /* src and dest rects, clipped to visible portion of
 		      dest rect */
-  u32 drw, drh;    /* dest rect width, height - gets adjusted */
+  uint32_t drw, drh;    /* dest rect width, height - gets adjusted */
   Point src_point, dest_point;
 
   /* dest coordinates: */
-  u32 x0, x1, x2, x3;
-  u32 y0, y1, y2, y3;
+  uint32_t x0, x1, x2, x3;
+  uint32_t y0, y1, y2, y3;
 
   {
     sr = * src_rect;
 
-    u32 srw = rect_width (& sr);
-    u32 srh = rect_height (& sr);
+    uint32_t srw = rect_width (& sr);
+    uint32_t srh = rect_height (& sr);
 
     if ((srw < 0) || (srh < 0))
       goto done;  /* the source rect is empty! */
@@ -595,7 +596,7 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 	       src_point.x < src_rect->max.x;
 	       src_point.x++)
 	    {
-	      boolean a;
+	      bool a;
 
 	      dest_point.x = dest_min->x + src_point.x - src_rect->min.x;
 
@@ -616,7 +617,7 @@ Bitmap *bitblt (Bitmap *src_bitmap,
 	       src_point.x < src_rect->max.x;
 	       src_point.x++)
 	    {
-	      boolean a, b, c;
+	      bool a, b, c;
 
 	      dest_point.x = dest_min->x + src_point.x - src_rect->min.x;
 
@@ -639,7 +640,7 @@ void flip_h (Bitmap *src)
   word_type *rp;  /* row pointer */
   word_type *p1;  /* work src ptr */
   word_type *p2;  /* work dest ptr */
-  s32 y;
+  int32_t y;
   int shift1, shift2;
 
   realloc_temp_buffer ((src->row_words + 1) * sizeof (word_type));
@@ -713,7 +714,7 @@ void rot_180 (Bitmap *src)  /* combination of flip_h and flip_v */
 /* "in-place" transformations - will allocate new memory and free old */
 void transpose (Bitmap *src)
 {
-  u32 new_row_words = DIV_ROUND_UP (rect_height (& src->rect), 32);
+  uint32_t new_row_words = DIV_ROUND_UP (rect_height (& src->rect), 32);
   word_type *new_bits;
 
   new_bits = calloc (1, new_row_words * rect_width (& src->rect) * sizeof (word_type));

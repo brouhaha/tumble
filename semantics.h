@@ -72,5 +72,5 @@ void output_pages (range_t range);
 
 
 /* functions to be called from main program: */
-boolean parse_spec_file (char *fn);
-boolean process_specs (void);
+bool parse_spec_file (char *fn);
+bool process_specs (void);

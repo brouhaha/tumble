@@ -1,7 +1,8 @@
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "type.h"
 #include "bitblt.h"
 
 

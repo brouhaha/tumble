@@ -1,8 +1,9 @@
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#include "type.h"
 #include "semantics.h"
 #include "parser.tab.h"
 #include "t2p.h"
@@ -10,13 +11,13 @@
 
 typedef struct
 {
-  boolean has_page_size;
+  bool has_page_size;
   page_size_t page_size;
 
-  boolean has_rotation;
+  bool has_rotation;
   int rotation;
 
-  boolean has_crop;
+  bool has_crop;
   crop_t crop;
 } input_modifiers_t;
 
@@ -57,7 +58,7 @@ typedef struct output_context_t
   bookmark_t *first_bookmark;
   bookmark_t *last_bookmark;
 
-  boolean has_page_label;
+  bool has_page_label;
   page_label_t page_label;
 } output_context_t;
 
@@ -432,9 +433,9 @@ static char *get_input_file (input_context_t *context)
   exit (2);
 }
 
-static boolean get_input_rotation (input_context_t *context,
-				   input_modifier_type_t type,
-				   int *rotation)
+static bool get_input_rotation (input_context_t *context,
+				input_modifier_type_t type,
+				int *rotation)
 {
   for (; context; context = context->parent)
     {
@@ -452,9 +453,9 @@ static boolean get_input_rotation (input_context_t *context,
   return (0);  /* default */
 }
 
-static boolean get_input_page_size (input_context_t *context,
-				    input_modifier_type_t type,
-				    page_size_t *page_size)
+static bool get_input_page_size (input_context_t *context,
+				 input_modifier_type_t type,
+				 page_size_t *page_size)
 {
   for (; context; context = context->parent)
     {
@@ -510,7 +511,7 @@ void dump_input_tree (void)
     for (i = image->range.first; i <= image->range.last; i++)
       {
 	input_modifier_type_t parity = (i % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
-	boolean has_rotation, has_page_size;
+	bool has_rotation, has_page_size;
 	int rotation;
 	page_size_t page_size;
 
@@ -571,9 +572,9 @@ static inline int range_count (range_t range)
 }
 
 
-boolean parse_spec_file (char *fn)
+bool parse_spec_file (char *fn)
 {
-  boolean result = 0;
+  bool result = 0;
 
   yyin = fopen (fn, "r");
   if (! yyin)
@@ -617,7 +618,7 @@ boolean parse_spec_file (char *fn)
 }
 
 
-boolean process_specs (void)
+bool process_specs (void)
 {
   input_image_t *image = NULL;
   output_page_t *page = NULL;

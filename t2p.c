@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * Main program
- * $Id: t2p.c,v 1.18 2002/08/25 21:43:49 eric Exp $
+ * $Id: t2p.c,v 1.19 2002/08/25 22:02:31 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,6 +23,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA */
 
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,7 +35,6 @@
 #include <panda/functions.h>
 #include <panda/constants.h>
 
-#include "type.h"
 #include "bitblt.h"
 #include "semantics.h"
 #include "parser.tab.h"
@@ -62,7 +63,7 @@ output_file_t *out;
 /* panda_pdf *out; */
 
 
-boolean close_tiff_input_file (void)
+bool close_tiff_input_file (void)
 {
   if (in)
     {
@@ -74,7 +75,7 @@ boolean close_tiff_input_file (void)
   return (1);
 }
 
-boolean open_tiff_input_file (char *name)
+bool open_tiff_input_file (char *name)
 {
   if (in)
     {
@@ -99,7 +100,7 @@ boolean open_tiff_input_file (char *name)
 }
 
 
-boolean close_pdf_output_files (void)
+bool close_pdf_output_files (void)
 {
   output_file_t *o, *n;
 
@@ -115,8 +116,8 @@ boolean close_pdf_output_files (void)
   return (1);
 }
 
-boolean open_pdf_output_file (char *name,
-			      pdf_file_attributes_t *attributes)
+bool open_pdf_output_file (char *name,
+			   pdf_file_attributes_t *attributes)
 {
   output_file_t *o;
 
@@ -225,23 +226,23 @@ static void rotate_bitmap (Bitmap *src,
 
 #define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
 
-boolean process_page (int image,  /* range 1 .. n */
-		      input_attributes_t input_attributes,
-		      bookmark_t *bookmarks)
+bool process_page (int image,  /* range 1 .. n */
+		   input_attributes_t input_attributes,
+		   bookmark_t *bookmarks)
 {
   int result = 0;
 
-  u32 image_length, image_width;
-  u32 dest_image_length, dest_image_width;
+  uint32_t image_length, image_width;
+  uint32_t dest_image_length, dest_image_width;
 #ifdef CHECK_DEPTH
-  u32 image_depth;
+  uint32_t image_depth;
 #endif
 
-  u16 samples_per_pixel;
-  u16 bits_per_sample;
-  u16 planar_config;
+  uint16_t samples_per_pixel;
+  uint16_t bits_per_sample;
+  uint16_t planar_config;
 
-  u16 resolution_unit;
+  uint16_t resolution_unit;
   float x_resolution, y_resolution;
   float dest_x_resolution, dest_y_resolution;
 
@@ -381,7 +382,7 @@ boolean process_page (int image,  /* range 1 .. n */
       }
 
 #ifdef TIFF_REVERSE_BITS
-  reverse_bits ((u8 *) bitmap->bits,
+  reverse_bits ((uint8_t *) bitmap->bits,
 		image_length * bitmap->row_words * sizeof (word_type));
 #endif /* TIFF_REVERSE_BITS */
 
@@ -424,7 +425,7 @@ boolean process_page (int image,  /* range 1 .. n */
   TIFFSetField (tiff_temp, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
 
 #ifdef TIFF_REVERSE_BITS
-  reverse_bits ((u8 *) bitmap->bits,
+  reverse_bits ((uint8_t *) bitmap->bits,
 		image_length * bitmap->row_words * sizeof (word_type));
 #endif /* TIFF_REVERSE_BITS */
 

@@ -1,7 +1,7 @@
 typedef struct Point
 {
-  s32 x;
-  s32 y;
+  int32_t x;
+  int32_t y;
 } Point;
 
 typedef struct Rect
@@ -10,18 +10,18 @@ typedef struct Rect
   Point max;
 } Rect;
 
-static inline s32 rect_width (Rect *r)
+static inline int32_t rect_width (Rect *r)
 {
   return (r->max.x - r->min.x);
 }
 
-static inline s32 rect_height (Rect *r)
+static inline int32_t rect_height (Rect *r)
 {
   return (r->max.y - r->min.y);
 }
 
 
-typedef u32 word_type;
+typedef uint32_t word_type;
 #define BITS_PER_WORD (8 * sizeof (word_type))
 #define ALL_ONES (~ 0U)
 
@@ -30,7 +30,7 @@ typedef struct Bitmap
 {
   word_type *bits;
   Rect rect;
-  u32 row_words;
+  uint32_t row_words;
 } Bitmap;
 
 
@@ -43,8 +43,8 @@ typedef struct Bitmap
 Bitmap *create_bitmap (Rect *rect);
 void free_bitmap (Bitmap *bitmap);
 
-boolean get_pixel (Bitmap *bitmap, Point coord);
-void set_pixel (Bitmap *bitmap, Point coord, boolean value);
+bool get_pixel (Bitmap *bitmap, Point coord);
+void set_pixel (Bitmap *bitmap, Point coord, bool value);
 
 
 Bitmap *bitblt (Bitmap *src_bitmap,
@@ -68,4 +68,4 @@ void rot_90 (Bitmap *src);   /* transpose + flip_h */
 void rot_270 (Bitmap *src);  /* transpose + flip_v */
 
 
-void reverse_bits (u8 *p, int byte_count);
+void reverse_bits (uint8_t *p, int byte_count);

@@ -1,6 +1,7 @@
 %{
+  #include <stdbool.h>
+  #include <stdint.h>
   #include <stdio.h>
-  #include "type.h"
   #include "semantics.h"
 %}
 
@@ -186,7 +187,7 @@ pdf_file_attributes:
 
 output_file_clause:
 	FILE_KEYWORD STRING { output_set_file ($2); }
-	pdf_file_attributes ';'
+	pdf_file_attributes ';' ;
 
 label_clause:
 	LABEL ';' { page_label_t label = { NULL, '\0' }; output_set_page_label (label); }

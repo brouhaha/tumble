@@ -1,14 +1,15 @@
 /*
-$Id: scanner.l,v 1.15 2002/01/02 02:17:24 eric Exp $
+$Id: scanner.l,v 1.16 2002/08/25 22:02:31 eric Exp $
 */
 
 %option case-insensitive
 %option noyywrap
 
 %{
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "type.h"
 #include "semantics.h"
 #include "parser.tab.h"
 
