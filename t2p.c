@@ -1,7 +1,7 @@
 /*
  * tiffg4: reencode a bilevel TIFF file as a single-strip TIFF Class F Group 4
  * Main program
- * $Id: t2p.c,v 1.8 2001/12/31 19:44:40 eric Exp $
+ * $Id: t2p.c,v 1.9 2001/12/31 21:02:44 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,8 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <tiffio.h>
 #include <panda/functions.h>
 #include <panda/constants.h>
@@ -31,6 +33,13 @@
 #include "semantics.h"
 #include "parser.tab.h"
 #include "tiff2pdf.h"
+
+
+#define POINTS_PER_INCH 72
+
+/* page size limited by Acrobat Reader to 45 inches on a side */
+#define PAGE_MAX_INCHES 45
+#define PAGE_MAX_POINTS (PAGE_MAX_INCHES * POINTS_PER_INCH)
 
 
 typedef struct output_file_t
@@ -166,9 +175,22 @@ boolean process_page (int image,  /* range 1 .. n */
   u16 planar_config;
   u16 resolution_unit;
   float x_resolution, y_resolution;
+  int width_points, height_points;  /* really 1/72 inch units rather than
+				       points */
+
 
   char *buffer;
   u32 row;
+
+  panda_page *page;
+
+  int tiff_temp_fd;
+  char tiff_temp_fn [] = "/var/tmp/tiff2pdf-XXXXXX\0";
+  TIFF *tiff_temp;
+  
+  char pagesize [26];  /* Needs to hold two ints of four characters (0..3420),
+			  two zeros, three spaces, two brackets, and a NULL.
+                          Added an extra ten characters just in case. */
 
   if (! TIFFSetDirectory (in, image - 1))
     {
@@ -243,21 +265,33 @@ boolean process_page (int image,  /* range 1 .. n */
       goto fail;
     }
 
-#if 0
-  TIFFSetField (out->pdf, TIFFTAG_IMAGELENGTH, image_length);
-  TIFFSetField (out->pdf, TIFFTAG_IMAGEWIDTH, image_width);
-  TIFFSetField (out->pdf, TIFFTAG_PLANARCONFIG, planar_config);
+  tiff_temp_fd = mkstemp (tiff_temp_fn);
+  if (tiff_temp_fd < 0)
+    {
+      fprintf (stderr, "can't create temporary TIFF file\n");
+      goto fail;
+    }
 
-  TIFFSetField (out->pdf, TIFFTAG_ROWSPERSTRIP, image_length);
+  tiff_temp = TIFFFdOpen (tiff_temp_fd, tiff_temp_fn, "w");
+  if (! out)
+    {
+      fprintf (stderr, "can't open temporary TIFF file '%s'\n", tiff_temp_fn);
+      goto fail;
+    }
 
-  TIFFSetField (out->pdf, TIFFTAG_RESOLUTIONUNIT, resolution_unit);
-  TIFFSetField (out->pdf, TIFFTAG_XRESOLUTION, x_resolution);
-  TIFFSetField (out->pdf, TIFFTAG_YRESOLUTION, y_resolution);
+  TIFFSetField (tiff_temp, TIFFTAG_IMAGELENGTH, image_length);
+  TIFFSetField (tiff_temp, TIFFTAG_IMAGEWIDTH, image_width);
+  TIFFSetField (tiff_temp, TIFFTAG_PLANARCONFIG, planar_config);
 
-  TIFFSetField (out->pdf, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
-  TIFFSetField (out->pdf, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
-  TIFFSetField (out->pdf, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
-#endif
+  TIFFSetField (tiff_temp, TIFFTAG_ROWSPERSTRIP, image_length);
+
+  TIFFSetField (tiff_temp, TIFFTAG_RESOLUTIONUNIT, resolution_unit);
+  TIFFSetField (tiff_temp, TIFFTAG_XRESOLUTION, x_resolution);
+  TIFFSetField (tiff_temp, TIFFTAG_YRESOLUTION, y_resolution);
+
+  TIFFSetField (tiff_temp, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
+  TIFFSetField (tiff_temp, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
+  TIFFSetField (tiff_temp, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE);
 
   buffer = _TIFFmalloc (TIFFScanlineSize (in));
   if (! buffer)
@@ -269,12 +303,36 @@ boolean process_page (int image,  /* range 1 .. n */
   for (row = 0; row < image_length; row++)
     {
       TIFFReadScanline (in, buffer, row, 0);
-#if 0
-      TIFFWriteScanline (out->pdf, buffer, row, 0);
-#endif
+      TIFFWriteScanline (tiff_temp, buffer, row, 0);
     }
 
   _TIFFfree (buffer);
+  TIFFClose (tiff_temp);
+
+  height_points = (image_width / x_resolution) * POINTS_PER_INCH;
+  width_points = (image_length / y_resolution) * POINTS_PER_INCH;
+
+  if ((height_points > PAGE_MAX_POINTS) || (width_points > PAGE_MAX_POINTS))
+    {
+      fprintf (stdout, "image too large (max %d inches on a side\n", PAGE_MAX_INCHES);
+      goto fail;
+    }
+
+  printf ("height_points %d, width_points %d\n", height_points, width_points);
+
+  sprintf (pagesize, "[0 0 %d %d]", width_points, height_points);
+
+  page = panda_newpage (out->pdf, pagesize);
+  panda_imagebox (out->pdf,
+		  page,
+		  0, /* top */
+		  0, /* left */
+		  height_points, /* bottom */
+		  width_points, /* right */
+		  tiff_temp_fn,
+		  panda_image_tiff);
+
+  unlink (tiff_temp_fn);
 
   return (1);
 
