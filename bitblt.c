@@ -12,19 +12,22 @@ static inline u8 pixel_mask (x)
 #endif
 }
 
-static inline u32 rect_width (Rect r)
+static inline s32 rect_width (Rect r)
 {
   return (r.lower_right.x - r.upper_left.x);
 }
 
-static inline u32 rect_height (Rect r)
+static inline s32 rect_height (Rect r)
 {
   return (r.lower_right.y - r.upper_left.y);
 }
 
-Bitmap *create_bitmap (u32 width, u32 height)
+Bitmap *create_bitmap (s32 width, s32 height)
 {
   Bitmap *bitmap;
+
+  if ((width <= 0) || (height <= 0))
+    return (NULL);
 
   bitmap = calloc (1, sizeof (Bitmap));
   if (! bitmap)

@@ -1,7 +1,7 @@
 typedef struct Point
 {
-  int x;
-  int y;
+  s32 x;
+  s32 y;
 } Point;
 
 typedef struct Rect
@@ -13,8 +13,8 @@ typedef struct Rect
 typedef struct Bitmap
 {
   u8 *bits;
-  u32 width;
-  u32 height;
+  s32 width;
+  s32 height;
   u32 rowbytes;
 } Bitmap;
 
@@ -35,7 +35,7 @@ typedef struct Bitmap
 #define ROT_270   (TRANSPOSE + FLIP_V)
 
 
-Bitmap *create_bitmap (u32 width, u32 height);
+Bitmap *create_bitmap (s32 width, s32 height);
 void free_bitmap (Bitmap *bitmap);
 boolean get_pixel (Bitmap *bitmap, Point coord);
 void set_pixel (Bitmap *bitmap, Point coord, boolean value);
