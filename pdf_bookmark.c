@@ -4,7 +4,7 @@
  *      will be compressed using ITU-T T.6 (G4) fax encoding.
  *
  * PDF routines
- * $Id: pdf_bookmark.c,v 1.1 2003/03/04 17:58:36 eric Exp $
+ * $Id: pdf_bookmark.c,v 1.2 2003/03/04 18:26:43 eric Exp $
  * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -53,6 +53,8 @@ static void pdf_bookmark_update_count (pdf_bookmark_handle entry)
       pdf_set_integer (count_obj,
 		       pdf_get_integer (count_obj) +
 		       ((entry->open) ? 1 : -1));
+      if (! entry->open)
+	break;
       entry = entry->parent;
     }
 }
