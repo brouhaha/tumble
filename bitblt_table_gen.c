@@ -2,7 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * bitblt table generator
- * $Id: bitblt_table_gen.c,v 1.7 2003/03/13 00:57:05 eric Exp $
+ * $Id: bitblt_table_gen.c,v 1.8 2003/08/18 01:59:41 eric Exp $
  * Copyright 2003 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -71,6 +71,16 @@ int count_run (int byte, int start_bit, int desired_val)
   int count = 0;
   int i;
 
+#ifdef WORDS_BIGENDIAN
+  for (i = 7 - start_bit; i >= 0; i--)
+    {
+      int bit = (byte >> i) & 1;
+      if (bit == desired_val)
+	count++;
+      else
+	break;
+    }
+#else
   for (i = start_bit; i < 8; i++)
     {
       int bit = (byte >> i) & 1;
@@ -79,6 +89,8 @@ int count_run (int byte, int start_bit, int desired_val)
       else
 	break;
     }
+#endif
+
   return (count);
 }
 
