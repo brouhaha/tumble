@@ -1,6 +1,6 @@
 # t2p: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.18 2003/03/07 02:16:08 eric Exp $
+# $Id: Makefile,v 1.19 2003/03/07 23:23:49 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -19,13 +19,25 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111  USA
 
 
-CFLAGS = -Wall -g
 
-# Panda is not all that common, so we'll statically link it in order to
-# make the t2p binary more portable.
+DEBUG=1
+# STATIC=1
 
-LDFLAGS = -g
-LDLIBS = -ltiff -lm
+
+CFLAGS = -Wall
+LDFLAGS =
+LDLIBS = -ltiff -ljpeg -lz -lm
+
+ifdef DEBUG
+CFLAGS := $(CFLAGS) -g
+LDFLAGS := $(LDFLAGS) -g
+LDLIBS := $(LDLIBS) -lefence -lpthread
+endif
+
+ifdef STATIC
+LDLIBS := -Wl,-static $(LDLIBS)
+endif
+
 
 YACC = bison
 YFLAGS = -d -v
@@ -36,7 +48,7 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.10
+VERSION = 0.11
 
 PACKAGE = t2p
 
@@ -64,8 +76,13 @@ all: $(TARGETS)
 
 
 t2p: t2p.o scanner.o semantics.o parser.tab.o bitblt.o \
-	pdf_g4.o \
-	pdf.o pdf_util.o pdf_prim.o pdf_bookmark.o pdf_name_tree.o
+		pdf_g4.o \
+		pdf.o pdf_util.o pdf_prim.o pdf_bookmark.o pdf_name_tree.o
+	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
+ifndef DEBUG
+	strip $@
+endif
+
 
 bitblt_tables.h: bitblt_table_gen
 	./bitblt_table_gen >bitblt_tables.h
