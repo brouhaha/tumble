@@ -1,7 +1,7 @@
 /*
  * tiffg4: reencode a bilevel TIFF file as a single-strip TIFF Class F Group 4
  * Main program
- * $Id: tumble.c,v 1.1 2001/12/29 09:44:24 eric Exp $
+ * $Id: tumble.c,v 1.2 2001/12/29 10:59:47 eric Exp $
  * Copyright 2001 Eric Smith <eric@brouhaha.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -32,6 +32,7 @@
 #include "tiff2pdf.h"
 
 
+FILE *yyin;
 TIFF *in;
 panda_pdf *out;
 
@@ -206,10 +207,14 @@ boolean process_page (int image)  /* range 1 .. n */
 }
 
 
+void yyerror (char *s)
+{
+  fprintf (stderr, "%s\n", s);
+}
+
 
 int main (int argc, char *argv[])
 {
-  FILE *spec;
   int result = 0;
 
   panda_init ();
@@ -221,8 +226,8 @@ int main (int argc, char *argv[])
       goto fail;
     }
 
-  spec = fopen (argv [2], "r");
-  if (! spec)
+  yyin = fopen (argv [2], "r");
+  if (! yyin)
     {
       fprintf (stderr, "can't open spec file '%s'\n", argv [2]);
       result = 3;
@@ -232,6 +237,7 @@ int main (int argc, char *argv[])
   yyparse ();
 
  fail:
+  fclose (yyin);
   close_tiff_input_file ();
   close_pdf_output_file ();
   return (result);

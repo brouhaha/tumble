@@ -73,8 +73,8 @@ image_ranges:
 	| image_ranges ',' range ;
 
 
-file_clause:
-	FILE_KEYWORD STRING  ';' ;
+input_file_clause:
+	FILE_KEYWORD STRING  ';'  { open_tiff_input_file ($2) } ;
 
 image_clause:
 	IMAGE INTEGER ';'
@@ -135,7 +135,7 @@ part_clauses:
 	| part_clauses part_clause;
 
 input_clause:
-	file_clause
+	input_file_clause
 	| image_clause
 	| images_clause
 	| modifier_clause
@@ -150,6 +150,9 @@ input_clause_list:
 
 input_statement:
 	INPUT input_clauses ;
+
+output_file_clause:
+	FILE_KEYWORD STRING  ';' { open_pdf_output_file ($2) } ;
 
 page_ranges:
 	range
@@ -168,7 +171,9 @@ bookmark_clause:
 	| BOOKMARK STRING ';' ;
 
 output_clause:
-	page_clause | pages_clause | bookmark_clause
+	output_file_clause
+	| page_clause | pages_clause
+	| bookmark_clause
 	| output_clause_list ;
 
 output_clauses:

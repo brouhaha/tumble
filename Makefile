@@ -1,6 +1,6 @@
 # tiff2pdf: build a PDF file out of one or more TIFF Class F Group 4 files
 # Makefile
-# $Id: Makefile,v 1.4 2001/12/29 09:44:27 eric Exp $
+# $Id: Makefile,v 1.5 2001/12/29 10:59:17 eric Exp $
 # Copyright 2001 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -24,11 +24,13 @@ LDLIBS = -g -ltiff -lm -L/usr/local/lib/panda -lpanda -lpng
 YACC = bison
 YFLAGS = -d -v
 
+SRCS = bitblt.c bitblt_test.c tiff2pdf.c
+HDRS = type.h bitblt.h tiff2pdf.h
+MISC = Makefile scanner.l parser.y
+
 tiff2pdf: tiff2pdf.o scanner.o parser.tab.o
 
 bitblt_test: bitblt_test.o bitblt.o
-
-pandamain: pandamain.o
 
 
 %.tab.c %.tab.h: %.y

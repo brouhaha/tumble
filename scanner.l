@@ -1,8 +1,13 @@
+/*
+$Id: scanner.l,v 1.6 2001/12/29 10:59:33 eric Exp $
+*/
+
 %option case-insensitive
 
 %{
 #include "parser.tab.h"
-}%
+%}
+
 
 digit [0-9]
 alpha [a-zA-Z]
@@ -12,7 +17,7 @@ alpha [a-zA-Z]
 \.\.		{ return (ELIPSIS); }
 
 {digit}+	{ yylval.integer = atoi (yytext); return (INTEGER); }
-{digit}+.{digit}* { yylval.float = atof (yytext); return (FLOAT); }
+{digit}+.{digit}* { yylval.fp = atof (yytext); return (FLOAT); }
 
 a		{ yylval.size.width = 8.5 * 25.4;
 		  yylval.size.height = 11.0 * 25.4;
@@ -50,7 +55,7 @@ resolution	{ return (RESOLUTION) ; }
 rotate		{ return (ROTATE); }
 size		{ return (SIZE); }
 
-\".*\"		{ yylval.string = newstr (yytext); return (STRING); }
+\".*\"		{ yylval.string = strdup (yytext); return (STRING); }
 
 [ \t\n]+	/* whitespace */
 
@@ -58,3 +63,4 @@ size		{ return (SIZE); }
 
 .		{ printf( "Unrecognized character: %s\n", yytext ); }
 
+%%
