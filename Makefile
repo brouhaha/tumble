@@ -1,6 +1,6 @@
 # tumble: build a PDF file from image files
 # Makefile
-# $Id: Makefile,v 1.30 2003/03/13 03:42:23 eric Exp $
+# $Id: Makefile,v 1.31 2003/03/13 03:50:59 eric Exp $
 # Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,7 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.25
+VERSION = 0.26
 
 PACKAGE = tumble
 
@@ -123,7 +123,7 @@ dist: $(DISTFILES)
 rh-rel := $(shell sed 's/^Red Hat Linux release \([0-9][0-9]*\.[0-9][0-9]*\) (.*)/\1/' </etc/redhat-release)
 
 bin-dist-rh: COPYING $(TARGETS) /etc/redhat-release
-	tar --gzip -chf $(DISTNAME)-${rh-rel}.tar.gz COPYING $(TARGETS)
+	tar --gzip -chf $(DISTNAME)-rh${rh-rel}.tar.gz COPYING $(TARGETS)
 
 
 clean:
