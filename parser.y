@@ -6,15 +6,18 @@
 
 %union {
   int integer;
+  char character;
   double fp;
   char *string;
   page_size_t size;
   range_t range;
+  page_label_t page_label;
 }
 
 %token <integer> INTEGER
 %token <fp> FLOAT
 %token <string> STRING
+%token <character> CHARACTER
 %token <size> PAGE_SIZE
 
 %token ELIPSIS
@@ -38,7 +41,7 @@
 %token RESOLUTION
 %token INPUT
 
-%token FORMAT
+%token LABEL
 %token PAGE
 %token PAGES
 %token BOOKMARK
@@ -151,8 +154,11 @@ input_statement:
 output_file_clause:
 	FILE_KEYWORD STRING  ';' { output_set_file ($2) } ;
 
-format_clause:
-	FORMAT STRING ';' { output_set_page_number_format ($2) } ;
+label_clause:
+	LABEL ';' { page_label_t label = { NULL, '\0' }; output_set_page_label (label); }
+	| LABEL STRING ';' { page_label_t label = { $2, '\0' }; output_set_page_label (label); }
+	| LABEL CHARACTER ';' { page_label_t label = { NULL, $2 }; output_set_page_label (label); }
+	| LABEL STRING ',' CHARACTER ';' { page_label_t label = { $2, $4 }; output_set_page_label (label); } ;
 
 page_ranges:
 	range { output_pages ($1); }
@@ -172,13 +178,13 @@ bookmark_name_list:
 	| bookmark_name_list ',' bookmark_name ;
 
 bookmark_clause:
-	BOOKMARK { output_push_context (); }
+	BOOKMARK { output_push_context (); bookmark_level++; }
 	bookmark_name_list
-	output_clause_list ';' { output_pop_context (); } ;
+	output_clause_list ';' { bookmark_level--; output_pop_context (); } ;
 
 output_clause:
 	output_file_clause
-	| format_clause
+	| label_clause
 	| page_clause | pages_clause
 	| bookmark_clause
 	| output_clause_list ;

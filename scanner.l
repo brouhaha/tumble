@@ -1,5 +1,5 @@
 /*
-$Id: scanner.l,v 1.11 2001/12/30 23:25:08 eric Exp $
+$Id: scanner.l,v 1.12 2001/12/31 19:46:08 eric Exp $
 */
 
 %option case-insensitive
@@ -54,11 +54,11 @@ cm		{ return (CM); }
 crop		{ return (CROP); }
 even		{ return (EVEN); }
 file		{ return (FILE_KEYWORD); }
-format		{ return (FORMAT); }
 image		{ return (IMAGE); }
 images		{ return (IMAGES); }
 inch		{ return (INCH); }
 input		{ return (INPUT); }
+label		{ return (LABEL); }
 landscape	{ return (LANDSCAPE); }
 odd		{ return (ODD); }
 output		{ return (OUTPUT); }
@@ -69,7 +69,12 @@ resolution	{ return (RESOLUTION) ; }
 rotate		{ return (ROTATE); }
 size		{ return (SIZE); }
 
-\"[^\n"]*\"		{ 
+'[^\n']'	{
+		  yylval.character = yytext [1];
+		  return (CHARACTER);
+		}
+
+\"[^\n"]*\"	{
                   int len = strlen (yytext) - 2;
                   yylval.string = malloc (len + 1);
                   memcpy (yylval.string, yytext + 1, len);
