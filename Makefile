@@ -26,6 +26,7 @@
 #DEBUG=1
 #EFENCE=1
 #STATIC=1
+CTL_LANG=1
 
 
 CFLAGS = -Wall
@@ -80,12 +81,23 @@ DISTNAME = $(PACKAGE)-$(VERSION)
 BIN_DISTFILES = COPYING README $(TARGETS)
 
 
-AUTO_CSRCS = scanner.c parser.tab.c bitblt_tables.c g4_tables.c
-AUTO_HDRS = parser.tab.h  bitblt_tables.h g4_tables.h
+AUTO_CSRCS = bitblt_tables.c g4_tables.c
+AUTO_HDRS = bitblt_tables.h g4_tables.h
+
+ifdef CTL_LANG
+AUTO_CSRCS += scanner.c parser.tab.c
+AUTO_HDRS += parser_tab.h
 AUTO_MISC = parser.output
+endif
 
 
-CFLAGS := $(CFLAGS) -DTUMBLE_VERSION=$(VERSION)
+CDEFINES = -DTUMBLE_VERSION=$(VERSION)
+
+ifdef CTL_LANG
+CDEFINES += -DCTL_LANG
+endif
+
+CFLAGS := $(CFLAGS) $(CDEFINES)
 
 
 -include Maketest
@@ -94,13 +106,18 @@ CFLAGS := $(CFLAGS) -DTUMBLE_VERSION=$(VERSION)
 all: $(TARGETS) $(TEST_TARGETS)
 
 
-tumble: tumble.o semantics.o \
+TUMBLE_OBJS = tumble.o semantics.o \
 		tumble_input.o tumble_tiff.o tumble_jpeg.o tumble_pbm.o \
-		scanner.o parser.tab.o \
 		bitblt.o bitblt_g4.o bitblt_tables.o g4_tables.o \
 		pdf.o pdf_util.o pdf_prim.o pdf_name_tree.o \
 		pdf_bookmark.o pdf_page_label.o \
 		pdf_text.o pdf_g4.o pdf_jpeg.o
+
+ifdef CTL_LANG
+TUMBLE_OBJS += scanner.o parser.tab.o
+endif
+
+tumble: $(TUMBLE_OBJS)
 	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
 ifndef DEBUG
 	strip $@
@@ -132,11 +149,11 @@ dist: $(DISTFILES)
 	-rm -rf $(DISTNAME)
 
 
-rh-rel := $(shell sed 's/^Red Hat Linux release \([0-9][0-9]*\.[0-9][0-9]*\) (.*)/\1/' </etc/redhat-release)
-
 bin-dist-rh: $(BIN_DISTFILES) /etc/redhat-release
-	tar --gzip -chf $(DISTNAME)-rh${rh-rel}.tar.gz $(BIN_DISTFILES)
+	tar --gzip -chf $(DISTNAME)-rh$(shell sed 's/^Red Hat Linux release \([0-9][0-9.]*\) (.*)/\1/' </etc/redhat-release).tar.gz $(BIN_DISTFILES)
 
+bin-dist-fc: $(BIN_DISTFILES) /etc/fedora-release
+	tar --gzip -chf $(DISTNAME)-fc$(shell sed 's/^Fedora Core release \([0-9][0-9.]*\) (.*)/\1/' </etc/fedora-release).tar.gz $(BIN_DISTFILES)
 
 clean:
 	rm -f *.o *.d $(TARGETS) $(AUTO_CSRCS) $(AUTO_HDRS) $(AUTO_MISC)

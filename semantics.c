@@ -29,7 +29,11 @@
 #include <stdio.h>
 
 #include "semantics.h"
+
+#ifdef CTL_LANG
 #include "parser.tab.h"
+#endif
+
 #include "tumble.h"
 
 
@@ -596,6 +600,7 @@ static inline int range_count (range_t range)
 }
 
 
+#ifdef CTL_LANG
 bool parse_control_file (char *fn)
 {
   bool result = 0;
@@ -736,3 +741,4 @@ bool process_controls (void)
       page_index++;
     }
 }
+#endif /* CTL_LANG */

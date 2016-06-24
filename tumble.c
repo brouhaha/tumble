@@ -32,7 +32,11 @@
 
 
 #include "semantics.h"
+
+#ifdef CTL_LANG
 #include "parser.tab.h"
+#endif
+
 #include "tumble.h"
 #include "bitblt.h"
 #include "pdf.h"
@@ -73,7 +77,9 @@ void usage (void)
   fprintf (stderr, "http://tumble.brouhaha.com/\n");
   fprintf (stderr, "\n");
   fprintf (stderr, "usage:\n");
+#ifdef CTL_LANG
   fprintf (stderr, "    %s [options] -c <control.tum>\n", progname);
+#endif
   fprintf (stderr, "    %s [options] <input.tif>... -o <output.pdf>\n", progname);
   fprintf (stderr, "options:\n");
   fprintf (stderr, "    -v        verbose\n");
@@ -389,6 +395,7 @@ int main (int argc, char *argv[])
 	      else
 		fatal (1, "missing filename after \"-o\" option\n");
 	    }
+#ifdef CTL_LANG
 	  else if (strcmp (argv [1], "-c") == 0)
 	    {
 	      if (argc)
@@ -400,6 +407,7 @@ int main (int argc, char *argv[])
 	      else
 		fatal (1, "missing filename after \"-s\" option\n");
 	    }
+#endif
 	  else if (strcmp (argv [1], "-b") == 0)
 	    {
 	      if (argc)
