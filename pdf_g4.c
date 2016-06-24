@@ -19,6 +19,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2008-12-30 [JDB] Fixed bug wherein "pdf_write_g4_content_callback" called
+ *                   "pdf_stream_printf" to write XObject name without escaping
+ *                   restricted characters.  Now calls "pdf_write_name".
+ *
+ *  2010-09-02 [JDB] Added support for min-is-black TIFF images.
  */
 
 
@@ -40,11 +46,8 @@ struct pdf_g4_image
 {
   double width, height;
   double x, y;
-  double r, g, b;  /* fill color, only for ImageMask */
   unsigned long Columns;
   unsigned long Rows;
-  bool ImageMask;
-  bool BlackIs1;
   Bitmap *bitmap;
   char XObject_name [4];
 };
@@ -60,12 +63,9 @@ static void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
   pdf_stream_printf (pdf_file, stream, "q %g 0 0 %g %g %g cm ",
 		     image->width, image->height,
 		     image->x, image->y);
-  if (image->ImageMask)
-    pdf_stream_printf (pdf_file, stream, "%g %g %g rg ",
-		       image->r, image->g, image->b);
 
-  pdf_stream_printf (pdf_file, stream, "/%s Do Q\r\n",
-		     image->XObject_name);
+  pdf_write_name (pdf_file, image->XObject_name);
+  pdf_stream_printf (pdf_file, stream, "Do Q\r\n");
 }
 
 
@@ -84,12 +84,10 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 			     double y,
 			     double width,
 			     double height,
+			     bool negative,
 			     Bitmap *bitmap,
-			     bool ImageMask,
-			     double r, /* RGB fill color, only for ImageMask */
-			     double g,
-			     double b,
-			     bool BlackIs1)          /* boolean, typ. false */
+			     colormap_t *colormap,
+			     rgb_range_t *transparency)
 {
   struct pdf_g4_image *image;
 
@@ -99,6 +97,16 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 
   struct pdf_obj *content_stream;
 
+  struct pdf_obj *contents;
+  struct pdf_obj *mask;
+  
+  typedef char MAP_STRING[6];
+  
+  MAP_STRING color_index;
+  static MAP_STRING last_color_index;
+  static struct pdf_obj *color_space;
+
+
   pdf_add_array_elem_unique (pdf_page->procset, pdf_new_name ("ImageB"));
 
   image = pdf_calloc (1, sizeof (struct pdf_g4_image));
@@ -107,15 +115,10 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
   image->height = height;
   image->x = x;
   image->y = y;
-  image->r = r;
-  image->g = g;
-  image->b = b;
 
   image->bitmap = bitmap;
   image->Columns = bitmap->rect.max.x - bitmap->rect.min.x;
   image->Rows = bitmap->rect.max.y - bitmap->rect.min.y;
-  image->ImageMask = ImageMask;
-  image->BlackIs1 = BlackIs1;
 
   stream_dict = pdf_new_obj (PT_DICTIONARY);
 
@@ -134,8 +137,42 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
   pdf_set_dict_entry (stream_dict, "Width",   pdf_new_integer (image->Columns));
   pdf_set_dict_entry (stream_dict, "Height",  pdf_new_integer (image->Rows));
   pdf_set_dict_entry (stream_dict, "BitsPerComponent", pdf_new_integer (1));
-  if (ImageMask)
-    pdf_set_dict_entry (stream_dict, "ImageMask", pdf_new_bool (ImageMask));
+
+  if (transparency)
+    {
+      mask = pdf_new_obj (PT_ARRAY);
+      
+      pdf_add_array_elem (mask, pdf_new_integer (transparency->red.first));
+      pdf_add_array_elem (mask, pdf_new_integer (transparency->red.last));
+
+      pdf_set_dict_entry (stream_dict, "Mask", mask);
+    }
+
+  if (colormap)
+    {
+      color_index [0] = (char) colormap->black_map.red;
+      color_index [1] = (char) colormap->black_map.green;
+      color_index [2] = (char) colormap->black_map.blue;
+      color_index [3] = (char) colormap->white_map.red;
+      color_index [4] = (char) colormap->white_map.green;
+      color_index [5] = (char) colormap->white_map.blue;
+
+      if ((color_space == NULL) || 
+          (memcmp (color_index, last_color_index, sizeof (MAP_STRING)) != 0))
+	{
+	  memcpy (last_color_index, color_index, sizeof (MAP_STRING));
+
+	  color_space = pdf_new_obj (PT_ARRAY);
+	  pdf_add_array_elem (color_space, pdf_new_name ("Indexed"));
+	  pdf_add_array_elem (color_space, pdf_new_name ("DeviceRGB"));
+	  pdf_add_array_elem (color_space, pdf_new_integer (1));
+	  pdf_add_array_elem (color_space, pdf_new_string_n (color_index, 6));
+
+	  color_space = pdf_new_ind_ref (pdf_page->pdf_file, color_space);
+	}
+
+      pdf_set_dict_entry (stream_dict, "ColorSpace", color_space);
+    }
   else
     pdf_set_dict_entry (stream_dict, "ColorSpace", pdf_new_name ("DeviceGray"));
 
@@ -153,10 +190,10 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 		      "Rows",
 		      pdf_new_integer (image->Rows));
 
-  if (BlackIs1)
+  if (negative)
     pdf_set_dict_entry (decode_parms,
 			"BlackIs1",
-			pdf_new_bool (BlackIs1));
+			pdf_new_bool (true));
 
   pdf_stream_add_filter (stream, "CCITTFaxDecode", decode_parms);
 
@@ -170,7 +207,13 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 						    & pdf_write_g4_content_callback,
 						    image));
 
-  pdf_set_dict_entry (pdf_page->page_dict, "Contents", content_stream);
+  contents = pdf_get_dict_entry (pdf_page->page_dict, "Contents");
+
+  if (! contents)
+    contents = pdf_new_obj (PT_ARRAY);
+
+  pdf_add_array_elem (contents, content_stream);
+  pdf_set_dict_entry (pdf_page->page_dict, "Contents", contents);
 
   pdf_write_ind_obj (pdf_page->pdf_file, content_stream);
 }

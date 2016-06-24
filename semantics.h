@@ -19,20 +19,60 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2009-03-13 [JDB] Add support for blank pages, overlay images, color
+ *                   mapping, color-key masking, and push/pop of input
+ *                   contexts.
  */
 
-
-typedef struct 
-{
-  double width;
-  double height;
-} page_size_t;
+// HACK! rgb_t and colormap_t have to appear here and in pdf_g4!  See pdf.h
+#define SEMANTICS
 
 typedef struct
 {
   int first; 
   int last;
  } range_t;
+
+typedef struct
+{
+  int red;
+  int green;
+  int blue;
+} rgb_t;
+
+typedef struct
+{
+  range_t red;
+  range_t green;
+  range_t blue;
+} rgb_range_t;
+
+typedef struct
+{
+  rgb_t black_map;
+  rgb_t white_map;
+} colormap_t;
+
+// end of HACK
+
+typedef struct
+{
+  double x;
+  double y;
+} position_t;
+
+typedef struct
+{
+  double left;
+  double top;
+} overlay_t;
+
+typedef struct 
+{
+  double width;
+  double height;
+} page_size_t;
 
 typedef struct
 {
@@ -74,12 +114,17 @@ extern int line;  /* line number in spec file */
 extern int bookmark_level;
 
 
+/* Bison interface */
+extern int yyparse (void);
+void yyerror (char *s);
+
 /* semantic routines for input statements */
 void input_push_context (void);
 void input_pop_context (void);
 void input_set_modifier_context (input_modifier_type_t type);
 void input_set_file (char *name);
 void input_set_rotation (int rotation);
+void input_set_transparency (rgb_range_t rgb_range);
 void input_set_page_size (page_size_t size);
 void input_images (range_t range);
 
@@ -97,6 +142,9 @@ void output_set_keywords (char *keywords);
 void output_set_bookmark (char *name);
 void output_set_page_label (page_label_t label);
 void output_pages (range_t range);
+void output_overlay (overlay_t overlay);
+void output_transparency (rgb_range_t rgb_range);
+void output_set_colormap (rgb_t black_color, rgb_t white_color);
 
 
 /* functions to be called from main program: */

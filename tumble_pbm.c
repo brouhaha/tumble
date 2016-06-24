@@ -18,6 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2009-03-02 [JDB] Add support for overlay images.
  */
 
 
@@ -125,6 +127,8 @@ static bool get_pbm_image_info (int image,
       return (0);
     }
 
+  image_info->negative = false;
+  
   return (1);
 }
 
@@ -132,7 +136,8 @@ static bool get_pbm_image_info (int image,
 static bool process_pbm_image (int image,  /* range 1 .. n */
 			       input_attributes_t input_attributes,
 			       image_info_t *image_info,
-			       pdf_page_handle page)
+			       pdf_page_handle page,
+			       position_t position)
 {
   bool result = 0;
   Rect rect;
@@ -192,12 +197,12 @@ static bool process_pbm_image (int image,  /* range 1 .. n */
 #endif
 
   pdf_write_g4_fax_image (page,
-			  0, 0,  /* x, y */
+			  position.x, position.y,
 			  image_info->width_points, image_info->height_points,
+			  image_info->negative,
 			  bitmap,
-			  0, /* ImageMask */
-			  0, 0, 0,  /* r, g, b */
-			  0); /* BlackIs1 */
+			  NULL,
+			  NULL);
 
   result = 1;
 

@@ -18,6 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2009-03-02 [JDB] Add support for overlay images.
  */
 
 
@@ -165,15 +167,17 @@ static bool get_jpeg_image_info (int image,
 static bool process_jpeg_image (int image,  /* range 1 .. n */
 				input_attributes_t input_attributes,
 				image_info_t *image_info,
-				pdf_page_handle page)
+				pdf_page_handle page,
+				position_t position)
 {
   pdf_write_jpeg_image (page,
-			0, 0,  /* x, y */
+			position.x, position.y,
 			image_info->width_points,
 			image_info->height_points,
 			image_info->color,
 			image_info->width_samples,
 			image_info->height_samples,
+			input_attributes.transparency,
 			jpeg_f);
 
   return (1);

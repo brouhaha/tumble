@@ -18,6 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2009-03-02 [JDB] Add support for overlay images and color key masking.
  */
 
 
@@ -38,6 +40,11 @@ typedef struct
 
   bool has_crop;
   crop_t crop;
+
+  rgb_range_t *transparency;
+
+  colormap_t *colormap;		// really an output attribute, but we don't have such a thing
+
 } input_attributes_t;
 
 
@@ -61,4 +68,6 @@ bool open_pdf_output_file (char *name,
 bool process_page (int image,  /* range 1 .. n */
 		   input_attributes_t input_attributes,
 		   bookmark_t *bookmarks,
-		   page_label_t *page_label);
+		   page_label_t *page_label,
+		   overlay_t *overlay,
+		   rgb_range_t *transparency);

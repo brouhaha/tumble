@@ -19,6 +19,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2007-05-07 [JDB] Add declarations for pdf_new_string_n() and
+ *                   pdf_write_name().
  */
 
 
@@ -78,6 +81,8 @@ struct pdf_obj *pdf_new_bool (bool val);
 struct pdf_obj *pdf_new_name (char *name);
 
 struct pdf_obj *pdf_new_string (char *str);
+
+struct pdf_obj *pdf_new_string_n (char *str, int n);
 
 struct pdf_obj *pdf_new_integer (long val);
 
@@ -144,6 +149,10 @@ void pdf_write_all_ind_obj (pdf_file_handle pdf_file);
 
 /* Write the cross reference table, and return the maximum object number */
 unsigned long pdf_write_xref (pdf_file_handle pdf_file);
+
+
+/* Write a name, escaping reserved characters */
+void pdf_write_name (pdf_file_handle pdf_file, char *s);
 
 
 /* this isn't really a PDF primitive data type */

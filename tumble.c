@@ -19,6 +19,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2009-03-02 [JDB] Add support for overlay images and color key masking.
+ *  2014-02-18 [JDB] Add -V option to print the program version.
  */
 
 
@@ -53,7 +56,7 @@ typedef struct output_file_t
 } output_file_t;
 
 
-int verbose;
+int verbose, version;
 
 
 output_file_t *output_files;
@@ -81,9 +84,11 @@ void usage (void)
   fprintf (stderr, "    %s [options] -c <control.tum>\n", progname);
 #endif
   fprintf (stderr, "    %s [options] <input.tif>... -o <output.pdf>\n", progname);
+  fprintf (stderr, "    %s -V\n", progname);
   fprintf (stderr, "options:\n");
   fprintf (stderr, "    -v        verbose\n");
   fprintf (stderr, "    -b <fmt>  create bookmarks\n");
+  fprintf (stderr, "    -V        print program version\n");
   fprintf (stderr, "bookmark format:\n");
   fprintf (stderr, "    %%F  file name (sans suffix)\n");
   fprintf (stderr, "    %%p  page number\n");
@@ -191,24 +196,53 @@ bool open_pdf_output_file (char *name,
 #define MAX_BOOKMARK_LEVEL 20
 static pdf_bookmark_handle bookmark_vector [MAX_BOOKMARK_LEVEL + 1] = { NULL };
 
+static pdf_page_handle last_page = NULL;
+static page_size_t last_size;
 
 bool process_page (int image,  /* range 1 .. n */
 		   input_attributes_t input_attributes,
 		   bookmark_t *bookmarks,
-		   page_label_t *page_label)
+		   page_label_t *page_label,
+		   overlay_t *overlay,
+		   rgb_range_t *transparency)
 {
   pdf_page_handle page;
   image_info_t image_info;
+  position_t position;
   
   if (! get_image_info (image, input_attributes, & image_info))
     return (0);
 
-  page = pdf_new_page (out->pdf,
-		       image_info.width_points,
-		       image_info.height_points);
+  if (overlay)
+    {
+      page = last_page;
+      position.x = overlay->left * POINTS_PER_INCH;
+      position.y = last_size.height - image_info.height_points - overlay->top * POINTS_PER_INCH;
 
-  if (! process_image (image, input_attributes, & image_info, page))
+      if (verbose)
+	fprintf (stderr, "overlaying image at %.3f, %.3f\n", position.x, position.y);
+
+    if (transparency)
+      {
+	input_attributes.transparency = transparency;
+      }
+    }
+  else
+    {
+      last_page = page = pdf_new_page (out->pdf,
+				       image_info.width_points,
+				       image_info.height_points);
+      last_size.width = image_info.width_points;
+      last_size.height = image_info.height_points;
+      position.x = 0.0;
+      position.y = 0.0;
+    }
+
+  if (! process_image (image, input_attributes, & image_info, page, position))
     return (0);
+
+  if (overlay)
+    return (page != NULL);
 
   while (bookmarks)
     {
@@ -338,6 +372,8 @@ void main_args (char *out_fn,
 				    ip);
 	  if (! process_page (ip, input_attributes,
 			      bookmark_fmt ? & bookmark : NULL,
+			      NULL,
+			      NULL,
 			      NULL))
 	    fatal (3, "error processing page %d of input file \"%s\"\n", ip, in_fn [i]);
 	  if (last_input_page ())
@@ -381,12 +417,18 @@ int main (int argc, char *argv[])
   init_tiff_handler ();
   init_jpeg_handler ();
   init_pbm_handler ();
+  init_png_handler ();
 
   while (--argc)
     {
       if (argv [1][0] == '-')
 	{
-	  if (strcmp (argv [1], "-v") == 0)
+	  if (strcmp (argv [1], "-V") == 0)
+	    {
+	      version++;
+	      break;
+	    }
+	  else if (strcmp (argv [1], "-v") == 0)
 	    verbose++;
 	  else if (strcmp (argv [1], "-o") == 0)
 	    {
@@ -431,6 +473,12 @@ int main (int argc, char *argv[])
       else
 	fatal (1, "exceeded maximum of %d input files\n", MAX_INPUT_FILES);
       argv++;
+    }
+
+  if (version)
+    {
+      puts (PDF_PRODUCER);
+      exit (0);
     }
 
 #ifdef CTL_LANG

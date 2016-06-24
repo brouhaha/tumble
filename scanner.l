@@ -19,10 +19,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
-*/
+ *
+ *  2009-03-13 [JDB] Add support for blank pages, overlay images, color
+ *                   mapping, color-key masking, and push/pop of input
+ *                   contexts.
+ */
 
 %option case-insensitive
 %option noyywrap
+%option nounput
+%option noinput
 
 %{
 #include <stdbool.h>
@@ -46,7 +52,7 @@ dot [\.]
 
 %%
 
-[\,;{}]		{ return (yytext [0]); }
+[\,;{}()]	{ return (yytext [0]); }
 {dot}{dot}	{ LDBG(("elipsis\n")); return (ELIPSIS); }
 
   /* decimal integer */
@@ -75,8 +81,10 @@ e		{ yylval.size.width = 34.0;
 
 all		{ return (ALL); }
 author		{ return (AUTHOR); }
+blank		{ return (BLANK); }
 bookmark	{ return (BOOKMARK); }
 cm		{ return (CM); }
+colormap	{ return (COLORMAP); }
 creator		{ return (CREATOR); }
 crop		{ return (CROP); }
 even		{ return (EVEN); }
@@ -90,6 +98,7 @@ label		{ return (LABEL); }
 landscape	{ return (LANDSCAPE); }
 odd		{ return (ODD); }
 output		{ return (OUTPUT); }
+overlay		{ return (OVERLAY); }
 page		{ return (PAGE); }
 pages		{ return (PAGES); }
 portrait	{ return (PORTRAIT) ; }
@@ -98,6 +107,7 @@ rotate		{ return (ROTATE); }
 size		{ return (SIZE); }
 subject		{ return (SUBJECT); }
 title		{ return (TITLE); }
+transparent	{ return (TRANSPARENT); }
 
 '[^\n']'	{
 		  yylval.character = yytext [1];

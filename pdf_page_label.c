@@ -19,6 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2007-05-07 [JDB] Fixed a bug wherein a page label specifying prefix without
+ *                   a style (e.g., LABEL <prefix>) produced bad PDF (no labels
+ *                   were displayed).  Should have output "/P <prefix>" but
+ *                   instead output "/S /P <prefix>".
  */
 
 
@@ -53,10 +58,14 @@ void pdf_new_page_label (pdf_file_handle pdf_file,
     }
 
   label_dict = pdf_new_obj (PT_DICTIONARY);
-  pdf_set_dict_entry (label_dict, "S", pdf_new_name (style_str));
+
+  if (style)
+    pdf_set_dict_entry (label_dict, "S", pdf_new_name (style_str));
+
   if (prefix)
     pdf_set_dict_entry (label_dict, "P", pdf_new_string (prefix));
-  if (base != 1)
+
+  if (base > 1)
     pdf_set_dict_entry (label_dict, "St", pdf_new_integer (base));
 
   pdf_add_number_tree_element (pdf_file->page_label_tree,
