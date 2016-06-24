@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <strings.h>  /* strcasecmp() is a BSDism */
 
-#include <pbm.h>
+#include <netpbm/pbm.h>
 /*
  * pbm_readpbmrow_packed always uses big-endian bit ordering.
  * On little-endian processors (such as the x86), we want little-endian

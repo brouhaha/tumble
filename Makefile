@@ -30,7 +30,7 @@
 
 CFLAGS = -Wall
 LDFLAGS =
-LDLIBS = -ltiff -ljpeg -lpbm -lz -lm
+LDLIBS = -ltiff -ljpeg -lnetpbm -lz -lm
 
 ifdef DEBUG
 CFLAGS := $(CFLAGS) -g
