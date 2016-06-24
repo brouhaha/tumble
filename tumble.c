@@ -353,6 +353,7 @@ void main_args (char *out_fn,
 }
 
 
+#ifdef CTL_LANG
 void main_control (char *control_fn)
 {
   if (! parse_control_file (control_fn))
@@ -360,11 +361,14 @@ void main_control (char *control_fn)
   if (! process_controls ())
     fatal (3, "error processing control file\n");
 }
+#endif
 
 
 int main (int argc, char *argv[])
 {
+#ifdef CTL_LANG
   char *control_fn = NULL;
+#endif
   char *out_fn = NULL;
   char *bookmark_fmt = NULL;
   int inf_count = 0;
@@ -429,19 +433,27 @@ int main (int argc, char *argv[])
       argv++;
     }
 
+#ifdef CTL_LANG
   if (! ((! out_fn) ^ (! control_fn)))
     fatal (1, "either a control file or an output file (but not both) must be specified\n");
+  if (control_fn && inf_count)
+    fatal (1, "if control file is provided, input files can't be specified as arguments\n");
+#else
+  if (! out_fn)
+    fatal (1, "an output file must be specified\n");
+#endif
 
   if (out_fn && ! inf_count)
     fatal (1, "no input files specified\n");
 
-  if (control_fn && inf_count)
-    fatal (1, "if control file is provided, input files can't be specified as arguments\n");
-
+#ifdef CTL_LANG
   if (control_fn)
     main_control (control_fn);
   else
     main_args (out_fn, inf_count, in_fn, bookmark_fmt);
+#else
+  main_args (out_fn, inf_count, in_fn, bookmark_fmt);
+#endif
   
   close_input_file ();
   close_pdf_output_files ();
