@@ -1,0 +1,11 @@
+*~
+*.o
+*.d
+bitblt_table_gen
+bitblt_tables.[ch]
+g4_table_gen
+g4_tables.[ch]
+parser.output
+parser.tab.[ch]
+scanner.c
+tumble
