@@ -64,7 +64,7 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.34
+VERSION = 0.35
 
 PACKAGE = tumble
 
@@ -184,3 +184,6 @@ DEPENDS = $(ALL_CSRCS:.c=.d)
 	$(CC) -M -MG $(CFLAGS) $< | sed -e 's@ \([A-Za-z]\):/@ /\1/@g' -e 's@^\(.*\)\.o:@\1.d \1.o:@' > $@
 
 -include $(DEPENDS)
+
+CHANGELOG.html: CHANGELOG.md
+	cmark $< >$@

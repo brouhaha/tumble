@@ -9,3 +9,4 @@ parser.output
 parser.tab.[ch]
 scanner.c
 tumble
+CHANGELOG.html
