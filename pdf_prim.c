@@ -19,6 +19,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2007-05-07 [JDB] Allow embedded nulls in strings by storing as character
+ *                   arrays plus length words.
  */
 
 
@@ -90,7 +93,10 @@ struct pdf_obj
   union {
     bool              boolean;
     char              *name;
-    char              *string;
+    struct {
+      char            *content;
+      int             length;
+    }                 string;
     long              integer;
     double            real;
     struct pdf_obj    *ind_ref;
@@ -243,7 +249,18 @@ struct pdf_obj *pdf_new_name (char *name)
 struct pdf_obj *pdf_new_string (char *str)
 {
   struct pdf_obj *obj = pdf_new_obj (PT_STRING);
-  obj->val.string = pdf_strdup (str);
+  obj->val.string.content = pdf_strdup (str);
+  obj->val.string.length = strlen(str);
+  return (obj);
+}
+
+
+struct pdf_obj *pdf_new_string_n (char *str, int n)
+{
+  struct pdf_obj *obj = pdf_new_obj (PT_STRING);
+  obj->val.string.length = n;
+  obj->val.string.content = pdf_calloc (1,n);
+  memcpy(obj->val.string.content, str, n);
   return (obj);
 }
 
@@ -397,7 +414,16 @@ int pdf_compare_obj (struct pdf_obj *o1, struct pdf_obj *o2)
 	return (1);
       return (0);
     case PT_STRING:
-      return (strcmp (o1->val.string, o2->val.string));
+      {
+	int l;
+	l = o1->val.string.length;
+	if(l > o2->val.string.length)
+	  l = o2->val.string.length;
+	l = memcmp (o1->val.string.content, o2->val.string.content, l);
+	if (l)
+	  return l;
+	return o1->val.string.length - o2->val.string.length;
+      }
     case PT_NAME:
       return (strcmp (o1->val.name, o2->val.name));
     default:
@@ -427,22 +453,70 @@ void pdf_write_name (pdf_file_handle pdf_file, char *s)
 }
 
 
-static int string_char_needs_quoting (char c)
+static int pdf_write_literal_string (pdf_file_handle pdf_file, char *s, int n)
 {
-  return ((c < ' ')  || (c > '~')  || (c == '\\') ||
-	  (c == '(') || (c == ')'));
+  int i, p;
+
+  if (pdf_file)
+    fprintf (pdf_file->f, "(");
+
+  for (i = p = 0; n; n--)
+    {
+      int j, k;
+
+      k = 0;
+
+      switch (*s)
+      {
+	case '\\':
+	  k = 1;
+	  break;
+
+	case '(':
+	  for (j = k =1; k && j < n; j++)
+	    k += (s[j] == '(') ? 1 : (s[j] == ')') ? -1 : 0;
+	  p += !k;
+	  break;
+
+	case ')':
+	  if (p)
+	    p--;
+	  else
+	    k = 1;
+	  break;
+      }
+
+      if (k)
+	{
+	  i++;
+	  if (pdf_file)
+	    fprintf (pdf_file->f, "\\");
+	}
+
+      i++;
+
+      if (pdf_file)
+	fprintf (pdf_file->f, "%c", *(s++));
+    }
+
+  if (pdf_file)
+    fprintf (pdf_file->f, ") ");
+  return i;
 }
 
 
-void pdf_write_string (pdf_file_handle pdf_file, char *s)
+void pdf_write_string (pdf_file_handle pdf_file, char *s, int n)
 {
-  fprintf (pdf_file->f, "(");
-  while (*s)
-    if (string_char_needs_quoting (*s))
-      fprintf (pdf_file->f, "\\%03o", 0xff & *(s++));
-    else
-      fprintf (pdf_file->f, "%c", *(s++));
-  fprintf (pdf_file->f, ") ");
+  if (pdf_write_literal_string (NULL, s, n) < 2 * n)
+    pdf_write_literal_string (pdf_file, s, n);
+  else
+    {
+      fprintf (pdf_file->f, "<");
+
+      for( ; n--; )
+	fprintf (pdf_file->f, "%.2X",*(s++));
+      fprintf (pdf_file->f, "> ");
+    }
 }
 
 
@@ -560,7 +634,7 @@ void pdf_write_obj (pdf_file_handle pdf_file, struct pdf_obj *obj)
       pdf_write_name (pdf_file, obj->val.name);
       break;
     case PT_STRING:
-      pdf_write_string (pdf_file, obj->val.string);
+      pdf_write_string (pdf_file, obj->val.string.content, obj->val.string.length);
       break;
     case PT_INTEGER:
       fprintf (pdf_file->f, "%ld ", obj->val.integer);

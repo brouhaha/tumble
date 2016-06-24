@@ -17,6 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111  USA
+#
+#  2010-09-02 [JDB] Allow building in a directory separate from the source and
+#                   add PNG and blank-page support files.  Also change the
+#                   "include" of dependencies to suppress an error if the
+#                   dependency files are not present.
 
 
 # Conditionals:  uncomment the following defines as nessary.  Note that a
@@ -29,7 +34,7 @@
 CTL_LANG=1
 
 
-CFLAGS = -Wall
+CFLAGS = -Wall -Wno-unused-function -Wno-unused-but-set-variable
 LDFLAGS =
 LDLIBS = -ltiff -ljpeg -lnetpbm -lz -lm
 
@@ -49,6 +54,7 @@ LDLIBS := -Wl,-static $(LDLIBS)
 endif
 
 
+LEX = flex
 YACC = bison
 YFLAGS = -d -v
 
@@ -58,18 +64,18 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.33
+VERSION = 0.34
 
 PACKAGE = tumble
 
 TARGETS = tumble
 
-CSRCS = tumble.c semantics.c \
-	tumble_input.c tumble_tiff.c tumble_jpeg.c tumble_pbm.c \
+CSRCS = tumble.c semantics.c tumble_input.c \
+	tumble_tiff.c tumble_jpeg.c tumble_pbm.c tumble_png.c tumble_blank.c \
 	bitblt.c bitblt_table_gen.c bitblt_g4.c g4_table_gen.c \
 	pdf.c pdf_util.c pdf_prim.c pdf_name_tree.c \
 	pdf_bookmark.c pdf_page_label.c \
-	pdf_text.c pdf_g4.c pdf_jpeg.c
+	pdf_text.c pdf_g4.c pdf_jpeg.c pdf_png.c
 OSRCS = scanner.l parser.y
 HDRS = tumble.h tumble_input.h semantics.h bitblt.h bitblt_tables.h \
 	pdf.h pdf_private.h pdf_util.h pdf_prim.h pdf_name_tree.h
@@ -106,12 +112,12 @@ CFLAGS := $(CFLAGS) $(CDEFINES)
 all: $(TARGETS) $(TEST_TARGETS)
 
 
-TUMBLE_OBJS = tumble.o semantics.o \
-		tumble_input.o tumble_tiff.o tumble_jpeg.o tumble_pbm.o \
+TUMBLE_OBJS = tumble.o semantics.o tumble_input.o \
+		tumble_tiff.o tumble_jpeg.o tumble_pbm.o tumble_png.o tumble_blank.o \
 		bitblt.o bitblt_g4.o bitblt_tables.o g4_tables.o \
 		pdf.o pdf_util.o pdf_prim.o pdf_name_tree.o \
 		pdf_bookmark.o pdf_page_label.o \
-		pdf_text.o pdf_g4.o pdf_jpeg.o
+		pdf_text.o pdf_g4.o pdf_jpeg.o pdf_png.o 
 
 ifdef CTL_LANG
 TUMBLE_OBJS += scanner.o parser.tab.o
@@ -119,9 +125,6 @@ endif
 
 tumble: $(TUMBLE_OBJS)
 	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
-ifndef DEBUG
-	strip $@
-endif
 
 
 bitblt_tables.h: bitblt_table_gen
@@ -178,6 +181,6 @@ ALL_CSRCS = $(CSRCS) $(AUTO_CSRCS) $(TEST_CSRCS)
 DEPENDS = $(ALL_CSRCS:.c=.d)
 
 %.d: %.c
-	$(CC) -M -MG $(CFLAGS) $< | sed -e 's@ /[^ ]*@@g' -e 's@^\(.*\)\.o:@\1.d \1.o:@' > $@
+	$(CC) -M -MG $(CFLAGS) $< | sed -e 's@ \([A-Za-z]\):/@ /\1/@g' -e 's@^\(.*\)\.o:@\1.d \1.o:@' > $@
 
-include $(DEPENDS)
+-include $(DEPENDS)

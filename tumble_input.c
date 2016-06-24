@@ -19,6 +19,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2007-05-07 [JDB] Add support for blank pages and fix a bug that caused a
+ *                   double free.
  */
 
 
@@ -66,9 +69,18 @@ bool match_input_suffix (char *suffix)
   return (0);
 }
 
+
 bool open_input_file (char *name)
 {
   int i;
+
+  if (name == NULL)
+    {
+      if (in)
+	close_input_file ();
+      current_input_handler = & blank_handler;
+      return (1);
+    }
 
   if (in)
     {
@@ -117,8 +129,10 @@ bool close_input_file (void)
       result = current_input_handler->close_input_file ();
       current_input_handler = NULL;
     }
-  if (in_filename)
+  if (in_filename) {
     free (in_filename);
+    in_filename = NULL;
+  }
   if (in)
     {
       fclose (in);
@@ -151,12 +165,14 @@ bool get_image_info (int image,
 bool process_image (int image,
 		    input_attributes_t input_attributes,
 		    image_info_t *image_info,
-		    pdf_page_handle page)
+		    pdf_page_handle page,
+		    position_t position)
 {
   if (! current_input_handler)
     return (0);
   return (current_input_handler->process_image (image,
 						input_attributes,
 						image_info,
-						page));
+						page,
+						position));
 }

@@ -19,7 +19,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2009-03-13 [JDB] pm_config.h (part of NETPBM) defines BITS_PER_WORD but
+ *                   apparently doesn't use it externally.  We undefine it here
+ *                   so that our version takes precedence and warnings are not
+ *                   generated.
  */
+
+#undef BITS_PER_WORD
 
 
 typedef struct Point

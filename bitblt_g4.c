@@ -19,6 +19,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2007-06-20 [JDB] Fixed a bug wherein "g4_get_pixel" is called with pixel
+ *                   index == width, causing an index off the end of the array
+ *                   if width % BITS_PER_WORD == 0.
  */
 
 
@@ -303,7 +307,7 @@ void bitblt_write_g4 (Bitmap *bitmap, FILE *f)
   word_t *cur_line;
   word_t *ref_line;  /* reference (previous) row */
 
-  temp_buffer = pdf_calloc ((width + BITS_PER_WORD - 1) / BITS_PER_WORD,
+  temp_buffer = pdf_calloc (width / BITS_PER_WORD + 1,
 			    sizeof (word_t));
 
   cur_line = bitmap->bits;

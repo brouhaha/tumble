@@ -19,14 +19,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
-*/
+ *
+ *  2009-03-13 [JDB] Add support for blank pages, overlay images, color
+ *                   mapping, color-key masking, and push/pop of input
+ *                   contexts.
+ */
 
 %{
   #include <stdbool.h>
   #include <stdint.h>
   #include <stdio.h>
   #include "semantics.h"
+
+  extern int yylex (void);
 %}
+
+%error-verbose
 
 %union {
   int integer;
@@ -36,6 +44,9 @@
   page_size_t size;
   range_t range;
   page_label_t page_label;
+  overlay_t overlay;
+  rgb_t rgb;
+  rgb_range_t rgb_range;
 }
 
 %token <integer> INTEGER
@@ -63,9 +74,13 @@
 %token CROP
 %token SIZE
 %token RESOLUTION
+%token BLANK
 %token INPUT
 
+%token TRANSPARENT
+%token COLORMAP
 %token LABEL
+%token OVERLAY
 %token PAGE
 %token PAGES
 %token BOOKMARK
@@ -88,6 +103,12 @@
 %type <integer> orientation
 
 %type <size> page_size
+
+%type <rgb> rgb
+
+%type <rgb_range> rgb_range
+%type <rgb_range> gray_range
+%type <rgb_range> color_range
 
 %%
 
@@ -157,8 +178,21 @@ size_clause:
 resolution_clause:
 	RESOLUTION FLOAT unit ;
 
+rgb_range:
+	'(' range range range ')' { $$.red = $2; $$.green = $3; $$.blue = $4; } 
+
+gray_range:
+	'(' range ')' { $$.red = $2; $$.green = $2; $$.blue = $2; } ;
+
+color_range:
+    rgb_range
+    | gray_range;
+
+transparency_clause:
+    TRANSPARENT color_range ';' { input_set_transparency ($2); } ;
+
 modifier_clause:
-	rotate_clause | crop_clause | size_clause | resolution_clause;
+	rotate_clause | crop_clause | size_clause | resolution_clause | transparency_clause;
 
 modifier_clauses:
 	modifier_clause
@@ -175,12 +209,16 @@ part_clause:
 	  modifier_clause_list ';'
           { input_set_modifier_context (INPUT_MODIFIER_ALL); } ;
 
+blank_page_clause:
+	BLANK { input_set_file (NULL); } size_clause ;
+
 input_clause:
 	input_file_clause
 	| image_clause
 	| images_clause
 	| part_clause
 	| modifier_clause
+	| blank_page_clause
 	| input_clause_list ;
 
 input_clauses:
@@ -188,7 +226,8 @@ input_clauses:
 	| input_clauses input_clause ;
 
 input_clause_list:
-	'{' input_clauses '}' ;
+	'{' { input_push_context (); }
+	input_clauses '}' { input_pop_context (); } ;
 
 input_statement:
 	INPUT input_clauses ;
@@ -218,12 +257,23 @@ label_clause:
 	| LABEL CHARACTER ';' { page_label_t label = { NULL, $2 }; output_set_page_label (label); }
 	| LABEL STRING ',' CHARACTER ';' { page_label_t label = { $2, $4 }; output_set_page_label (label); } ;
 
+overlay_clause_list:
+	/* empty */
+	| '{' overlay_clauses '}' ;
+
+overlay_clauses:
+	overlay_clause
+	| overlay_clauses overlay_clause ;
+
+overlay_clause:
+	OVERLAY length ',' length ';' { overlay_t overlay = { $2, $4 }; output_overlay (overlay); } ;
+
 page_ranges:
 	range { output_pages ($1); }
 	| page_ranges ',' range { output_pages ($3); } ;
 
 page_clause:
-	PAGE INTEGER ';' { range_t range = { $2, $2 }; output_pages (range); } ;
+	PAGE INTEGER { range_t range = { $2, $2 }; output_pages (range); } overlay_clause_list ';' ;
 
 pages_clause:
 	PAGES page_ranges ';' ;
@@ -240,8 +290,15 @@ bookmark_clause:
 	bookmark_name_list
 	output_clause_list ';' { bookmark_level--; output_pop_context (); } ;
 
+rgb:
+	'(' INTEGER INTEGER INTEGER ')' { $$.red = $2; $$.green = $3; $$.blue = $4; } ;
+
+colormap_clause:
+	COLORMAP rgb ',' rgb ';' { output_set_colormap ($2, $4); } ;
+
 output_clause:
 	output_file_clause
+	| colormap_clause
 	| label_clause
 	| page_clause | pages_clause
 	| bookmark_clause

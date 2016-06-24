@@ -19,6 +19,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2009-03-13 [JDB] Add support for blank pages, overlay images, color
+ *                   mapping, color-key masking, and push/pop of input
+ *                   contexts.
  */
 
 
@@ -47,6 +51,9 @@ typedef struct
 
   bool has_crop;
   crop_t crop;
+
+  bool has_transparency;
+  rgb_range_t transparency;
 } input_modifiers_t;
 
 
@@ -59,6 +66,7 @@ typedef struct input_context_t
 		      including those from subcontexts */
 
   char *input_file;
+  bool is_blank;
 
   input_modifiers_t modifiers [INPUT_MODIFIER_TYPE_COUNT];
 } input_context_t;
@@ -88,6 +96,9 @@ typedef struct output_context_t
 
   bool has_page_label;
   page_label_t page_label;
+
+  bool has_colormap;
+  colormap_t colormap;
 } output_context_t;
 
 
@@ -97,10 +108,10 @@ typedef struct output_page_t
   output_context_t *output_context;
   range_t range;
   bookmark_t *bookmark_list;
+  bool has_overlay;
+  overlay_t overlay;
 } output_page_t;
 
-
-#undef SEMANTIC_DEBUG
 
 #ifdef SEMANTIC_DEBUG
 #define SDBG(x) printf x
@@ -117,7 +128,7 @@ int bookmark_level;
 input_context_t *first_input_context;
 input_context_t *last_input_context;
 
-input_modifier_type_t current_modifier_context;
+input_modifier_type_t current_modifier_context = INPUT_MODIFIER_ALL;
 
 input_image_t *first_input_image;
 input_image_t *last_input_image;
@@ -206,6 +217,7 @@ void input_set_file (char *name)
 {
   input_clone ();
   last_input_context->input_file = name;
+  last_input_context->is_blank = (name == NULL);
 };
 
 void input_set_rotation (int rotation)
@@ -220,6 +232,12 @@ void input_set_page_size (page_size_t size)
   last_input_context->modifiers [current_modifier_context].has_page_size = 1;
   last_input_context->modifiers [current_modifier_context].page_size = size;
   SDBG(("page size %f, %f\n", size.width, size.height));
+}
+
+void input_set_transparency (rgb_range_t rgb_range)
+{
+  last_input_context->modifiers [current_modifier_context].has_transparency = 1;
+  last_input_context->modifiers [current_modifier_context].transparency = rgb_range;
 }
 
 static void increment_input_image_count (int count)
@@ -446,16 +464,31 @@ void output_pages (range_t range)
 }
 
 
+void output_overlay (overlay_t overlay)
+{
+  output_pages (last_output_page->range);
+  last_output_page->has_overlay = 1;
+  last_output_page->overlay.left = overlay.left;
+  last_output_page->overlay.top  = overlay.top;
+}
+
+void output_set_colormap (rgb_t black_color, rgb_t white_color)
+{
+  output_clone ();
+  last_output_context->has_colormap = 1;
+  last_output_context->colormap.black_map = black_color;
+  last_output_context->colormap.white_map = white_color;
+}
+
 void yyerror (char *s)
 {
   fprintf (stderr, "%d: %s\n", line, s);
 }
 
-
 static char *get_input_filename (input_context_t *context)
 {
   for (; context; context = context->parent)
-    if (context->input_file)
+    if ((context->input_file) || (context->is_blank))
       return (context->input_file);
   fprintf (stderr, "no input file name found\n");
   exit (2);
@@ -479,6 +512,23 @@ static bool get_input_rotation (input_context_t *context,
 	}
     }
   return (0);  /* default */
+}
+
+static rgb_range_t *get_input_transparency (input_context_t *context,
+					    input_modifier_type_t type)
+{
+  for (; context; context = context->parent)
+    {
+      if (context->modifiers [type].has_transparency)
+	{
+	  return & (context->modifiers [type].transparency);
+	}
+      if (context->modifiers [INPUT_MODIFIER_ALL].has_transparency)
+	{
+	  return & (context->modifiers [INPUT_MODIFIER_ALL].transparency);
+	}
+    }
+  return NULL;  /* default */
 }
 
 static bool get_input_page_size (input_context_t *context,
@@ -527,12 +577,21 @@ static page_label_t *get_output_page_label (output_context_t *context)
   return (NULL);  /* default */
 }
 
+static colormap_t *get_output_colormap (output_context_t *context)
+{
+  for (; context; context = context->parent)
+    if (context->has_colormap)
+      return (& context->colormap);
+  return (NULL);  /* default */
+}
+
 
 #ifdef SEMANTIC_DEBUG
 void dump_input_tree (void)
 {
   input_image_t *image;
   int i;
+  char *fn;
 
   printf ("input images:\n");
   for (image = first_input_image; image; image = image->next)
@@ -542,6 +601,7 @@ void dump_input_tree (void)
 	bool has_rotation, has_page_size;
 	int rotation;
 	page_size_t page_size;
+	rgb_range_t *transparency;
 
 	has_rotation = get_input_rotation (image->input_context,
 					   parity,
@@ -549,11 +609,19 @@ void dump_input_tree (void)
 	has_page_size = get_input_page_size (image->input_context,
 					     parity,
 					     & page_size);
-	printf ("file '%s' image %d",
-	        get_input_filename (image->input_context),
-		i);
+	transparency = get_input_transparency (image->input_context, parity);
+	fn = get_input_filename (image->input_context);
+	if (fn)
+	  printf ("file '%s' image %d", fn, i);
+	else
+	  printf ("blank image %d", i);
 	if (has_rotation)
 	  printf (" rotation %d", rotation);
+	if (transparency)
+	  printf (" transparency %d..%d, %d..%d, %d..%d",
+		  transparency->red.first,   transparency->red.last,  
+		  transparency->green.first, transparency->green.last,
+		  transparency->blue.first,  transparency->blue.last);
 	if (has_page_size)
 	  printf (" size %f, %f", page_size.width, page_size.height);
 	printf ("\n");
@@ -578,6 +646,7 @@ void dump_output_tree (void)
       for (i = page->range.first; i <= page->range.last; i++)
 	{
 	  page_label_t *label = get_output_page_label (page->output_context);
+	  colormap_t *colormap = get_output_colormap (page->output_context);
 	  printf ("file \"%s\" ", get_output_filename (page->output_context));
 	  if (label)
 	    {
@@ -587,6 +656,10 @@ void dump_output_tree (void)
 	      if (label->style)
 		printf ("'%c' ", label->style);
 	    }
+	  if (colormap)
+	    printf ("colormap (%d %d %d) (%d %d %d) ",
+		    colormap->black_map.red, colormap->black_map.green, colormap->black_map.blue,
+		    colormap->white_map.red, colormap->white_map.green, colormap->white_map.blue);
 	  printf ("page %d\n", i);
 	}
     }
@@ -630,7 +703,7 @@ bool parse_control_file (char *fn)
       goto fail;
     }
 
-  fprintf (stderr, "%d pages specified\n", first_input_context->image_count);
+  fprintf (stderr, "%d images specified\n", first_input_context->image_count);
 
   result = 1;
 
@@ -646,6 +719,22 @@ bool parse_control_file (char *fn)
   return (result);
 }
 
+bool omit_label (page_label_t *page_label)
+{
+  static page_label_t *last_page_label;
+  bool unneeded;
+
+  unneeded = ( (last_page_label != NULL) &&
+	       page_label->prefix &&
+	       last_page_label->prefix &&
+	       (strcmp (page_label->prefix, last_page_label->prefix) == 0) &&
+	       (page_label->style == last_page_label->style) &&
+	       (page_label->base == last_page_label->base + 1) );
+
+  last_page_label = page_label;
+
+  return unneeded;
+}
 
 bool process_controls (void)
 {
@@ -672,7 +761,12 @@ bool process_controls (void)
 	  i = 0;
 	  input_fn = get_input_filename (image->input_context);
 	  if (verbose)
-	    fprintf (stderr, "opening input file '%s'\n", input_fn);
+	    {
+	      if (input_fn)
+		fprintf (stderr, "opening input file '%s'\n", input_fn);
+	      else
+		fprintf (stderr, "generating blank image\n");
+	    }
 	  if (! open_input_file (input_fn))
 	    {
 	      fprintf (stderr, "error opening input file '%s'\n", input_fn);
@@ -712,6 +806,12 @@ bool process_controls (void)
 							    parity,
 							    & input_attributes.page_size);
 
+      input_attributes.transparency = get_input_transparency (image->input_context, parity);
+
+
+      // really an output attribute, but we don't have such an thing
+      input_attributes.colormap = get_output_colormap (page->output_context);
+
       if (verbose)
 	fprintf (stderr, "processing image %d\n", image->range.first + i);
 
@@ -725,20 +825,27 @@ bool process_controls (void)
 	      page_label->page_index = page_index;
 	      page_label->base = page->range.first;
 	      page_label->count = range_count (page->range);
+
+	      if (omit_label (page_label))
+		page_label = NULL;
 	    }
 	}
 
       if (! process_page (image->range.first + i,
 			  input_attributes,
 			  p ? NULL : page->bookmark_list,
-			  page_label))
+			  page_label,
+			  page->has_overlay ? & page->overlay : NULL,
+			  input_attributes.transparency))
 	{
 	  fprintf (stderr, "error processing image %d\n", image->range.first + i);
 	  return (0);
 	}
       i++;
       p++;
-      page_index++;
+
+      if (! page->has_overlay)
+	page_index++;
     }
 }
 #endif /* CTL_LANG */

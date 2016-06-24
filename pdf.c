@@ -19,6 +19,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2005-05-03 [JDB] Add CreationDate and ModDate PDF headers.
+ *  2014-02-18 [JDB] Use PDF_PRODUCER definition.
  */
 
 
@@ -26,6 +29,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 
 #include "bitblt.h"
@@ -70,6 +74,11 @@ struct pdf_pages *pdf_new_pages (pdf_file_handle pdf_file)
 pdf_file_handle pdf_create (char *filename)
 {
   pdf_file_handle pdf_file;
+  time_t current_time, adjusted_time;
+  struct tm *time_and_date;
+  int gmt_diff;
+  char tm_string[18], gmt_string[24];
+  const char tm_format[] = "D:%Y%m%d%H%M%S";
 
   pdf_file = pdf_calloc (1, sizeof (struct pdf_file));
 
@@ -88,7 +97,23 @@ pdf_file_handle pdf_create (char *filename)
   pdf_set_dict_entry (pdf_file->catalog, "PageLayout", pdf_new_name ("SinglePage"));
 
   pdf_file->info    = pdf_new_ind_ref (pdf_file, pdf_new_obj (PT_DICTIONARY));
-  pdf_set_info (pdf_file, "Producer", "tumble by Eric Smith -- http://tumble.brouhaha.com/");
+  pdf_set_info (pdf_file, "Producer", PDF_PRODUCER);
+
+  /* Generate CreationDate and ModDate */
+
+  current_time = time (NULL);
+  time_and_date = gmtime (&current_time);
+  adjusted_time = mktime (time_and_date);
+  gmt_diff = (int) difftime (current_time, adjusted_time);
+
+  time_and_date = localtime (&current_time);
+
+  if (strftime (tm_string, sizeof (tm_string), tm_format, time_and_date))
+    {
+      sprintf (gmt_string, "%s%+03d'%02d'", tm_string, gmt_diff / 3600, gmt_diff % 60);
+      pdf_set_info (pdf_file, "CreationDate", gmt_string);
+      pdf_set_info (pdf_file, "ModDate", gmt_string);
+    }
 
   pdf_file->trailer_dict = pdf_new_obj (PT_DICTIONARY);
   /* Size key will be added later */

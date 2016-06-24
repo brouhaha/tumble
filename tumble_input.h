@@ -18,12 +18,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2010-09-02 [JDB] Added support for min-is-black TIFF images.
  */
 
 
 typedef struct
 {
   bool color;
+  bool negative;
   uint32_t width_samples, height_samples;
   double width_points, height_points;
   double x_resolution, y_resolution;
@@ -42,7 +45,8 @@ typedef struct
   bool (*process_image) (int image,
 			 input_attributes_t input_attributes,
 			 image_info_t *image_info,
-			 pdf_page_handle page);
+			 pdf_page_handle page,
+			 position_t position);
 } input_handler_t;
 
 
@@ -59,9 +63,13 @@ bool get_image_info (int image,
 bool process_image (int image,
 		    input_attributes_t input_attributes,
 		    image_info_t *image_info,
-		    pdf_page_handle page);
+		    pdf_page_handle page,
+		    position_t position);
 
 
 void init_tiff_handler (void);
 void init_jpeg_handler (void);
 void init_pbm_handler  (void);
+void init_png_handler  (void);
+
+input_handler_t blank_handler;

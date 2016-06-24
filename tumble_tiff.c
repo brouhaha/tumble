@@ -18,6 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA
+ *
+ *  2010-09-02 [JDB] Added support for min-is-black TIFF images.
  */
 
 
@@ -102,6 +104,7 @@ static bool get_tiff_image_info (int image,
   uint32_t image_height, image_width;
   uint16_t samples_per_pixel;
   uint16_t bits_per_sample;
+  uint16_t photometric_interpretation;
   uint16_t planar_config;
 
   uint16_t resolution_unit;
@@ -146,6 +149,19 @@ static bool get_tiff_image_info (int image,
   if (1 != TIFFGetField (tiff_in, TIFFTAG_BITSPERSAMPLE, & bits_per_sample))
     {
       fprintf (stderr, "can't get bits per sample\n");
+      return (0);
+    }
+
+  if (1 != TIFFGetField (tiff_in, TIFFTAG_PHOTOMETRIC, & photometric_interpretation))
+    {
+      fprintf(stderr, "warning: photometric interpretation not specified, assuming min-is-white\n");
+      photometric_interpretation = PHOTOMETRIC_MINISWHITE;
+    }
+
+  else if ((photometric_interpretation != PHOTOMETRIC_MINISWHITE) &&
+	   (photometric_interpretation != PHOTOMETRIC_MINISBLACK))
+    {
+      fprintf(stderr, "photometric interpretation value %u is invalid\n", photometric_interpretation);
       return (0);
     }
 
@@ -217,6 +233,8 @@ static bool get_tiff_image_info (int image,
       return (0);
     }
 
+  image_info->negative = (photometric_interpretation == PHOTOMETRIC_MINISBLACK);
+
   return (1);
 }
 
@@ -267,7 +285,8 @@ static void rotate_bitmap (Bitmap *src,
 static bool process_tiff_image (int image,  /* range 1 .. n */
 				input_attributes_t input_attributes,
 				image_info_t *image_info,
-				pdf_page_handle page)
+				pdf_page_handle page,
+				position_t position)
 {
   bool result = 0;
   Rect rect;
@@ -328,12 +347,12 @@ static bool process_tiff_image (int image,  /* range 1 .. n */
   pdf_write_text (page);
 #else
   pdf_write_g4_fax_image (page,
-			  0, 0,  /* x, y */
+			  position.x, position.y,
 			  image_info->width_points, image_info->height_points,
+			  image_info->negative,
 			  bitmap,
-			  0, /* ImageMask */
-			  0, 0, 0,  /* r, g, b */
-			  0); /* BlackIs1 */
+			  input_attributes.colormap,
+			  input_attributes.transparency);
 #endif
 
   result = 1;
