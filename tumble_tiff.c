@@ -239,47 +239,6 @@ static bool get_tiff_image_info (int image,
 }
 
 
-/* frees original! */
-static Bitmap *resize_bitmap (Bitmap *src,
-			      double x_resolution,
-			      double y_resolution,
-			      input_attributes_t input_attributes)
-{
-  Rect src_rect;
-  Point dest_min;
-  Bitmap *dest;
-
-  int width_pixels = input_attributes.page_size.width * x_resolution;
-  int height_pixels = input_attributes.page_size.height * y_resolution;
-
-  src_rect.min.x = (rect_width (& src->rect) - width_pixels) / 2;
-  src_rect.min.y = (rect_height (& src->rect) - height_pixels) / 2;
-  src_rect.max.x = src_rect.min.x + width_pixels;
-  src_rect.max.y = src_rect.min.y + height_pixels;
-
-  dest_min.x = 0;
-  dest_min.y = 0;
-
-  dest = bitblt (src, & src_rect, NULL, & dest_min, TF_SRC, 0);
-  free_bitmap (src);
-  return (dest);
-}
-
-
-/* "in place" rotation */
-static void rotate_bitmap (Bitmap *src,
-			   input_attributes_t input_attributes)
-{
-  switch (input_attributes.rotation)
-    {
-    case 0: break;
-    case 90: rot_90 (src); break;
-    case 180: rot_180 (src); break;
-    case 270: rot_270 (src); break;
-    default:
-      fprintf (stderr, "rotation must be 0, 90, 180, or 270\n");
-    }
-}
 
 
 static bool process_tiff_image (int image,  /* range 1 .. n */
@@ -335,13 +294,11 @@ static bool process_tiff_image (int image,  /* range 1 .. n */
 #if 0
   if (input_attributes.has_page_size)
     bitmap = resize_bitmap (bitmap,
-			    x_resolution,
-			    y_resolution,
-			    input_attributes);
+			    input_attributes.page_size.width * x_resolution,
+			    input_attributes.page_size.height * y_resolution);
 #endif
 
-  rotate_bitmap (bitmap,
-		 input_attributes);
+  rotate_bitmap (bitmap, input_attributes.rotation);
 
 #if 0
   pdf_write_text (page);

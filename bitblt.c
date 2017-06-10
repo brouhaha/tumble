@@ -34,6 +34,8 @@
 #include "bitblt_tables.h"
 
 
+#define SWAP(type,a,b) do { type temp; temp = a; a = b; b = temp; } while (0)
+
 #define DIV_ROUND_UP(count,pow2) (((count) - 1) / (pow2) + 1)
 
 
@@ -716,14 +718,32 @@ void rot_180 (Bitmap *src)  /* combination of flip_h and flip_v */
 }
 
 /* "in-place" transformations - will allocate new memory and free old */
+// XXX hideously inefficient!
 void transpose (Bitmap *src)
 {
-  uint32_t new_row_words = DIV_ROUND_UP (rect_height (& src->rect), 32);
-  word_t *new_bits;
+  Rect transposed_rect;
+  Bitmap *dest;
+  Point src_coord, dest_coord;
 
-  new_bits = calloc (1, new_row_words * rect_width (& src->rect) * sizeof (word_t));
+  transposed_rect.min.x = src->rect.min.y;
+  transposed_rect.max.x = src->rect.max.y;
+  transposed_rect.min.y = src->rect.min.x;
+  transposed_rect.max.y = src->rect.max.x;
+  dest = create_bitmap (& transposed_rect);
 
-  /* $$$ more code needed here */
+  for (src_coord.y = src->rect.min.y; src_coord.y < src->rect.max.y; src_coord.y++)
+    {
+      dest_coord.x = src_coord.y;
+      
+      for (src_coord.x = src->rect.min.x; src_coord.x < src->rect.max.x; src_coord.x++)
+	{
+	  dest_coord.y = src_coord.x;
+	  set_pixel(dest, dest_coord, get_pixel(src, src_coord));
+	}
+    }
+
+  SWAP(Bitmap, *src, *dest);
+  free_bitmap(dest);
 }
 
 void rot_90 (Bitmap *src)   /* transpose + flip_h */
@@ -739,3 +759,39 @@ void rot_270 (Bitmap *src)  /* transpose + flip_v */
 }
 
 
+/* frees original! */
+Bitmap *resize_bitmap (Bitmap *src,
+		       int width_pixels,
+		       int height_pixels)
+{
+  Rect src_rect;
+  Point dest_min;
+  Bitmap *dest;
+
+  src_rect.min.x = (rect_width (& src->rect) - width_pixels) / 2;
+  src_rect.min.y = (rect_height (& src->rect) - height_pixels) / 2;
+  src_rect.max.x = src_rect.min.x + width_pixels;
+  src_rect.max.y = src_rect.min.y + height_pixels;
+
+  dest_min.x = 0;
+  dest_min.y = 0;
+
+  dest = bitblt (src, & src_rect, NULL, & dest_min, TF_SRC, 0);
+  free_bitmap (src);
+  return (dest);
+}
+
+
+/* "in place" rotation */
+void rotate_bitmap (Bitmap *src, int rotation)
+{
+  switch (rotation)
+    {
+    case 0: break;
+    case 90: rot_90 (src); break;
+    case 180: rot_180 (src); break;
+    case 270: rot_270 (src); break;
+    default:
+      fprintf (stderr, "rotation %d, but must be 0, 90, 180, or 270\n", rotation);
+    }
+}

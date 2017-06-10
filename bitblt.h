@@ -109,3 +109,12 @@ void reverse_bits (uint8_t *p, int byte_count);
 
 
 void bitblt_write_g4 (Bitmap *bitmap, FILE *f);
+
+
+/* frees original! */
+Bitmap *resize_bitmap (Bitmap *src,
+		       int width_pixels,
+		       int height_pixels);
+
+/* "in place" rotation */
+void rotate_bitmap (Bitmap *src, int rotation);
