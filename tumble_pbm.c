@@ -109,16 +109,32 @@ static bool get_pbm_image_info (int image,
 {
   double x_resolution = 300;
   double y_resolution = 300;
+  double dest_x_resolution, dest_y_resolution;
 
-  /* $$$ need to handle rotation! */
   if (input_attributes.has_resolution)
     {
       x_resolution = input_attributes.x_resolution;
       y_resolution = input_attributes.y_resolution;
     }
 
-  image_info->width_points = (pbm.cols / x_resolution) * POINTS_PER_INCH;
-  image_info->height_points = (pbm.rows / y_resolution) * POINTS_PER_INCH;
+  if ((input_attributes.rotation == 90) || (input_attributes.rotation == 270))
+    {
+      image_info->width_samples = pbm.rows;
+      image_info->height_samples = pbm.cols;
+      dest_x_resolution = y_resolution;
+      dest_y_resolution = x_resolution;
+    }
+  else
+    {
+      image_info->width_samples = pbm.cols;
+      image_info->height_samples = pbm.rows;
+      dest_x_resolution = x_resolution;
+      dest_y_resolution = y_resolution;
+    }
+
+
+  image_info->width_points = (image_info->width_samples / dest_x_resolution) * POINTS_PER_INCH;
+  image_info->height_points = (image_info->height_samples / dest_y_resolution) * POINTS_PER_INCH;
 
   if ((image_info->height_points > PAGE_MAX_POINTS) || 
       (image_info->width_points > PAGE_MAX_POINTS))
@@ -191,10 +207,7 @@ static bool process_pbm_image (int image,  /* range 1 .. n */
 			    input_attributes);
 #endif
 
-#if 0
-  rotate_bitmap (bitmap,
-		 input_attributes);
-#endif
+  rotate_bitmap (bitmap, input_attributes.rotation);
 
   pdf_write_g4_fax_image (page,
 			  position.x, position.y,
