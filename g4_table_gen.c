@@ -2,8 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * G4 table generator
- * $Id: g4_table_gen.c,v 1.4 2003/03/13 00:57:05 eric Exp $
- * Copyright 2003 Eric Smith <eric@brouhaha.com>
+ * Copyright 2003, 2017 Eric Smith <spacewar@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -37,7 +36,7 @@ void emit_code (int indent, char *code, int last, bool comment, int cval)
 
   printf ("%*s{ ", indent, "");
 
-  printf ("%d, ", strlen (code));
+  printf ("%d, ", (int) strlen (code));
 
   for (i = 0; i < strlen (code); i++)
     switch (code [i])

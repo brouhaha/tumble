@@ -2,8 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * PDF routines
- * $Id: pdf_jpeg.c,v 1.5 2003/03/19 23:53:09 eric Exp $
- * Copyright 2003 Eric Smith <eric@brouhaha.com>
+ * Copyright 2003, 2017 Eric Smith <spacewar@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

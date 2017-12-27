@@ -2,8 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Lexical analyzer
- * $Id: scanner.l,v 1.18 2003/03/13 00:57:05 eric Exp $
- * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ * Copyright 2001, 2002, 2003, 2017 Eric Smith <spacewar@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

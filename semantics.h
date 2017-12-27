@@ -2,8 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Semantic routines for spec file parser
- * $Id: semantics.h,v 1.15 2003/03/16 05:58:26 eric Exp $
- * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ * Copyright 2001, 2002, 2003, 2017 Eric Smith <spacewar@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -116,7 +115,7 @@ extern int bookmark_level;
 
 /* Bison interface */
 extern int yyparse (void);
-void yyerror (char *s);
+void yyerror (const char *s);
 
 /* semantic routines for input statements */
 void input_push_context (void);

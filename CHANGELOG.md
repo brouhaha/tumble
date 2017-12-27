@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.36] - 2017-12-27
+### Minor updates, no significant code changes.
+- Minor changes to avoid a few compile warnings.
+- Updates to email address, URL, copyright notices.
+
 ## [0.35] - 2016-06-23
 ### Added CHANGELOG.md	
 	

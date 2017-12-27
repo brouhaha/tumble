@@ -4,7 +4,7 @@
  * PDF routines
  * Copyright 2004 Daniel Gloeckner
  *
- * Derived from pdf_jpeg.c written 2003 by Eric Smith <eric at brouhaha.com>
+ * Derived from pdf_jpeg.c written 2003 by Eric Smith <spacewar@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

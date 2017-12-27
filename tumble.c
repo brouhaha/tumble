@@ -2,8 +2,7 @@
  * tumble: build a PDF file from image files
  *
  * Main program
- * $Id: tumble.c,v 1.43 2003/04/10 01:02:12 eric Exp $
- * Copyright 2001, 2002, 2003 Eric Smith <eric@brouhaha.com>
+ * Copyright 2001, 2002, 2003, 2017 Eric Smith <spacewar@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -76,8 +75,8 @@ bool close_pdf_output_files (void);
 void usage (void)
 {
   fprintf (stderr, "\n");
-  fprintf (stderr, "tumble version " MAKESTR(TUMBLE_VERSION) " - Copyright 2001-2003 Eric Smith <eric@brouhaha.com>\n");
-  fprintf (stderr, "http://tumble.brouhaha.com/\n");
+  fprintf (stderr, "tumble version " MAKESTR(TUMBLE_VERSION) " - Copyright 2001-2017 Eric Smith <spacewar@gmail.com>\n");
+  fprintf (stderr, "https://github.com/brouhaha/tumble/\n");
   fprintf (stderr, "\n");
   fprintf (stderr, "usage:\n");
 #ifdef CTL_LANG

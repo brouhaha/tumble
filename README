@@ -1,6 +1,5 @@
 tumble: build a PDF file from image files
-Copyright 2003 Eric Smith <eric@brouhaha.com>
-$Id: README,v 1.2 2003/03/19 22:54:07 eric Exp $
+Copyright 2003-2017 Eric Smith <spacewar@gmail.com>
 
 Tumble is a utility to construct PDF files from one or more image
 files.  Supported input image file formats are JPEG, and black and

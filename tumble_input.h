@@ -1,8 +1,7 @@
 /*
  * tumble: build a PDF file from image files
  *
- * $Id: tumble_input.h,v 1.3 2003/04/10 00:47:30 eric Exp $
- * Copyright 2003 Eric Smith <eric@brouhaha.com>
+ * Copyright 2003, 2017 Eric Smith <spacewar@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
