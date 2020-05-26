@@ -215,6 +215,7 @@ static uint32_t g4_find_pixel (uint8_t *buf,
   return (width);
 }
 
+#define absdiff(a, b) ((a) < (b) ? (b)-(a) : (a) - (b))
 
 static void g4_encode_row (struct bit_buffer *buf,
 			   uint32_t width,
@@ -253,7 +254,7 @@ static void g4_encode_row (struct bit_buffer *buf,
 	  fprintf (stderr, "pass\n");
 #endif
 	}
-      else if (abs (a1 - b1) <= 3)
+      else if (absdiff(a1, b1) <= 3)
 	{
 	  /* vertical mode */
 	  write_bits (buf,
