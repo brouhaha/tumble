@@ -177,20 +177,16 @@ static bool get_png_image_info (int image,
   image_info->width_samples = width;
   image_info->height_samples = height;
 
-  switch (unit==1)
-  {
-    case 1:
+  if (unit == 1) {
       image_info->width_points = ((image_info->width_samples * POINTS_PER_INCH) /
 				  (xppu * 0.0254));
       image_info->height_points = ((image_info->height_samples * POINTS_PER_INCH) /
 				   (yppu * 0.0254));
-      break;
-    case 0:
+  } else if (unit == 0) {
       /* assume 300 DPI - not great, but what else can we do? */
       image_info->width_points = (image_info->width_samples * POINTS_PER_INCH) / 300.0;
       image_info->height_points = ((double) yppu * image_info->height_samples * POINTS_PER_INCH) / ( 300.0 * xppu);
-      break;
-    default:
+  } else {
       fprintf (stderr, "PNG pHYs unit %d not supported\n", unit);
   }
 
