@@ -33,7 +33,7 @@
 CTL_LANG=1
 
 
-CFLAGS = -Wall -Wno-unused-function -Wno-unused-but-set-variable
+CFLAGS = -Wall -Wno-unused-function -Wno-unused-but-set-variable -I/usr/include/netpbm
 LDFLAGS =
 LDLIBS = -ltiff -ljpeg -lnetpbm -lz -lm
 
