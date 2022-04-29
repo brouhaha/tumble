@@ -385,6 +385,7 @@ void main_args (char *out_fn,
     }
   if (! close_pdf_output_files ())
     fatal (3, "error closing output file \"%s\"\n", out_fn);
+  fprintf(stderr, "\n");
 }
 
 
