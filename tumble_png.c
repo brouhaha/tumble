@@ -88,10 +88,16 @@ static bool get_png_image_info (int image,
 				 input_attributes_t input_attributes,
 				 image_info_t *image_info)
 {
-  uint8_t buf [20], unit;
-  uint32_t width,height,xppu,yppu;
+  uint8_t buf [20];
+  uint8_t unit;
+  uint32_t width  = 0;  // compiler isn't smart enough to tell that there's
+  uint32_t height = 0;  // no way past the for(;;) loop that doesn't init these
+  uint32_t xppu;
+  uint32_t yppu;
   size_t l;
-  bool seen_IHDR,seen_PLTE,seen_pHYs;
+  bool seen_IHDR;
+  bool seen_PLTE;
+  bool seen_pHYs;
 
   seen_IHDR=seen_PLTE=seen_pHYs=false;
   memset(&cinfo,0,sizeof(cinfo));
