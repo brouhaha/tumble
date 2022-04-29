@@ -28,6 +28,10 @@
 #include <stdlib.h>
 #include <strings.h>  /* strcasecmp() is a BSDism */
 
+// Sadly libtiff doesn't accept C streams as input sources, so we have to
+// use Unix file descriptors.
+#include <unistd.h>
+
 #include <tiffio.h>
 /*
  * On the x86, libtiff defaults to big-endian bit order for no good reason.
@@ -80,10 +84,43 @@ static bool open_tiff_input_file (FILE *f, char *name)
 	 ((buf [0] == 0x4d) && (buf [1] == 0x4d))))
     return (0);
 
-  tiff_in = TIFFFdOpen (fileno (f), name, "r");
+  // At this point we expect never to use f (C stream) again,
+  // and rewind() isn't guaranteed to have had any effect on
+  // the C stream, so we explicity lseek() the Unix FD to the start
+  // of the file.
+  // However, if TIFFFdOpen() fails, it's possible that another
+  // input handler will try using the C stream again, so we'll
+  // have to restore the file offset to where it left it.
+
+  int fd = fileno(f);
+
+  off_t original_offset = lseek(fd, 0, SEEK_CUR);
+  if (original_offset < 0)
+    {
+      // SHOULD NEVER HAPPEN
+      fprintf(stderr, "can't get file descriptor position from lseek().");
+      exit (2);
+    }
+
+  off_t new_offset = lseek(fd, 0, SEEK_SET);
+  if (new_offset != 0)
+    {
+      // SHOULD NEVER HAPPEN
+      fprintf(stderr, "can't lseek() to start of file.");
+      exit (2);
+    }
+
+  tiff_in = TIFFFdOpen (fd, name, "r");
   if (! tiff_in)
     {
       fprintf (stderr, "can't open input file '%s'\n", name);
+      off_t restore_offset = lseek(fd, original_offset, SEEK_SET);
+      if (restore_offset != original_offset)
+	{
+	  // SHOULD NEVER HAPPEN
+	  fprintf(stderr, "can't lseek() back to original file offset.");
+	  exit (2);
+	}
       return (0);
     }
   return (1);
