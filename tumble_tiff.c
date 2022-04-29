@@ -30,7 +30,7 @@
 
 #include <tiffio.h>
 /*
- * On the x86, libtiff defaults to bit-endian bit order for no good reason.
+ * On the x86, libtiff defaults to big-endian bit order for no good reason.
  * In theory, the '-L' (and maybe '-H') should give us little-endian bit
  * order, but it doesn't seem to work.  Thus we reverse the bits ourselves
  * after we read in the file.

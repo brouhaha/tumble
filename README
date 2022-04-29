@@ -1,5 +1,5 @@
 tumble: build a PDF file from image files
-Copyright 2003-2017 Eric Smith <spacewar@gmail.com>
+Copyright 2003-2022 Eric Smith <spacewar@gmail.com>
 
 Tumble is a utility to construct PDF files from one or more image
 files.  Supported input image file formats are JPEG, and black and
@@ -8,10 +8,6 @@ encoded in the PDF output using lossless Group 4 fax compression
 (ITU-T recommendation T.6).  This provides a very good compression
 ratio for text and line art.  JPEG images will be preserved with the
 original coding.
-
-The current version of Tumble will only work on little-endian systems,
-such as x86, VAX, and Alpha.  The byte order dependencies will be fixed
-in a later release.
 
 The input and output files can be specified on the command line.
 Alternatively, a control file, typically with a ".tum" suffix, may be
