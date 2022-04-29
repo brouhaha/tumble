@@ -119,7 +119,7 @@ typedef struct output_page_t
 #endif
 
 
-FILE *yyin;
+extern FILE *yyin;  // forward declaration, will be defined by bison
 int line;  /* line number in spec file */
 
 int bookmark_level;
