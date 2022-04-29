@@ -33,7 +33,7 @@
   extern int yylex (void);
 %}
 
-%error-verbose
+%define parse.error verbose
 
 %union {
   int integer;
