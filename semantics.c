@@ -336,6 +336,7 @@ static void output_clone (void)
   memcpy (new_output_context, last_output_context, sizeof (output_context_t));
   new_output_context->page_count = 0;
   last_output_context->next = new_output_context;
+  last_output_context = new_output_context;
 }
 
 void output_set_file (char *name)
@@ -624,7 +625,7 @@ void dump_input_tree (void)
 	if (has_page_size)
 	  printf (" size %f, %f", page_size.width, page_size.height);
 	printf ("\n");
-	printf ("context: %08x\n", image->input_context);
+	printf ("input context: %p\n", image->input_context);
       }
 }
 
@@ -660,6 +661,7 @@ void dump_output_tree (void)
 		    colormap->black_map.red, colormap->black_map.green, colormap->black_map.blue,
 		    colormap->white_map.red, colormap->white_map.green, colormap->white_map.blue);
 	  printf ("page %d\n", i);
+	  printf ("output context %p\n", page->output_context);
 	}
     }
 }
