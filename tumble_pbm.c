@@ -214,8 +214,8 @@ static bool process_pbm_image (int image,  /* range 1 .. n */
 			  image_info->width_points, image_info->height_points,
 			  image_info->negative,
 			  bitmap,
-			  NULL,
-			  NULL);
+			  input_attributes.colormap,
+			  input_attributes.transparency);
 
   result = 1;
 
