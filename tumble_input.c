@@ -64,8 +64,8 @@ bool match_input_suffix (char *suffix)
   int i;
   for (i = 0; i < input_handler_count; i++)
     if (input_handlers [i]->match_suffix (suffix))
-      return (1);
-  return (0);
+      return true;
+  return false;
 }
 
 
@@ -78,13 +78,13 @@ bool open_input_file (char *name)
       if (in)
 	close_input_file ();
       current_input_handler = & blank_handler;
-      return (1);
+      return true;
     }
 
   if (in)
     {
       if (strcmp (name, in_filename) == 0)
-	return (1);
+	return true;
       close_input_file ();
     }
   in_filename = strdup (name);
@@ -109,13 +109,13 @@ bool open_input_file (char *name)
       goto fail;
     }
   current_input_handler = input_handlers [i];
-  return (1);
+  return true;
 
  fail:
   if (in)
     fclose (in);
   in = NULL;
-  return (0);
+  return false;
 }
 
 
@@ -138,15 +138,15 @@ bool close_input_file (void)
       in = NULL;
     }
 
-  return (result);
+  return result;
 }
 
 
 bool last_input_page (void)
 {
   if (! current_input_handler)
-    return (0);
-  return (current_input_handler->last_input_page ());
+    return false;
+  return current_input_handler->last_input_page ();
 }
 
 
@@ -155,23 +155,23 @@ bool get_image_info (int image,
 		     image_info_t *image_info)
 {
   if (! current_input_handler)
-    return (0);
-  return (current_input_handler->get_image_info (image,
-						 input_attributes,
-						 image_info));
+    return false;
+  return current_input_handler->get_image_info (image,
+						input_attributes,
+						image_info);
 }
 
 bool process_image (int image,
 		    input_attributes_t input_attributes,
 		    image_info_t *image_info,
 		    pdf_page_handle page,
-		    position_t position)
+		    output_attributes_t output_attributes)
 {
   if (! current_input_handler)
-    return (0);
-  return (current_input_handler->process_image (image,
-						input_attributes,
-						image_info,
-						page,
-						position));
+    return false;
+  return current_input_handler->process_image (image,
+					       input_attributes,
+					       image_info,
+					       page,
+					       output_attributes);
 }

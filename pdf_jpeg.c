@@ -51,7 +51,7 @@ struct pdf_jpeg_image
 
 
 static void pdf_write_jpeg_content_callback (pdf_file_handle pdf_file,
-					     struct pdf_obj *stream,
+					     pdf_obj_handle stream,
 					     void *app_data)
 {
   struct pdf_jpeg_image *image = app_data;
@@ -68,7 +68,7 @@ static void pdf_write_jpeg_content_callback (pdf_file_handle pdf_file,
 #define JPEG_BUFFER_SIZE 8192
 
 static void pdf_write_jpeg_image_callback (pdf_file_handle pdf_file,
-					   struct pdf_obj *stream,
+					   pdf_obj_handle stream,
 					   void *app_data)
 {
   struct pdf_jpeg_image *image = app_data;
@@ -109,13 +109,10 @@ void pdf_write_jpeg_image (pdf_page_handle pdf_page,
 {
   struct pdf_jpeg_image *image;
 
-  struct pdf_obj *stream;
-  struct pdf_obj *stream_dict;
+  pdf_obj_handle stream;
+  pdf_obj_handle stream_dict;
 
-  struct pdf_obj *content_stream;
-
-  struct pdf_obj *contents;
-  struct pdf_obj *mask;
+  pdf_obj_handle mask;
 
   image = pdf_calloc (1, sizeof (struct pdf_jpeg_image));
 
@@ -174,19 +171,11 @@ void pdf_write_jpeg_image (pdf_page_handle pdf_page,
      get the actual data */
   pdf_write_ind_obj (pdf_page->pdf_file, stream);
 
-  content_stream = pdf_new_ind_ref (pdf_page->pdf_file,
-				    pdf_new_stream (pdf_page->pdf_file,
-						    pdf_new_obj (PT_DICTIONARY),
-						    & pdf_write_jpeg_content_callback,
-						    image));
+  pdf_obj_handle content_stream = pdf_new_ind_ref(pdf_page->pdf_file,
+						  pdf_new_stream (pdf_page->pdf_file,
+								  pdf_new_obj (PT_DICTIONARY),
+								  & pdf_write_jpeg_content_callback,
+								  image));
 
-  contents = pdf_get_dict_entry (pdf_page->page_dict, "Contents");
-
-  if (! contents)
-    contents = pdf_new_obj (PT_ARRAY);
-
-  pdf_add_array_elem (contents, content_stream);
-  pdf_set_dict_entry (pdf_page->page_dict, "Contents", contents);
-
-  pdf_write_ind_obj (pdf_page->pdf_file, content_stream);
+  pdf_page_add_content_stream(pdf_page, content_stream);
 }

@@ -45,7 +45,8 @@ typedef struct
 			 input_attributes_t input_attributes,
 			 image_info_t *image_info,
 			 pdf_page_handle page,
-			 position_t position);
+			 output_attributes_t output_attributes
+			 );
 } input_handler_t;
 
 
@@ -63,7 +64,7 @@ bool process_image (int image,
 		    input_attributes_t input_attributes,
 		    image_info_t *image_info,
 		    pdf_page_handle page,
-		    position_t position);
+		    output_attributes_t output_attributes);
 
 
 void init_tiff_handler (void);

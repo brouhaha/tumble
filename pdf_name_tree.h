@@ -36,7 +36,7 @@ struct pdf_name_tree
 
 struct pdf_name_tree_node
 {
-  struct pdf_obj *dict;    /* indirect reference */
+  pdf_obj_handle dict;    /* indirect reference */
 
   struct pdf_name_tree_node *parent;  /* NULL for root */
   bool leaf;
@@ -46,13 +46,13 @@ struct pdf_name_tree_node
 
   struct pdf_name_tree_node *kids [MAX_NAME_TREE_NODE_ENTRIES];  /* non-leaf only */
 
-  struct pdf_obj *min_key;
-  struct pdf_obj *max_key;
+  pdf_obj_handle min_key;
+  pdf_obj_handle max_key;
 
   /* following fields valid in leaf nodes only: */
 
-  struct pdf_obj *keys [MAX_NAME_TREE_NODE_ENTRIES];
-  struct pdf_obj *values [MAX_NAME_TREE_NODE_ENTRIES];
+  pdf_obj_handle keys [MAX_NAME_TREE_NODE_ENTRIES];
+  pdf_obj_handle values [MAX_NAME_TREE_NODE_ENTRIES];
 };
 
 
@@ -62,12 +62,12 @@ struct pdf_name_tree *pdf_new_name_tree (pdf_file_handle pdf_file,
 
 void pdf_add_name_tree_element (struct pdf_name_tree *tree,
 				char *key,
-				struct pdf_obj *val);
+				pdf_obj_handle val);
 
 
 void pdf_add_number_tree_element (struct pdf_name_tree *tree,
 				  long key,
-				  struct pdf_obj *val);
+				  pdf_obj_handle val);
 
 
 void pdf_finalize_name_trees (pdf_file_handle pdf_file);

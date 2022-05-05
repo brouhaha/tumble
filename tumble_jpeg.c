@@ -50,7 +50,7 @@ static bool match_jpeg_suffix (char *suffix)
 
 static bool close_jpeg_input_file (void)
 {
-  return (1);
+  return true;
 }
 
 
@@ -61,12 +61,12 @@ static bool open_jpeg_input_file (FILE *f, char *name)
 
   l = fread (& buf [0], 1, sizeof (buf), f);
   if (l != sizeof (buf))
-    return (0);
+    return false;
 
   rewind (f);
 
   if ((buf [0] != 0xff) || (buf [1] != 0xd8))
-    return (0);
+    return false;
 
   cinfo.err = jpeg_std_error (& jerr);
   jpeg_create_decompress (& cinfo);
@@ -79,13 +79,13 @@ static bool open_jpeg_input_file (FILE *f, char *name)
 
   jpeg_f = f;
 
-  return (1);
+  return true;
 }
 
 
 static bool last_jpeg_input_page (void)
 {
-  return (1);
+  return true;
 }
 
 
@@ -112,7 +112,7 @@ static bool get_jpeg_image_info (int image,
 	{
 	  fprintf (stderr, "JPEG grayscale image has %d components, should have 1\n",
 		   cinfo.num_components);
-	  return (0);
+	  return false;
 	}
       image_info->color = 0;
       break;
@@ -122,13 +122,13 @@ static bool get_jpeg_image_info (int image,
 	{
 	  fprintf (stderr, "JPEG RGB or YCbCr image has %d components, should have 3\n",
 		   cinfo.num_components);
-	  return (0);
+	  return false;
 	}
       image_info->color = 1;
       break;
     default:
       fprintf (stderr, "JPEG color space %d not supported\n", cinfo.jpeg_color_space);
-      return (0);
+      return false;
     }
   image_info->width_samples = cinfo.image_width;
   image_info->height_samples = cinfo.image_height;
@@ -145,7 +145,7 @@ static bool get_jpeg_image_info (int image,
 	  break;
 	default:
 	  fprintf (stderr, "JFIF density unit %d not supported\n", cinfo.density_unit);
-	  return (0);
+	  return false;
 	}
       image_info->width_points = ((image_info->width_samples * POINTS_PER_INCH) /
 				  (cinfo.X_density * unit));
@@ -159,7 +159,7 @@ static bool get_jpeg_image_info (int image,
       image_info->height_points = (image_info->height_samples * POINTS_PER_INCH) / 300.0;
     }
 
-  return (1);
+  return true;
 }
 
 
@@ -167,10 +167,10 @@ static bool process_jpeg_image (int image,  /* range 1 .. n */
 				input_attributes_t input_attributes,
 				image_info_t *image_info,
 				pdf_page_handle page,
-				position_t position)
+				output_attributes_t output_attributes)
 {
   pdf_write_jpeg_image (page,
-			position.x, position.y,
+			output_attributes.position.x, output_attributes.position.y,
 			image_info->width_points,
 			image_info->height_points,
 			image_info->color,
@@ -179,7 +179,7 @@ static bool process_jpeg_image (int image,  /* range 1 .. n */
 			input_attributes.transparency,
 			jpeg_f);
 
-  return (1);
+  return true;
 }
 
 

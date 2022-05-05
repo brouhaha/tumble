@@ -62,14 +62,14 @@ static pbm_info_t pbm;
 
 static bool match_pbm_suffix (char *suffix)
 {
-  return (strcasecmp (suffix, ".pbm") == 0);
+  return strcasecmp (suffix, ".pbm") == 0;
 }
 
 
 static bool close_pbm_input_file (void)
 {
   pbm.f = NULL;
-  return (1);
+  return true;
 }
 
 
@@ -80,26 +80,26 @@ static bool open_pbm_input_file (FILE *f, char *name)
 
   l = fread (& buf [0], 1, sizeof (buf), f);
   if (l != sizeof (buf))
-    return (0);
+    return false;
 
   rewind (f);
 
   if (! (((buf [0] == 'P') && (buf [1] == '1')) ||
 	 ((buf [0] == 'P') && (buf [1] == '4'))))
-    return (0);
+    return false;
 
   pbm.f = f;
 
   pbm_readpbminit (f, & pbm.cols, & pbm.rows, & pbm.format);
 
-  return (1);
+  return true;
 }
 
 
 static bool last_pbm_input_page (void)
 {
   /* only handle single-page PBM files for now */
-  return (1);
+  return true;
 }
 
 
@@ -140,12 +140,12 @@ static bool get_pbm_image_info (int image,
       (image_info->width_points > PAGE_MAX_POINTS))
     {
       fprintf (stdout, "image too large (max %d inches on a side\n", PAGE_MAX_INCHES);
-      return (0);
+      return false;
     }
 
   image_info->negative = false;
   
-  return (1);
+  return true;
 }
 
 
@@ -153,7 +153,7 @@ static bool process_pbm_image (int image,  /* range 1 .. n */
 			       input_attributes_t input_attributes,
 			       image_info_t *image_info,
 			       pdf_page_handle page,
-			       position_t position)
+			       output_attributes_t output_attributes)
 {
   bool result = 0;
   Rect rect;
@@ -210,11 +210,12 @@ static bool process_pbm_image (int image,  /* range 1 .. n */
   rotate_bitmap (bitmap, input_attributes.rotation);
 
   pdf_write_g4_fax_image (page,
-			  position.x, position.y,
+			  output_attributes.position.x, output_attributes.position.y,
 			  image_info->width_points, image_info->height_points,
 			  image_info->negative,
 			  bitmap,
-			  input_attributes.colormap,
+			  output_attributes.overlay,
+			  output_attributes.colormap,
 			  input_attributes.transparency);
 
   result = 1;
@@ -222,7 +223,7 @@ static bool process_pbm_image (int image,  /* range 1 .. n */
  fail:
   if (bitmap)
     free_bitmap (bitmap);
-  return (result);
+  return result;
 }
 
 

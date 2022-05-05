@@ -37,7 +37,7 @@
 
 
 static void pdf_write_text_content_callback (pdf_file_handle pdf_file,
-					     struct pdf_obj *stream,
+					     pdf_obj_handle stream,
 					     void *app_data)
 {
   pdf_stream_printf (pdf_file, stream,
@@ -45,9 +45,9 @@ static void pdf_write_text_content_callback (pdf_file_handle pdf_file,
 }
 
 
-static struct pdf_obj *pdf_create_font (pdf_page_handle pdf_page)
+static pdf_obj_handle pdf_create_font (pdf_page_handle pdf_page)
 {
-  struct pdf_obj *font = pdf_new_ind_ref (pdf_page->pdf_file,
+  pdf_obj_handle font = pdf_new_ind_ref (pdf_page->pdf_file,
 					  pdf_new_obj (PT_DICTIONARY));
   pdf_set_dict_entry (font, "Type", pdf_new_name ("Font"));
   pdf_set_dict_entry (font, "Subtype", pdf_new_name ("Type1"));
@@ -60,9 +60,8 @@ static struct pdf_obj *pdf_create_font (pdf_page_handle pdf_page)
 
 void pdf_write_text (pdf_page_handle pdf_page)
 {
-  struct pdf_obj *font;
-  struct pdf_obj *font_dict;
-  struct pdf_obj *content_stream;
+  pdf_obj_handle font;
+  pdf_obj_handle font_dict;
 
   font = pdf_create_font (pdf_page);
 
@@ -75,14 +74,12 @@ void pdf_write_text (pdf_page_handle pdf_page)
 
   pdf_add_array_elem_unique (pdf_page->procset, pdf_new_name ("Text"));
 
-  content_stream = pdf_new_ind_ref (pdf_page->pdf_file,
-				    pdf_new_stream (pdf_page->pdf_file,
-						    pdf_new_obj (PT_DICTIONARY),
-						    & pdf_write_text_content_callback,
-						    NULL));
+  pdf_obj_handle content_stream = pdf_new_ind_ref(pdf_page->pdf_file,
+						  pdf_new_stream (pdf_page->pdf_file,
+								  pdf_new_obj (PT_DICTIONARY),
+								  & pdf_write_text_content_callback,
+								  NULL));
 
-  pdf_set_dict_entry (pdf_page->page_dict, "Contents", content_stream);
-
-  pdf_write_ind_obj (pdf_page->pdf_file, content_stream);
+  pdf_page_add_content_stream(pdf_page, content_stream);
 }
 

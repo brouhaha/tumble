@@ -132,7 +132,7 @@ bool close_pdf_output_files (void)
     }
   out = NULL;
   output_files = NULL;
-  return (1);
+  return true;
 }
 
 bool open_pdf_output_file (char *name,
@@ -141,18 +141,18 @@ bool open_pdf_output_file (char *name,
   output_file_t *o;
 
   if (out && (strcmp (name, out->name) == 0))
-    return (1);
+    return true;
   for (o = output_files; o; o = o->next)
     if (strcmp (name, o->name) == 0)
       {
 	out = o;
-	return (1);
+	return true;
       }
   o = calloc (1, sizeof (output_file_t));
   if (! o)
     {
       fprintf (stderr, "can't calloc output file struct for '%s'\n", name);
-      return (0);
+      return false;
    }
 
   o->name = strdup (name);
@@ -160,7 +160,7 @@ bool open_pdf_output_file (char *name,
     {
       fprintf (stderr, "can't strdup output filename '%s'\n", name);
       free (o);
-      return (0);
+      return false;
     }
 
   o->pdf = pdf_create (name);
@@ -169,7 +169,7 @@ bool open_pdf_output_file (char *name,
       fprintf (stderr, "can't open output file '%s'\n", name);
       free (o->name);
       free (o);
-      return (0);
+      return false;
     }
 
   if (attributes->author)
@@ -188,7 +188,7 @@ bool open_pdf_output_file (char *name,
   output_files = o;
 
   out = o;
-  return (1);
+  return true;
 }
 
 
@@ -202,29 +202,38 @@ bool process_page (int image,  /* range 1 .. n */
 		   input_attributes_t input_attributes,
 		   bookmark_t *bookmarks,
 		   page_label_t *page_label,
-		   overlay_t *overlay,
-		   rgb_range_t *transparency)
+		   output_attributes_t output_attributes)
 {
   pdf_page_handle page;
   image_info_t image_info;
-  position_t position;
   
   if (! get_image_info (image, input_attributes, & image_info))
-    return (0);
+    return false;
 
-  if (overlay)
+  output_attributes.position.x = 0.0;
+  output_attributes.position.y = 0.0;
+  
+  if (output_attributes.overlay)
     {
       page = last_page;
-      position.x = overlay->left * POINTS_PER_INCH;
-      position.y = last_size.height - image_info.height_points - overlay->top * POINTS_PER_INCH;
 
-      if (verbose)
-	fprintf (stderr, "overlaying image at %.3f, %.3f\n", position.x, position.y);
-
-    if (transparency)
-      {
-	input_attributes.transparency = transparency;
-      }
+      if (output_attributes.overlay->imagemask)
+	{
+	  if (verbose)
+	    fprintf (stderr, "overlaying imagemask with fg (%d %d %d)\n",
+		     output_attributes.overlay->foreground.red,
+		     output_attributes.overlay->foreground.green,
+		     output_attributes.overlay->foreground.blue);
+	}
+      else
+	{
+	  output_attributes.position.x = output_attributes.overlay->position.x * POINTS_PER_INCH;
+	  output_attributes.position.y = last_size.height - image_info.height_points - output_attributes.overlay->position.y * POINTS_PER_INCH;
+	  if (verbose)
+	    fprintf (stderr, "overlaying image at %.3f, %.3f\n",
+		     output_attributes.position.x,
+		     output_attributes.position.y);
+	}
     }
   else
     {
@@ -233,15 +242,17 @@ bool process_page (int image,  /* range 1 .. n */
 				       image_info.height_points);
       last_size.width = image_info.width_points;
       last_size.height = image_info.height_points;
-      position.x = 0.0;
-      position.y = 0.0;
     }
 
-  if (! process_image (image, input_attributes, & image_info, page, position))
-    return (0);
+  if (! process_image (image,
+		       input_attributes,
+		       & image_info,
+		       page,
+		       output_attributes))
+    return false;
 
-  if (overlay)
-    return (page != NULL);
+  if (output_attributes.overlay)
+    return page != NULL;  // not creating a new page, so no bookmarks or page label
 
   while (bookmarks)
     {
@@ -271,7 +282,7 @@ bool process_page (int image,  /* range 1 .. n */
 			page_label->style,
 			page_label->prefix);
 
-  return (page != NULL);
+  return page != NULL;
 }
 
 
@@ -285,8 +296,8 @@ static int filename_length_without_suffix (char *in_fn)
 
   p = strrchr (in_fn, '.');
   if (p && match_input_suffix (p))
-    return (p - in_fn);
-  return (len);
+    return p - in_fn;
+  return len;
 }
 
 
@@ -344,7 +355,8 @@ void main_args (char *out_fn,
 {
   int i, ip;
   input_attributes_t input_attributes;
-  pdf_file_attributes_t output_attributes;
+  output_attributes_t output_attributes;
+  pdf_file_attributes_t pdf_file_attributes;
   bookmark_t bookmark;
   char bookmark_name [MAX_BOOKMARK_NAME_LEN];
 
@@ -352,10 +364,11 @@ void main_args (char *out_fn,
   bookmark.level = 1;
   bookmark.name = & bookmark_name [0];
 
-  memset (& input_attributes, 0, sizeof (input_attributes));
-  memset (& output_attributes, 0, sizeof (output_attributes));
+  memset (& input_attributes,    0, sizeof (input_attributes));
+  memset (& output_attributes,   0, sizeof (output_attributes));
+  memset (& pdf_file_attributes, 0, sizeof (pdf_file_attributes));
 
-  if (! open_pdf_output_file (out_fn, & output_attributes))
+  if (! open_pdf_output_file (out_fn, & pdf_file_attributes))
     fatal (3, "error opening output file \"%s\"\n", out_fn);
   for (i = 0; i < inf_count; i++)
     {
@@ -369,11 +382,11 @@ void main_args (char *out_fn,
 				    bookmark_fmt, 
 				    in_fn [i],
 				    ip);
-	  if (! process_page (ip, input_attributes,
+	  if (! process_page (ip,
+			      input_attributes,
 			      bookmark_fmt ? & bookmark : NULL,
 			      NULL,
-			      NULL,
-			      NULL))
+			      output_attributes))
 	    fatal (3, "error processing page %d of input file \"%s\"\n", ip, in_fn [i]);
 	  if (last_input_page ())
 	    break;

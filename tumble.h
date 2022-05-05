@@ -41,10 +41,14 @@ typedef struct
   crop_t crop;
 
   rgb_range_t *transparency;
-
-  colormap_t *colormap;		// really an output attribute, but we don't have such a thing
-
 } input_attributes_t;
+
+typedef struct
+{
+  colormap_t *colormap;
+  position_t position;   // position of image on page  XXX should also have scale
+  overlay_t  *overlay;
+} output_attributes_t;
 
 
 bool open_input_file (char *name);
@@ -68,5 +72,4 @@ bool process_page (int image,  /* range 1 .. n */
 		   input_attributes_t input_attributes,
 		   bookmark_t *bookmarks,
 		   page_label_t *page_label,
-		   overlay_t *overlay,
-		   rgb_range_t *transparency);
+		   output_attributes_t output_attributes);

@@ -107,10 +107,10 @@ static void pdf_split_name_tree_node (struct pdf_name_tree *tree,
 	  j * sizeof (struct pdf_name_tree_node *));
   memcpy (& new_node->keys [0],
 	  & node->keys [i],
-	  j * sizeof (struct pdf_obj *));
+	  j * sizeof (pdf_obj_handle ));
   memcpy (& new_node->values [0],
 	  & node->values [i],
-	  j * sizeof (struct pdf_obj *));
+	  j * sizeof (pdf_obj_handle ));
 
   node->count = i;
   new_node->count = j;
@@ -163,8 +163,8 @@ static void pdf_split_name_tree_node (struct pdf_name_tree *tree,
 
 
 static void pdf_add_tree_element (struct pdf_name_tree *tree,
-				  struct pdf_obj *key,
-				  struct pdf_obj *val)
+				  pdf_obj_handle key,
+				  pdf_obj_handle val)
 {
   struct pdf_name_tree_node *node;
   int i;
@@ -197,10 +197,10 @@ static void pdf_add_tree_element (struct pdf_name_tree *tree,
     {
       memmove (& node->keys [i+1],
 	       & node->keys [i],
-	       (node->count - i) * sizeof (struct pdf_obj *));
+	       (node->count - i) * sizeof (pdf_obj_handle ));
       memmove (& node->values [i+1],
 	       & node->values [i],
-	       (node->count - i) * sizeof (struct pdf_obj *));
+	       (node->count - i) * sizeof (pdf_obj_handle ));
     }
 
   node->keys [i] = key;
@@ -232,18 +232,18 @@ static void pdf_add_tree_element (struct pdf_name_tree *tree,
 
 void pdf_add_name_tree_element (struct pdf_name_tree *tree,
 				char *key,
-				struct pdf_obj *val)
+				pdf_obj_handle val)
 {
-  struct pdf_obj *key_obj = pdf_new_string (key);
+  pdf_obj_handle key_obj = pdf_new_string (key);
   pdf_add_tree_element (tree, key_obj, val);
 }
 
 
 void pdf_add_number_tree_element (struct pdf_name_tree *tree,
 				  long key,
-				  struct pdf_obj *val)
+				  pdf_obj_handle val)
 {
-  struct pdf_obj *key_obj = pdf_new_integer (key);
+  pdf_obj_handle key_obj = pdf_new_integer (key);
   pdf_add_tree_element (tree, key_obj, val);
 }
 
@@ -258,7 +258,7 @@ static void pdf_finalize_name_tree_node (struct pdf_name_tree *tree,
   if (node->leaf)
     {
       /* write Names or Nums array */
-      struct pdf_obj *names = pdf_new_obj (PT_ARRAY);
+      pdf_obj_handle names = pdf_new_obj (PT_ARRAY);
       for (i = 0; i < node->count; i++)
 	{
 	  pdf_add_array_elem (names, node->keys [i]);
@@ -272,7 +272,7 @@ static void pdf_finalize_name_tree_node (struct pdf_name_tree *tree,
     {
       /* finalize the children first so that their dict ind ref is
 	 available */
-      struct pdf_obj *kids;
+      pdf_obj_handle kids;
 
       for (i = 0; i < node->count; i++)
 	pdf_finalize_name_tree_node (tree, node->kids [i]);
@@ -287,7 +287,7 @@ static void pdf_finalize_name_tree_node (struct pdf_name_tree *tree,
   if (node->parent)
     {
       /* write Limits array */
-      struct pdf_obj *limits = pdf_new_obj (PT_ARRAY);
+      pdf_obj_handle limits = pdf_new_obj (PT_ARRAY);
       pdf_add_array_elem (limits, node->min_key);
       pdf_add_array_elem (limits, node->max_key);
       pdf_set_dict_entry (node->dict, "Limits", limits);

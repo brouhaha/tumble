@@ -50,12 +50,12 @@ static struct {
 
 static bool match_png_suffix (char *suffix)
 {
-  return (strcasecmp (suffix, ".png") == 0);
+  return strcasecmp (suffix, ".png") == 0;
 }
 
 static bool close_png_input_file (void)
 {
-  return (1);
+  return true;
 }
 
 #define BENUM(p) (((p)[0]<<24)+((p)[1]<<16)+((p)[2]<<8)+(p)[3])
@@ -178,7 +178,7 @@ static bool get_png_image_info (int image,
       break;
     default:
       fprintf (stderr, "PNG color type %d not supported\n", cinfo.color);
-      return (0);
+      return false;
     }
   image_info->width_samples = width;
   image_info->height_samples = height;
@@ -204,10 +204,10 @@ static bool process_png_image (int image,  /* range 1 .. n */
 			       input_attributes_t input_attributes,
 			       image_info_t *image_info,
 			       pdf_page_handle page,
-			       position_t position)
+			       output_attributes_t output_attributes)
 {
   pdf_write_png_image (page,
-		       position.x, position.y,
+		       output_attributes.position.x, output_attributes.position.y,
 		       image_info->width_points,
 		       image_info->height_points,
 		       cinfo.color,
@@ -219,7 +219,7 @@ static bool process_png_image (int image,  /* range 1 .. n */
 		       input_attributes.transparency,
 		       png_f);
 
-  return (1);
+  return true;
 }
 
 

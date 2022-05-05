@@ -24,35 +24,35 @@
 struct pdf_page
 {
   pdf_file_handle pdf_file;
-  struct pdf_obj *page_dict;
-  struct pdf_obj *media_box;
-  struct pdf_obj *procset;
-  struct pdf_obj *resources;
+  pdf_obj_handle page_dict;
+  pdf_obj_handle media_box;
+  pdf_obj_handle procset;
+  pdf_obj_handle resources;
 
   char last_XObject_name;
-  struct pdf_obj *XObject_dict;
+  pdf_obj_handle XObject_dict;
 };
 
 
 struct pdf_pages
 {
-  struct pdf_obj *pages_dict;
-  struct pdf_obj *kids;
-  struct pdf_obj *count;
+  pdf_obj_handle pages_dict;
+  pdf_obj_handle kids;
+  pdf_obj_handle count;
 };
 
 
 struct pdf_file
 {
   FILE                 *f;
-  struct pdf_obj       *first_ind_obj;
-  struct pdf_obj       *last_ind_obj;
-  long int              xref_offset;
-  struct pdf_obj       *catalog;
-  struct pdf_obj       *info;
+  pdf_obj_handle       first_ind_obj;
+  pdf_obj_handle       last_ind_obj;
+  long int             xref_offset;
+  pdf_obj_handle       catalog;
+  pdf_obj_handle       info;
   struct pdf_pages     *root;
   struct pdf_bookmark  *outline_root;
-  struct pdf_obj       *trailer_dict;
+  pdf_obj_handle       trailer_dict;
   struct pdf_name_tree *page_label_tree;
   struct pdf_name_tree *name_tree_list;
 };

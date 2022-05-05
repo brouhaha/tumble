@@ -52,24 +52,24 @@ struct pdf_blank_page
 
 static bool match_blank_suffix (char *suffix)
 {
-  return (0);
+  return false;
 }
 
 static bool close_blank_input_file (void)
 {
-  return (1);
+  return true;
 }
 
 
 static bool open_blank_input_file (FILE *f, char *name)
 {
-  return (1);
+  return true;
 }
 
 
 static bool last_blank_input_page (void)
 {
-  return (1);
+  return true;
 }
 
 
@@ -81,15 +81,15 @@ static bool get_blank_image_info (int image,
     {
       image_info->width_points = input_attributes.page_size.width * POINTS_PER_INCH;
       image_info->height_points = input_attributes.page_size.height * POINTS_PER_INCH;
-      return (1);
+      return true;
     }
   else
-    return (0);
+    return false;
 }
 
 
 static void pdf_write_blank_content_callback (pdf_file_handle pdf_file,
-					      struct pdf_obj *stream,
+					      pdf_obj_handle stream,
 					      void *app_data)
 {
   struct pdf_blank_page *page = app_data;
@@ -106,14 +106,13 @@ static bool process_blank_image (int image,  /* range 1 .. n */
 				 input_attributes_t input_attributes,
 				 image_info_t *image_info,
 				 pdf_page_handle pdf_page,
-				 position_t position)
+				 output_attributes_t output_attributes)
 {
   struct pdf_blank_page *page;
-  struct pdf_obj *content_stream;
 
 /* If colormap set, use "white" color and draw rectangle to cover page. */
 
-  if (input_attributes.colormap)
+  if (output_attributes.colormap)
     {
       page = pdf_calloc (1, sizeof (struct pdf_blank_page));
 
@@ -121,20 +120,18 @@ static bool process_blank_image (int image,  /* range 1 .. n */
       page->height = image_info->height_points;
       page->x = 0;
       page->y = 0;
-      page->red = (double) input_attributes.colormap->white_map.red / 255.0;
-      page->green = (double) input_attributes.colormap->white_map.green / 255.0;
-      page->blue = (double) input_attributes.colormap->white_map.blue / 255.0;
+      page->red   = (double) output_attributes.colormap->white_map.red / 255.0;
+      page->green = (double) output_attributes.colormap->white_map.green / 255.0;
+      page->blue  = (double) output_attributes.colormap->white_map.blue / 255.0;
 
-      content_stream = pdf_new_ind_ref (pdf_page->pdf_file,
-    					pdf_new_stream (pdf_page->pdf_file,
-    							pdf_new_obj (PT_DICTIONARY),
-    							& pdf_write_blank_content_callback,
-    							page));
-
-      pdf_set_dict_entry (pdf_page->page_dict, "Contents", content_stream);
-      pdf_write_ind_obj (pdf_page->pdf_file, content_stream);
+      pdf_obj_handle content_stream = pdf_new_ind_ref(pdf_page->pdf_file,
+						      pdf_new_stream (pdf_page->pdf_file,
+								      pdf_new_obj (PT_DICTIONARY),
+								      & pdf_write_blank_content_callback,
+								      page));
+      pdf_page_add_content_stream(pdf_page, content_stream);
     }
-  return (1);
+  return true;
 }
 
 

@@ -65,7 +65,7 @@ static bool match_tiff_suffix (char *suffix)
 static bool close_tiff_input_file (void)
 {
   TIFFClose (tiff_in);
-  return (1);
+  return true;
 }
 
 
@@ -76,13 +76,13 @@ static bool open_tiff_input_file (FILE *f, char *name)
 
   l = fread (& buf [0], 1, sizeof (buf), f);
   if (l != sizeof (buf))
-    return (0);
+    return false;
 
   rewind (f);
 
   if (! (((buf [0] == 0x49) && (buf [1] == 0x49)) ||
 	 ((buf [0] == 0x4d) && (buf [1] == 0x4d))))
-    return (0);
+    return false;
 
   // At this point we expect never to use f (C stream) again,
   // and rewind() isn't guaranteed to have had any effect on
@@ -121,15 +121,15 @@ static bool open_tiff_input_file (FILE *f, char *name)
 	  fprintf(stderr, "can't lseek() back to original file offset.");
 	  exit (2);
 	}
-      return (0);
+      return false;
     }
-  return (1);
+  return true;
 }
 
 
 static bool last_tiff_input_page (void)
 {
-  return (TIFFLastDirectory (tiff_in));
+  return TIFFLastDirectory (tiff_in);
 }
 
 
@@ -155,37 +155,37 @@ static bool get_tiff_image_info (int image,
   if (! TIFFSetDirectory (tiff_in, image - 1))
     {
       fprintf (stderr, "can't find page %d of input file\n", image);
-      return (0);
+      return false;
     }
   if (1 != TIFFGetField (tiff_in, TIFFTAG_IMAGELENGTH, & image_height))
     {
       fprintf (stderr, "can't get image height\n");
-      return (0);
+      return false;
     }
   if (1 != TIFFGetField (tiff_in, TIFFTAG_IMAGEWIDTH, & image_width))
     {
       fprintf (stderr, "can't get image width\n");
-      return (0);
+      return false;
     }
 
   if (1 != TIFFGetField (tiff_in, TIFFTAG_SAMPLESPERPIXEL, & samples_per_pixel))
     {
       fprintf (stderr, "can't get samples per pixel\n");
-      return (0);
+      return false;
     }
 
 #ifdef CHECK_DEPTH
   if (1 != TIFFGetField (tiff_in, TIFFTAG_IMAGEDEPTH, & image_depth))
     {
       fprintf (stderr, "can't get image depth\n");
-      return (0);
+      return false;
     }
 #endif
 
   if (1 != TIFFGetField (tiff_in, TIFFTAG_BITSPERSAMPLE, & bits_per_sample))
     {
       fprintf (stderr, "can't get bits per sample\n");
-      return (0);
+      return false;
     }
 
   if (1 != TIFFGetField (tiff_in, TIFFTAG_PHOTOMETRIC, & photometric_interpretation))
@@ -198,7 +198,7 @@ static bool get_tiff_image_info (int image,
 	   (photometric_interpretation != PHOTOMETRIC_MINISBLACK))
     {
       fprintf(stderr, "photometric interpretation value %u is invalid\n", photometric_interpretation);
-      return (0);
+      return false;
     }
 
   if (1 != TIFFGetField (tiff_in, TIFFTAG_PLANARCONFIG, & planar_config))
@@ -214,27 +214,27 @@ static bool get_tiff_image_info (int image,
   if (samples_per_pixel != 1)
     {
       fprintf (stderr, "samples per pixel %u, must be 1\n", samples_per_pixel);
-      return (0);
+      return false;
     }
 
 #ifdef CHECK_DEPTH
   if (image_depth != 1)
     {
       fprintf (stderr, "image depth %u, must be 1\n", image_depth);
-      return (0);
+      return false;
     }
 #endif
 
   if (bits_per_sample != 1)
     {
       fprintf (stderr, "bits per sample %u, must be 1\n", bits_per_sample);
-      return (0);
+      return false;
     }
 
   if (planar_config != 1)
     {
       fprintf (stderr, "planar config %u, must be 1\n", planar_config);
-      return (0);
+      return false;
     }
 
   if (input_attributes.has_resolution)
@@ -266,12 +266,12 @@ static bool get_tiff_image_info (int image,
       (image_info->width_points > PAGE_MAX_POINTS))
     {
       fprintf (stdout, "image too large (max %d inches on a side\n", PAGE_MAX_INCHES);
-      return (0);
+      return false;
     }
 
   image_info->negative = (photometric_interpretation == PHOTOMETRIC_MINISBLACK);
 
-  return (1);
+  return true;
 }
 
 
@@ -281,7 +281,7 @@ static bool process_tiff_image (int image,  /* range 1 .. n */
 				input_attributes_t input_attributes,
 				image_info_t *image_info,
 				pdf_page_handle page,
-				position_t position)
+				output_attributes_t output_attributes)
 {
   bool result = 0;
   Rect rect;
@@ -336,24 +336,21 @@ static bool process_tiff_image (int image,  /* range 1 .. n */
 
   rotate_bitmap (bitmap, input_attributes.rotation);
 
-#if 0
-  pdf_write_text (page);
-#else
   pdf_write_g4_fax_image (page,
-			  position.x, position.y,
+			  output_attributes.position.x, output_attributes.position.y,
 			  image_info->width_points, image_info->height_points,
 			  image_info->negative,
 			  bitmap,
-			  input_attributes.colormap,
+			  output_attributes.overlay,
+			  output_attributes.colormap,
 			  input_attributes.transparency);
-#endif
 
   result = 1;
 
  fail:
   if (bitmap)
     free_bitmap (bitmap);
-  return (result);
+  return result;
 }
 
 

@@ -24,33 +24,10 @@
  *  2014-02-18 [JDB] Added PDF_PRODUCER definition.
  */
 
-#if !defined(SEMANTICS)
-typedef struct
-{
-  int first; 
-  int last;
- } range_t;
+#ifndef PDF_H
+#define PDF_H
 
-typedef struct
-{
-  int red;
-  int green;
-  int blue;
-} rgb_t;
-
-typedef struct
-{
-  range_t red;
-  range_t green;
-  range_t blue;
-} rgb_range_t;
-
-typedef struct
-{
-  rgb_t black_map;
-  rgb_t white_map;
-} colormap_t;
-#endif
+#include "semantics.h"
 
 /* Acrobat default units aren't really points, but they're close. */
 #define POINTS_PER_INCH 72.0
@@ -114,6 +91,7 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 			     double height,
 			     bool negative,
 			     Bitmap *bitmap,
+			     overlay_t *overlay,
 			     colormap_t *colormap,
 			     rgb_range_t *transparency);
 
@@ -161,3 +139,5 @@ void pdf_new_page_label (pdf_file_handle pdf_file,
 			 int count,
 			 char style,
 			 char *prefix);
+
+#endif // PDF_H

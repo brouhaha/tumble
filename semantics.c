@@ -467,9 +467,8 @@ void output_pages (range_t range)
 void output_overlay (overlay_t overlay)
 {
   output_pages (last_output_page->range);
-  last_output_page->has_overlay = 1;
-  last_output_page->overlay.left = overlay.left;
-  last_output_page->overlay.top  = overlay.top;
+  last_output_page->has_overlay = true;
+  last_output_page->overlay = overlay;
 }
 
 void output_set_colormap (rgb_t black_color, rgb_t white_color)
@@ -478,6 +477,14 @@ void output_set_colormap (rgb_t black_color, rgb_t white_color)
   last_output_context->has_colormap = 1;
   last_output_context->colormap.black_map = black_color;
   last_output_context->colormap.white_map = white_color;
+}
+
+void output_imagemask (rgb_t foreground_color)
+{
+  output_pages (last_output_page->range);
+  last_output_page->has_overlay = true;
+  last_output_page->overlay.imagemask = true;
+  last_output_page->overlay.foreground = foreground_color;
 }
 
 void yyerror (const char *s)
@@ -489,7 +496,7 @@ static char *get_input_filename (input_context_t *context)
 {
   for (; context; context = context->parent)
     if ((context->input_file) || (context->is_blank))
-      return (context->input_file);
+      return context->input_file;
   fprintf (stderr, "no input file name found\n");
   exit (2);
 }
@@ -503,15 +510,15 @@ static bool get_input_rotation (input_context_t *context,
       if (context->modifiers [type].has_rotation)
 	{
 	  * rotation = context->modifiers [type].rotation;
-	  return (1);
+	  return true;
 	}
       if (context->modifiers [INPUT_MODIFIER_ALL].has_rotation)
 	{
 	  * rotation = context->modifiers [INPUT_MODIFIER_ALL].rotation;
-	  return (1);
+	  return true;
 	}
     }
-  return (0);  /* default */
+  return false;  /* default */
 }
 
 static rgb_range_t *get_input_transparency (input_context_t *context,
@@ -540,22 +547,22 @@ static bool get_input_page_size (input_context_t *context,
       if (context->modifiers [type].has_page_size)
 	{
 	  * page_size = context->modifiers [type].page_size;
-	  return (1);
+	  return true;
 	}
       if (context->modifiers [INPUT_MODIFIER_ALL].has_page_size)
 	{
 	  * page_size = context->modifiers [INPUT_MODIFIER_ALL].page_size;
-	  return (1);
+	  return true;
 	}
     }
-  return (0);  /* default */
+  return false;  /* default */
 }
 
 static char *get_output_filename (output_context_t *context)
 {
   for (; context; context = context->parent)
     if (context->output_file)
-      return (context->output_file);
+      return context->output_file;
   fprintf (stderr, "no output file found\n");
   exit (2);
 }
@@ -564,7 +571,7 @@ static pdf_file_attributes_t *get_output_file_attributes (output_context_t *cont
 {
   for (; context; context = context->parent)
     if (context->output_file)
-      return (& context->file_attributes);
+      return & context->file_attributes;
   fprintf (stderr, "no output file found\n");
   exit (2);
 }
@@ -573,16 +580,16 @@ static page_label_t *get_output_page_label (output_context_t *context)
 {
   for (; context; context = context->parent)
     if (context->has_page_label)
-      return (& context->page_label);
-  return (NULL);  /* default */
+      return & context->page_label;
+  return NULL;  /* default */
 }
 
 static colormap_t *get_output_colormap (output_context_t *context)
 {
   for (; context; context = context->parent)
     if (context->has_colormap)
-      return (& context->colormap);
-  return (NULL);  /* default */
+      return & context->colormap;
+  return NULL;  /* default */
 }
 
 
@@ -670,7 +677,7 @@ void dump_output_tree (void)
 
 static inline int range_count (range_t range)
 {
-  return ((range.last - range.first) + 1);
+  return (range.last - range.first) + 1;
 }
 
 
@@ -717,7 +724,7 @@ bool parse_control_file (char *fn)
   if (yyin)
     fclose (yyin);
 
-  return (result);
+  return result;
 }
 
 bool omit_label (page_label_t *page_label)
@@ -747,6 +754,7 @@ bool process_controls (void)
   input_attributes_t input_attributes;
   input_modifier_type_t parity;
   page_label_t *page_label;
+  output_attributes_t output_attributes;
 
   for (;;)
     {
@@ -758,7 +766,7 @@ bool process_controls (void)
 	  else
 	    image = first_input_image;
 	  if (! image)
-	    return (1);  /* done */
+	    return true;  /* done */
 	  i = 0;
 	  input_fn = get_input_filename (image->input_context);
 	  if (verbose)
@@ -771,7 +779,7 @@ bool process_controls (void)
 	  if (! open_input_file (input_fn))
 	    {
 	      fprintf (stderr, "error opening input file '%s'\n", input_fn);
-	      return (0);
+	      return false;
 	    }
 	}
 
@@ -790,7 +798,7 @@ bool process_controls (void)
 				      get_output_file_attributes (page->output_context)))
 	    {
 	      fprintf (stderr, "error opening PDF file '%s'\n", output_fn);
-	      return (0);
+	      return false;
 	    }
 	}
 
@@ -809,14 +817,21 @@ bool process_controls (void)
 
       input_attributes.transparency = get_input_transparency (image->input_context, parity);
 
+      memset (& output_attributes, 0, sizeof (output_attributes));
+      output_attributes.colormap = get_output_colormap (page->output_context);
 
-      // really an output attribute, but we don't have such an thing
-      input_attributes.colormap = get_output_colormap (page->output_context);
+      if (page->has_overlay)
+	output_attributes.overlay = & page->overlay;
 
       if (verbose)
-	fprintf (stderr, "processing image %d\n", image->range.first + i);
+	{
+	  fprintf(stderr, "processing image %d", image->range.first + i);
+	  if (page->has_overlay)
+	    fprintf(stderr, " overlay");
+	  fprintf(stderr, "\n");
+	}
 
-      if (p)
+      if (p || page->has_overlay)
 	page_label = NULL;
       else
 	{
@@ -836,11 +851,10 @@ bool process_controls (void)
 			  input_attributes,
 			  p ? NULL : page->bookmark_list,
 			  page_label,
-			  page->has_overlay ? & page->overlay : NULL,
-			  input_attributes.transparency))
+			  output_attributes))
 	{
 	  fprintf (stderr, "error processing image %d\n", image->range.first + i);
-	  return (0);
+	  return false;
 	}
       i++;
       p++;

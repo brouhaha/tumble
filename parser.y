@@ -69,6 +69,7 @@
 %token FILE_KEYWORD
 %token IMAGE
 %token IMAGES
+%token IMAGEMASK
 %token ROTATE
 %token CROP
 %token SIZE
@@ -116,7 +117,8 @@ statements:
 	| statements statement ;
 
 statement:
-	input_statement
+	/* empty: null statement */
+	| input_statement
 	| output_statement ;
 
 
@@ -130,16 +132,16 @@ image_ranges:
 
 
 input_file_clause:
-	FILE_KEYWORD STRING  ';'  { input_set_file ($2); } ;
+	FILE_KEYWORD STRING { input_set_file ($2); } ;
 
 image_clause:
-	IMAGE INTEGER ';' { range_t range = { $2, $2 }; input_images (range); } ;
+	IMAGE INTEGER { range_t range = { $2, $2 }; input_images (range); } ;
 
 images_clause:
-	IMAGES image_ranges ';' ;
+	IMAGES image_ranges ;
 
 rotate_clause:
-	ROTATE INTEGER ';' { input_set_rotation ($2); } ;
+	ROTATE INTEGER { input_set_rotation ($2); } ;
 
 unit:
 	/* empty */  /* default to INCH */ { $$ = 1.0; }
@@ -150,10 +152,10 @@ length:
 	FLOAT unit { $$ = $1 * $2; } ;
 
 crop_clause:
-	CROP PAGE_SIZE ';'
-	| CROP PAGE_SIZE orientation ';'
-	| CROP length ',' length ';'
-	| CROP length ',' length ',' length ',' length ';' ;
+	CROP PAGE_SIZE
+	| CROP PAGE_SIZE orientation
+	| CROP length ',' length
+	| CROP length ',' length ',' length ',' length ;
 
 orientation:
 	PORTRAIT { $$ = 0; }
@@ -172,7 +174,7 @@ page_size:
 	| length ',' length { $$.width = $1; $$.height = $3; } ;
 
 size_clause:
-	SIZE page_size ';' { input_set_page_size ($2); } ;
+	SIZE page_size { input_set_page_size ($2); } ;
 
 resolution_clause:
 	RESOLUTION FLOAT unit ;
@@ -188,36 +190,40 @@ color_range:
     | gray_range;
 
 transparency_clause:
-    TRANSPARENT color_range ';' { input_set_transparency ($2); } ;
+    TRANSPARENT color_range { input_set_transparency ($2); } ;
 
 modifier_clause:
-	rotate_clause | crop_clause | size_clause | resolution_clause | transparency_clause;
+	rotate_clause ';'
+	| crop_clause ';'
+	| size_clause ';'
+	| resolution_clause ';'
+	| transparency_clause ';' ;
 
 modifier_clauses:
-	modifier_clause
-	| modifier_clauses modifier_clause;
+        modifier_clause
+	| modifier_clauses modifier_clause ;
 
 modifier_clause_list:
 	'{' modifier_clauses '}' ;
 
 part_clause:
 	ODD { input_set_modifier_context (INPUT_MODIFIER_ODD); }
-          modifier_clause_list ';'
+          modifier_clause_list
           { input_set_modifier_context (INPUT_MODIFIER_ALL); }
 	| EVEN { input_set_modifier_context (INPUT_MODIFIER_EVEN); }
-	  modifier_clause_list ';'
+	  modifier_clause_list
           { input_set_modifier_context (INPUT_MODIFIER_ALL); } ;
 
 blank_page_clause:
-	BLANK { input_set_file (NULL); } size_clause ;
+	BLANK { input_set_file (NULL); } size_clause;
 
 input_clause:
-	input_file_clause
-	| image_clause
-	| images_clause
-	| part_clause
-	| modifier_clause
-	| blank_page_clause
+	input_file_clause ';'
+	| image_clause ';'
+	| images_clause ';'
+	| part_clause ';'
+	| modifier_clauses ';'
+	| blank_page_clause ';'
 	| input_clause_list ;
 
 input_clauses:
@@ -229,7 +235,7 @@ input_clause_list:
 	input_clauses '}' { input_pop_context (); } ;
 
 input_statement:
-	INPUT input_clauses ;
+	INPUT '{' input_clauses '}' ;
 
 pdf_file_attribute:
 	AUTHOR STRING { output_set_author ($2); }
@@ -248,34 +254,37 @@ pdf_file_attributes:
 
 output_file_clause:
 	FILE_KEYWORD STRING { output_set_file ($2); }
-	pdf_file_attributes ';' ;
+	pdf_file_attributes ;
 
 label_clause:
-	LABEL ';' { page_label_t label = { NULL, '\0' }; output_set_page_label (label); }
-	| LABEL STRING ';' { page_label_t label = { $2, '\0' }; output_set_page_label (label); }
-	| LABEL CHARACTER ';' { page_label_t label = { NULL, $2 }; output_set_page_label (label); }
-	| LABEL STRING ',' CHARACTER ';' { page_label_t label = { $2, $4 }; output_set_page_label (label); } ;
+	LABEL { page_label_t label = { NULL, '\0' }; output_set_page_label (label); }
+	| LABEL STRING { page_label_t label = { $2, '\0' }; output_set_page_label (label); }
+	| LABEL CHARACTER { page_label_t label = { NULL, $2 }; output_set_page_label (label); }
+	| LABEL STRING ',' CHARACTER { page_label_t label = { $2, $4 }; output_set_page_label (label); } ;
 
 overlay_clause_list:
 	/* empty */
 	| '{' overlay_clauses '}' ;
 
 overlay_clauses:
-	overlay_clause
-	| overlay_clauses overlay_clause ;
+	overlay_clause ';'
+	| overlay_clauses overlay_clause ';' ;
 
 overlay_clause:
-	OVERLAY length ',' length ';' { overlay_t overlay = { $2, $4 }; output_overlay (overlay); } ;
+	OVERLAY length ',' length { overlay_t overlay = { .imagemask = false,
+	    						  .position.x = $2,
+							  .position.y = $4 }; output_overlay (overlay); }
+	| IMAGEMASK rgb { output_imagemask($2); } ;
 
 page_ranges:
 	range { output_pages ($1); }
 	| page_ranges ',' range { output_pages ($3); } ;
 
 page_clause:
-	PAGE INTEGER { range_t range = { $2, $2 }; output_pages (range); } overlay_clause_list ';' ;
+	PAGE INTEGER { range_t range = { $2, $2 }; output_pages (range); } overlay_clause_list ;
 
 pages_clause:
-	PAGES page_ranges ';' ;
+	PAGES page_ranges ;
 
 bookmark_name:
 	STRING { output_set_bookmark ($1); } ;
@@ -287,20 +296,21 @@ bookmark_name_list:
 bookmark_clause:
 	BOOKMARK { output_push_context (); bookmark_level++; }
 	bookmark_name_list
-	output_clause_list ';' { bookmark_level--; output_pop_context (); } ;
+	output_clause_list { bookmark_level--; output_pop_context (); } ;
 
 rgb:
 	'(' INTEGER INTEGER INTEGER ')' { $$.red = $2; $$.green = $3; $$.blue = $4; } ;
 
 colormap_clause:
-	COLORMAP rgb ',' rgb ';' { output_set_colormap ($2, $4); } ;
+	COLORMAP rgb ',' rgb { output_set_colormap ($2, $4); } ;
 
 output_clause:
-	output_file_clause
-	| colormap_clause
-	| label_clause
-	| page_clause | pages_clause
-	| bookmark_clause
+	output_file_clause ';'
+	| colormap_clause ';'
+	| label_clause ';'
+	| page_clause ';'
+	| pages_clause ';'
+	| bookmark_clause ';'
 	| output_clause_list ;
 
 output_clauses:
@@ -312,4 +322,4 @@ output_clause_list:
 	output_clauses '}' { output_pop_context (); } ;
 
 output_statement:
-	OUTPUT output_clauses ;
+	OUTPUT '{' output_clauses '}' ;

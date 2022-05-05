@@ -41,7 +41,7 @@
 struct pdf_array_elem
 {
   struct pdf_array_elem *next;
-  struct pdf_obj        *val;
+  pdf_obj_handle        val;
 };
 
 
@@ -56,7 +56,7 @@ struct pdf_dict_entry
 {
   struct pdf_dict_entry *next;
   char                  *key;
-  struct pdf_obj        *val;
+  pdf_obj_handle        val;
 };
 
 
@@ -68,20 +68,20 @@ struct pdf_dict
 
 struct pdf_stream
 {
-  struct pdf_obj *stream_dict;
-  struct pdf_obj *length;
+  pdf_obj_handle stream_dict;
+  pdf_obj_handle length;
   pdf_stream_write_callback callback;
   void *app_data;  /* arg to pass to callback */
-  struct pdf_obj *filters;  /* name or array of names */
-  struct pdf_obj *decode_parms;
+  pdf_obj_handle filters;  /* name or array of names */
+  pdf_obj_handle decode_parms;
 };
 
 
 struct pdf_obj
 {
   /* these fields only apply to indirectly referenced objects */
-  struct pdf_obj      *prev;
-  struct pdf_obj      *next;
+  pdf_obj_handle      prev;
+  pdf_obj_handle      next;
   unsigned long       obj_num;
   unsigned long       obj_gen;
   long int            file_offset;
@@ -98,7 +98,7 @@ struct pdf_obj
     }                 string;
     long              integer;
     double            real;
-    struct pdf_obj    *ind_ref;
+    pdf_obj_handle    ind_ref;
     struct pdf_dict   dict;
     struct pdf_array  array;
     struct pdf_stream stream;
@@ -106,14 +106,14 @@ struct pdf_obj
 };
 
 
-struct pdf_obj *ref (struct pdf_obj *obj)
+pdf_obj_handle ref (pdf_obj_handle obj)
 {
   obj->ref_count++;
   return (obj);
 }
 
 
-void unref (struct pdf_obj *obj)
+void unref (pdf_obj_handle obj)
 {
   if ((--obj->ref_count) == 0)
     {
@@ -122,14 +122,14 @@ void unref (struct pdf_obj *obj)
 }
 
 
-struct pdf_obj *pdf_deref_ind_obj (struct pdf_obj *ind_obj)
+pdf_obj_handle pdf_deref_ind_obj (pdf_obj_handle ind_obj)
 {
   pdf_assert (ind_obj->type == PT_IND_REF);
   return (ind_obj->val.ind_ref);
 }
 
 
-void pdf_set_dict_entry (struct pdf_obj *dict_obj, char *key, struct pdf_obj *val)
+void pdf_set_dict_entry (pdf_obj_handle dict_obj, char *key, pdf_obj_handle val)
 {
   struct pdf_dict_entry *entry;
 
@@ -158,7 +158,7 @@ void pdf_set_dict_entry (struct pdf_obj *dict_obj, char *key, struct pdf_obj *va
 }
 
 
-struct pdf_obj *pdf_get_dict_entry (struct pdf_obj *dict_obj, char *key)
+pdf_obj_handle pdf_get_dict_entry (pdf_obj_handle dict_obj, char *key)
 {
   struct pdf_dict_entry *entry;
 
@@ -175,7 +175,7 @@ struct pdf_obj *pdf_get_dict_entry (struct pdf_obj *dict_obj, char *key)
 }
 
 
-void pdf_add_array_elem (struct pdf_obj *array_obj, struct pdf_obj *val)
+void pdf_add_array_elem (pdf_obj_handle array_obj, pdf_obj_handle val)
 {
   struct pdf_array_elem *elem = pdf_calloc (1, sizeof (struct pdf_array_elem));
 
@@ -195,7 +195,7 @@ void pdf_add_array_elem (struct pdf_obj *array_obj, struct pdf_obj *val)
 }
 
 
-void pdf_add_array_elem_unique (struct pdf_obj *array_obj, struct pdf_obj *val)
+void pdf_add_array_elem_unique (pdf_obj_handle array_obj, pdf_obj_handle val)
 {
   struct pdf_array_elem *elem;
 
@@ -221,42 +221,42 @@ void pdf_add_array_elem_unique (struct pdf_obj *array_obj, struct pdf_obj *val)
 }
 
 
-struct pdf_obj *pdf_new_obj (pdf_obj_type type)
+pdf_obj_handle pdf_new_obj (pdf_obj_type type)
 {
-  struct pdf_obj *obj = pdf_calloc (1, sizeof (struct pdf_obj));
+  pdf_obj_handle obj = pdf_calloc (1, sizeof (struct pdf_obj));
   obj->type = type;
   return (obj);
 }
 
 
-struct pdf_obj *pdf_new_bool (bool val)
+pdf_obj_handle pdf_new_bool (bool val)
 {
-  struct pdf_obj *obj = pdf_new_obj (PT_BOOL);
+  pdf_obj_handle obj = pdf_new_obj (PT_BOOL);
   obj->val.boolean = val;
   return (obj);
 }
 
 
-struct pdf_obj *pdf_new_name (char *name)
+pdf_obj_handle pdf_new_name (char *name)
 {
-  struct pdf_obj *obj = pdf_new_obj (PT_NAME);
+  pdf_obj_handle obj = pdf_new_obj (PT_NAME);
   obj->val.name = pdf_strdup (name);
   return (obj);
 }
 
 
-struct pdf_obj *pdf_new_string (char *str)
+pdf_obj_handle pdf_new_string (char *str)
 {
-  struct pdf_obj *obj = pdf_new_obj (PT_STRING);
+  pdf_obj_handle obj = pdf_new_obj (PT_STRING);
   obj->val.string.content = pdf_strdup (str);
   obj->val.string.length = strlen(str);
   return (obj);
 }
 
 
-struct pdf_obj *pdf_new_string_n (char *str, int n)
+pdf_obj_handle pdf_new_string_n (char *str, int n)
 {
-  struct pdf_obj *obj = pdf_new_obj (PT_STRING);
+  pdf_obj_handle obj = pdf_new_obj (PT_STRING);
   obj->val.string.length = n;
   obj->val.string.content = pdf_calloc (1,n);
   memcpy(obj->val.string.content, str, n);
@@ -264,28 +264,28 @@ struct pdf_obj *pdf_new_string_n (char *str, int n)
 }
 
 
-struct pdf_obj *pdf_new_integer (long val)
+pdf_obj_handle pdf_new_integer (long val)
 {
-  struct pdf_obj *obj = pdf_new_obj (PT_INTEGER);
+  pdf_obj_handle obj = pdf_new_obj (PT_INTEGER);
   obj->val.integer = val;
   return (obj);
 }
 
 
-struct pdf_obj *pdf_new_real (double val)
+pdf_obj_handle pdf_new_real (double val)
 {
-  struct pdf_obj *obj = pdf_new_obj (PT_REAL);
+  pdf_obj_handle obj = pdf_new_obj (PT_REAL);
   obj->val.real = val;
   return (obj);
 }
 
 
-struct pdf_obj *pdf_new_stream (pdf_file_handle pdf_file,
-				struct pdf_obj *stream_dict,
+pdf_obj_handle pdf_new_stream (pdf_file_handle pdf_file,
+				pdf_obj_handle stream_dict,
 				pdf_stream_write_callback callback,
 				void *app_data)
 {
-  struct pdf_obj *obj = pdf_new_obj (PT_STREAM);
+  pdf_obj_handle obj = pdf_new_obj (PT_STREAM);
 
   obj->val.stream.stream_dict = stream_dict;
   obj->val.stream.length = pdf_new_ind_ref (pdf_file, pdf_new_integer (0));
@@ -298,9 +298,9 @@ struct pdf_obj *pdf_new_stream (pdf_file_handle pdf_file,
 
 
 /* $$$ currently limited to one filter per stream */
-void pdf_stream_add_filter (struct pdf_obj *stream,
+void pdf_stream_add_filter (pdf_obj_handle stream,
 			    char *filter_name,
-			    struct pdf_obj *decode_parms)
+			    pdf_obj_handle decode_parms)
 {
   if (stream->type == PT_IND_REF)
     stream = pdf_deref_ind_obj (stream);
@@ -313,9 +313,9 @@ void pdf_stream_add_filter (struct pdf_obj *stream,
 }
 
 
-struct pdf_obj *pdf_new_ind_ref (pdf_file_handle pdf_file, struct pdf_obj *obj)
+pdf_obj_handle pdf_new_ind_ref (pdf_file_handle pdf_file, pdf_obj_handle obj)
 {
-  struct pdf_obj *ind_obj;
+  pdf_obj_handle ind_obj;
 
   pdf_assert (obj->type != PT_IND_REF);
 
@@ -346,7 +346,7 @@ struct pdf_obj *pdf_new_ind_ref (pdf_file_handle pdf_file, struct pdf_obj *obj)
 }
 
 
-long pdf_get_integer (struct pdf_obj *obj)
+long pdf_get_integer (pdf_obj_handle obj)
 {
   if (obj->type == PT_IND_REF)
     obj = pdf_deref_ind_obj (obj);
@@ -356,7 +356,7 @@ long pdf_get_integer (struct pdf_obj *obj)
   return (obj->val.integer);
 }
 
-void pdf_set_integer (struct pdf_obj *obj, long val)
+void pdf_set_integer (pdf_obj_handle obj, long val)
 {
   if (obj->type == PT_IND_REF)
     obj = pdf_deref_ind_obj (obj);
@@ -367,7 +367,7 @@ void pdf_set_integer (struct pdf_obj *obj, long val)
 }
 
 
-double pdf_get_real (struct pdf_obj *obj)
+double pdf_get_real (pdf_obj_handle obj)
 {
   if (obj->type == PT_IND_REF)
     obj = pdf_deref_ind_obj (obj);
@@ -377,7 +377,7 @@ double pdf_get_real (struct pdf_obj *obj)
   return (obj->val.real);
 }
 
-void pdf_set_real (struct pdf_obj *obj, double val)
+void pdf_set_real (pdf_obj_handle obj, double val)
 {
   if (obj->type == PT_IND_REF)
     obj = pdf_deref_ind_obj (obj);
@@ -388,7 +388,7 @@ void pdf_set_real (struct pdf_obj *obj, double val)
 }
 
 
-int pdf_compare_obj (struct pdf_obj *o1, struct pdf_obj *o2)
+int pdf_compare_obj (pdf_obj_handle o1, pdf_obj_handle o2)
 {
   if (o1->type == PT_IND_REF)
     o1 = pdf_deref_ind_obj (o1);
@@ -527,14 +527,14 @@ void pdf_write_real (pdf_file_handle pdf_file, double num)
 }
 
 
-void pdf_write_ind_ref (pdf_file_handle pdf_file, struct pdf_obj *ind_obj)
+void pdf_write_ind_ref (pdf_file_handle pdf_file, pdf_obj_handle ind_obj)
 {
-  struct pdf_obj *obj = pdf_deref_ind_obj (ind_obj);
+  pdf_obj_handle obj = pdf_deref_ind_obj (ind_obj);
   fprintf (pdf_file->f, "%ld %ld R ", obj->obj_num, obj->obj_gen);
 }
 
 
-void pdf_write_array (pdf_file_handle pdf_file, struct pdf_obj *array_obj)
+void pdf_write_array (pdf_file_handle pdf_file, pdf_obj_handle array_obj)
 {
   struct pdf_array_elem *elem;
 
@@ -550,7 +550,7 @@ void pdf_write_array (pdf_file_handle pdf_file, struct pdf_obj *array_obj)
 }
 
 
-void pdf_write_dict (pdf_file_handle pdf_file, struct pdf_obj *dict_obj)
+void pdf_write_dict (pdf_file_handle pdf_file, pdf_obj_handle dict_obj)
 {
   struct pdf_dict_entry *entry;
 
@@ -569,7 +569,7 @@ void pdf_write_dict (pdf_file_handle pdf_file, struct pdf_obj *dict_obj)
 
 
 void pdf_stream_write_data (pdf_file_handle pdf_file,
-			    struct pdf_obj *stream,
+			    pdf_obj_handle stream,
 			    char *data,
 			    unsigned long len)
 {
@@ -585,7 +585,7 @@ void pdf_stream_write_data (pdf_file_handle pdf_file,
 
 
 void pdf_stream_printf (pdf_file_handle pdf_file,
-			struct pdf_obj *stream,
+			pdf_obj_handle stream,
 			char *fmt, ...)
 {
   va_list ap;
@@ -596,7 +596,7 @@ void pdf_stream_printf (pdf_file_handle pdf_file,
 }
 
 
-void pdf_write_stream (pdf_file_handle pdf_file, struct pdf_obj *stream)
+void pdf_write_stream (pdf_file_handle pdf_file, pdf_obj_handle stream)
 {
   unsigned long begin_pos, end_pos;
 
@@ -616,7 +616,7 @@ void pdf_write_stream (pdf_file_handle pdf_file, struct pdf_obj *stream)
 }
 
 
-void pdf_write_obj (pdf_file_handle pdf_file, struct pdf_obj *obj)
+void pdf_write_obj (pdf_file_handle pdf_file, pdf_obj_handle obj)
 {
   switch (obj->type)
     {
@@ -659,9 +659,9 @@ void pdf_write_obj (pdf_file_handle pdf_file, struct pdf_obj *obj)
 }
 
 
-void pdf_write_ind_obj (pdf_file_handle pdf_file, struct pdf_obj *ind_obj)
+void pdf_write_ind_obj (pdf_file_handle pdf_file, pdf_obj_handle ind_obj)
 {
-  struct pdf_obj *obj;
+  pdf_obj_handle obj;
 
   if (ind_obj->type == PT_IND_REF)
     obj = pdf_deref_ind_obj (ind_obj);
@@ -677,7 +677,7 @@ void pdf_write_ind_obj (pdf_file_handle pdf_file, struct pdf_obj *ind_obj)
 
 void pdf_write_all_ind_obj (pdf_file_handle pdf_file)
 {
-  struct pdf_obj *ind_obj;
+  pdf_obj_handle ind_obj;
   for (ind_obj = pdf_file->first_ind_obj; ind_obj; ind_obj = ind_obj->next)
     if (! ind_obj->file_offset)
       pdf_write_ind_obj (pdf_file, ind_obj);
@@ -686,7 +686,7 @@ void pdf_write_all_ind_obj (pdf_file_handle pdf_file)
 
 unsigned long pdf_write_xref (pdf_file_handle pdf_file)
 {
-  struct pdf_obj *ind_obj;
+  pdf_obj_handle ind_obj;
   pdf_file->xref_offset = ftell (pdf_file->f);
   fprintf (pdf_file->f, "xref\r\n");
   fprintf (pdf_file->f, "0 %ld\r\n", pdf_file->last_ind_obj->obj_num + 1);
@@ -698,7 +698,7 @@ unsigned long pdf_write_xref (pdf_file_handle pdf_file)
 
 
 /* this isn't really a PDF primitive data type */
-char pdf_new_XObject (pdf_page_handle pdf_page, struct pdf_obj *ind_ref)
+char pdf_new_XObject (pdf_page_handle pdf_page, pdf_obj_handle ind_ref)
 {
   char XObject_name [4] = "Im ";
 
@@ -715,4 +715,19 @@ char pdf_new_XObject (pdf_page_handle pdf_page, struct pdf_obj *ind_ref)
   return (pdf_page->last_XObject_name);
 }
 
+
+void pdf_page_add_content_stream(pdf_page_handle pdf_page,
+				 pdf_obj_handle content_stream)
+{
+  pdf_obj_handle contents;
+  contents = pdf_get_dict_entry (pdf_page->page_dict, "Contents");
+
+  if (! contents)
+    contents = pdf_new_obj (PT_ARRAY);
+  
+  pdf_add_array_elem (contents, content_stream);
+  pdf_set_dict_entry (pdf_page->page_dict, "Contents", contents);
+
+  pdf_write_ind_obj (pdf_page->pdf_file, content_stream);
+}
 

@@ -37,8 +37,8 @@
 
 struct pdf_bookmark
 {
-  struct pdf_obj *dict;    /* indirect reference */
-  struct pdf_obj *count;
+  pdf_obj_handle dict;    /* indirect reference */
+  pdf_obj_handle count;
   bool open;
 
   struct pdf_bookmark *first;
@@ -83,7 +83,7 @@ pdf_bookmark_handle pdf_new_bookmark (pdf_bookmark_handle parent,
   struct pdf_bookmark *root;
   struct pdf_bookmark *entry;
 
-  struct pdf_obj *dest_array;
+  pdf_obj_handle dest_array;
 
   root = pdf_file->outline_root;
   if (! root)

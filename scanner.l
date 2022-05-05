@@ -51,66 +51,67 @@ dot [\.]
 
 %%
 
-[\,;{}()]	{ return (yytext [0]); }
-{dot}{dot}	{ LDBG(("elipsis\n")); return (ELIPSIS); }
+[\,;{}()]	{ return yytext [0]; }
+{dot}{dot}	{ LDBG(("elipsis\n")); return ELIPSIS; }
 
   /* decimal integer */
-{digit}+	{ yylval.integer = atoi (yytext); LDBG(("integer %d\n", yylval.integer)); return (INTEGER); }
+{digit}+	{ yylval.integer = atoi (yytext); LDBG(("integer %d\n", yylval.integer)); return INTEGER; }
 
   /* floating point number - tricky to make sure it doesn't grab an integer
      followed by an elipsis */
--?{digit}+\.{digit}+ { yylval.fp = atof (yytext); return (FLOAT); }
--?{digit}+\./[^.] { yylval.fp = atof (yytext); return (FLOAT); }
+-?{digit}+\.{digit}+ { yylval.fp = atof (yytext); return FLOAT; }
+-?{digit}+\./[^.] { yylval.fp = atof (yytext); return FLOAT; }
 
 a		{ yylval.size.width = 8.5;
 		  yylval.size.height = 11.0;
-                  return (PAGE_SIZE); }
+                  return PAGE_SIZE; }
 b		{ yylval.size.width = 11.0;
                   yylval.size.height = 17.0;
-                  return (PAGE_SIZE); }
+                  return PAGE_SIZE; }
 c		{ yylval.size.width = 17.0;
                   yylval.size.height = 22.0;
-                  return (PAGE_SIZE); }
+                  return PAGE_SIZE; }
 d		{ yylval.size.width = 22.0;
                   yylval.size.height = 34.0;
-                  return (PAGE_SIZE); }
+                  return PAGE_SIZE; }
 e		{ yylval.size.width = 34.0;
                    yylval.size.height = 44.0;
-                  return (PAGE_SIZE); }
+                  return PAGE_SIZE; }
 
-all		{ return (ALL); }
-author		{ return (AUTHOR); }
-blank		{ return (BLANK); }
-bookmark	{ return (BOOKMARK); }
-cm		{ return (CM); }
-colormap	{ return (COLORMAP); }
-creator		{ return (CREATOR); }
-crop		{ return (CROP); }
-even		{ return (EVEN); }
-file		{ return (FILE_KEYWORD); }
-image		{ return (IMAGE); }
-images		{ return (IMAGES); }
-inch		{ return (INCH); }
-input		{ return (INPUT); }
-keywords	{ return (KEYWORDS); }
-label		{ return (LABEL); }
-landscape	{ return (LANDSCAPE); }
-odd		{ return (ODD); }
-output		{ return (OUTPUT); }
-overlay		{ return (OVERLAY); }
-page		{ return (PAGE); }
-pages		{ return (PAGES); }
-portrait	{ return (PORTRAIT) ; }
-resolution	{ return (RESOLUTION) ; }
-rotate		{ return (ROTATE); }
-size		{ return (SIZE); }
-subject		{ return (SUBJECT); }
-title		{ return (TITLE); }
-transparent	{ return (TRANSPARENT); }
+all		{ return ALL; }
+author		{ return AUTHOR; }
+blank		{ return BLANK; }
+bookmark	{ return BOOKMARK; }
+cm		{ return CM; }
+colormap	{ return COLORMAP; }
+creator		{ return CREATOR; }
+crop		{ return CROP; }
+even		{ return EVEN; }
+file		{ return FILE_KEYWORD; }
+imagemask       { return IMAGEMASK; }
+image		{ return IMAGE; }
+images		{ return IMAGES; }
+inch		{ return INCH; }
+input		{ return INPUT; }
+keywords	{ return KEYWORDS; }
+label		{ return LABEL; }
+landscape	{ return LANDSCAPE; }
+odd		{ return ODD; }
+output		{ return OUTPUT; }
+overlay		{ return OVERLAY; }
+page		{ return PAGE; }
+pages		{ return PAGES; }
+portrait	{ return PORTRAIT ; }
+resolution	{ return RESOLUTION ; }
+rotate		{ return ROTATE; }
+size		{ return SIZE; }
+subject		{ return SUBJECT; }
+title		{ return TITLE; }
+transparent	{ return TRANSPARENT; }
 
 '[^\n']'	{
 		  yylval.character = yytext [1];
-		  return (CHARACTER);
+		  return CHARACTER;
 		}
 
 \"[^\n"]*\"	{
@@ -119,7 +120,7 @@ transparent	{ return (TRANSPARENT); }
                   memcpy (yylval.string, yytext + 1, len);
                   yylval.string [len] = '\0';
 		  LDBG (("string \"%s\"\n", yylval.string));
-                  return (STRING);
+                  return STRING;
                 }
 
 [ \t]+		/* whitespace */

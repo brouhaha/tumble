@@ -76,7 +76,7 @@ pdf_file_handle pdf_create (char *filename)
   time_t current_time, adjusted_time;
   struct tm *time_and_date;
   int gmt_diff;
-  char tm_string[18], gmt_string[24];
+  char tm_string[18], gmt_string[25];
   const char tm_format[] = "D:%Y%m%d%H%M%S";
 
   pdf_file = pdf_calloc (1, sizeof (struct pdf_file));
@@ -240,7 +240,7 @@ pdf_page_handle pdf_new_page (pdf_file_handle pdf_file,
 
   if (pdf_get_integer (pdf_file->root->count) == 0)
     {
-      struct pdf_obj *dest_array = pdf_new_obj (PT_ARRAY);
+      pdf_obj_handle dest_array = pdf_new_obj (PT_ARRAY);
       pdf_add_array_elem (dest_array, page->page_dict);
       pdf_add_array_elem (dest_array, pdf_new_name ("Fit"));
       pdf_set_dict_entry (pdf_file->catalog, "OpenAction", dest_array);

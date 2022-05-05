@@ -49,11 +49,13 @@ struct pdf_g4_image
   unsigned long Rows;
   Bitmap *bitmap;
   char XObject_name [4];
+  bool imagemask;
+  double fg_red, fg_green, fg_blue;  // only if imagemask
 };
 
 
 static void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
-					   struct pdf_obj *stream,
+					   pdf_obj_handle stream,
 					   void *app_data)
 {
   struct pdf_g4_image *image = app_data;
@@ -63,13 +65,19 @@ static void pdf_write_g4_content_callback (pdf_file_handle pdf_file,
 		     image->width, image->height,
 		     image->x, image->y);
 
-  pdf_write_name (pdf_file, image->XObject_name);
-  pdf_stream_printf (pdf_file, stream, "Do Q\r\n");
+  if (image->imagemask)
+    {
+      // set nonstroking color in DeviceRGB color space
+      pdf_stream_printf(pdf_file, stream, "%g %g %g rg ", image->fg_red, image->fg_green, image->fg_blue);
+    }
+
+  pdf_write_name(pdf_file, image->XObject_name);
+  pdf_stream_printf(pdf_file, stream, "Do Q\r\n");
 }
 
 
 static void pdf_write_g4_fax_image_callback (pdf_file_handle pdf_file,
-					     struct pdf_obj *stream,
+					     pdf_obj_handle stream,
 					     void *app_data)
 {
   struct pdf_g4_image *image = app_data;
@@ -85,26 +93,27 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 			     double height,
 			     bool negative,
 			     Bitmap *bitmap,
+			     overlay_t *overlay,
 			     colormap_t *colormap,
 			     rgb_range_t *transparency)
 {
   struct pdf_g4_image *image;
 
-  struct pdf_obj *stream;
-  struct pdf_obj *stream_dict;
-  struct pdf_obj *decode_parms;
+  pdf_obj_handle stream;
+  pdf_obj_handle stream_dict;
+  pdf_obj_handle decode_parms;
 
-  struct pdf_obj *content_stream;
-
-  struct pdf_obj *contents;
-  struct pdf_obj *mask;
-  
   typedef char MAP_STRING[6];
   
   MAP_STRING color_index;
   static MAP_STRING last_color_index;
-  static struct pdf_obj *color_space;
+  static pdf_obj_handle color_space;
 
+  if (transparency && (overlay && overlay->imagemask))
+  {
+    fprintf(stderr, "Can't use transparency or color map with an image mask.\n");
+    exit(2);  // XXX should be a failure return value
+  }
 
   pdf_add_array_elem_unique (pdf_page->procset, pdf_new_name ("ImageB"));
 
@@ -119,6 +128,14 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
   image->Columns = bitmap->rect.max.x - bitmap->rect.min.x;
   image->Rows = bitmap->rect.max.y - bitmap->rect.min.y;
 
+  if (overlay && overlay->imagemask)
+    {
+      image->imagemask = true;
+      image->fg_red   = overlay->foreground.red   / 255.0;
+      image->fg_green = overlay->foreground.green / 255.0;
+      image->fg_blue  = overlay->foreground.blue  / 255.0;
+    }
+
   stream_dict = pdf_new_obj (PT_DICTIONARY);
 
   stream = pdf_new_ind_ref (pdf_page->pdf_file,
@@ -132,13 +149,21 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
 
   pdf_set_dict_entry (stream_dict, "Type",    pdf_new_name ("XObject"));
   pdf_set_dict_entry (stream_dict, "Subtype", pdf_new_name ("Image"));
-  pdf_set_dict_entry (stream_dict, "Name",    pdf_new_name (& image->XObject_name [0]));
+  // Name entry was required in PDF 1.0, obsolete in subsequent versions
+  //pdf_set_dict_entry (stream_dict, "Name",    pdf_new_name (& image->XObject_name [0]));
   pdf_set_dict_entry (stream_dict, "Width",   pdf_new_integer (image->Columns));
   pdf_set_dict_entry (stream_dict, "Height",  pdf_new_integer (image->Rows));
   pdf_set_dict_entry (stream_dict, "BitsPerComponent", pdf_new_integer (1));
 
+  if (overlay && overlay->imagemask)
+    {
+      pdf_set_dict_entry (stream_dict, "ImageMask", pdf_new_bool (true));
+    }
+
   if (transparency)
     {
+      pdf_obj_handle mask;
+  
       mask = pdf_new_obj (PT_ARRAY);
       
       pdf_add_array_elem (mask, pdf_new_integer (transparency->red.first));
@@ -147,33 +172,36 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
       pdf_set_dict_entry (stream_dict, "Mask", mask);
     }
 
-  if (colormap)
+  if (! (overlay && overlay->imagemask))
     {
-      color_index [0] = (char) colormap->black_map.red;
-      color_index [1] = (char) colormap->black_map.green;
-      color_index [2] = (char) colormap->black_map.blue;
-      color_index [3] = (char) colormap->white_map.red;
-      color_index [4] = (char) colormap->white_map.green;
-      color_index [5] = (char) colormap->white_map.blue;
-
-      if ((color_space == NULL) || 
-          (memcmp (color_index, last_color_index, sizeof (MAP_STRING)) != 0))
+      if (colormap)
 	{
-	  memcpy (last_color_index, color_index, sizeof (MAP_STRING));
+	  color_index [0] = (char) colormap->black_map.red;
+	  color_index [1] = (char) colormap->black_map.green;
+	  color_index [2] = (char) colormap->black_map.blue;
+	  color_index [3] = (char) colormap->white_map.red;
+	  color_index [4] = (char) colormap->white_map.green;
+	  color_index [5] = (char) colormap->white_map.blue;
 
-	  color_space = pdf_new_obj (PT_ARRAY);
-	  pdf_add_array_elem (color_space, pdf_new_name ("Indexed"));
-	  pdf_add_array_elem (color_space, pdf_new_name ("DeviceRGB"));
-	  pdf_add_array_elem (color_space, pdf_new_integer (1));
-	  pdf_add_array_elem (color_space, pdf_new_string_n (color_index, 6));
+	  if ((color_space == NULL) || 
+	      (memcmp (color_index, last_color_index, sizeof (MAP_STRING)) != 0))
+	    {
+	      memcpy (last_color_index, color_index, sizeof (MAP_STRING));
 
-	  color_space = pdf_new_ind_ref (pdf_page->pdf_file, color_space);
+	      color_space = pdf_new_obj (PT_ARRAY);
+	      pdf_add_array_elem (color_space, pdf_new_name ("Indexed"));
+	      pdf_add_array_elem (color_space, pdf_new_name ("DeviceRGB"));
+	      pdf_add_array_elem (color_space, pdf_new_integer (1));
+	      pdf_add_array_elem (color_space, pdf_new_string_n (color_index, 6));
+
+	      color_space = pdf_new_ind_ref (pdf_page->pdf_file, color_space);
+	    }
+
+	  pdf_set_dict_entry (stream_dict, "ColorSpace", color_space);
 	}
-
-      pdf_set_dict_entry (stream_dict, "ColorSpace", color_space);
+      else
+	pdf_set_dict_entry (stream_dict, "ColorSpace", pdf_new_name ("DeviceGray"));
     }
-  else
-    pdf_set_dict_entry (stream_dict, "ColorSpace", pdf_new_name ("DeviceGray"));
 
   decode_parms = pdf_new_obj (PT_DICTIONARY);
 
@@ -200,20 +228,11 @@ void pdf_write_g4_fax_image (pdf_page_handle pdf_page,
      get the actual data */
   pdf_write_ind_obj (pdf_page->pdf_file, stream);
 
-  content_stream = pdf_new_ind_ref (pdf_page->pdf_file,
-				    pdf_new_stream (pdf_page->pdf_file,
-						    pdf_new_obj (PT_DICTIONARY),
-						    & pdf_write_g4_content_callback,
-						    image));
-
-  contents = pdf_get_dict_entry (pdf_page->page_dict, "Contents");
-
-  if (! contents)
-    contents = pdf_new_obj (PT_ARRAY);
-
-  pdf_add_array_elem (contents, content_stream);
-  pdf_set_dict_entry (pdf_page->page_dict, "Contents", contents);
-
-  pdf_write_ind_obj (pdf_page->pdf_file, content_stream);
+  pdf_obj_handle content_stream = pdf_new_ind_ref(pdf_page->pdf_file,
+						  pdf_new_stream (pdf_page->pdf_file,
+								  pdf_new_obj (PT_DICTIONARY),
+								  & pdf_write_g4_content_callback,
+								  image));
+  pdf_page_add_content_stream(pdf_page, content_stream);
 }
 

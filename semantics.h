@@ -24,8 +24,8 @@
  *                   contexts.
  */
 
-// HACK! rgb_t and colormap_t have to appear here and in pdf_g4!  See pdf.h
-#define SEMANTICS
+#ifndef SEMANTICS_H
+#define SEMANTICS_H
 
 typedef struct
 {
@@ -63,8 +63,13 @@ typedef struct
 
 typedef struct
 {
-  double left;
-  double top;
+  bool imagemask;
+
+  // if not imagemask
+  position_t position;
+
+  // if imagemask
+  rgb_t foreground;
 } overlay_t;
 
 typedef struct 
@@ -90,7 +95,6 @@ typedef struct
   int base;
   int count;
 } page_label_t;
-
 
 typedef enum
 {
@@ -144,8 +148,11 @@ void output_pages (range_t range);
 void output_overlay (overlay_t overlay);
 void output_transparency (rgb_range_t rgb_range);
 void output_set_colormap (rgb_t black_color, rgb_t white_color);
+void output_imagemask (rgb_t foreground_color);
 
 
 /* functions to be called from main program: */
 bool parse_control_file (char *fn);
 bool process_controls (void);
+
+#endif // SEMANTICS_H

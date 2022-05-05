@@ -48,7 +48,7 @@ void pdf_new_page_label (pdf_file_handle pdf_file,
 			 char style,
 			 char *prefix)
 {
-  struct pdf_obj *label_dict;
+  pdf_obj_handle label_dict;
   char style_str [2] = { style, '\0' };
 
   if (! pdf_file->page_label_tree)
