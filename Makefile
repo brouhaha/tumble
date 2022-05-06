@@ -63,7 +63,7 @@ YFLAGS = -d -v
 # let me know why so I can improve this Makefile.
 # -----------------------------------------------------------------------------
 
-VERSION = 0.36
+VERSION = 0.38
 
 PACKAGE = tumble
 

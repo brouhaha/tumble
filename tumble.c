@@ -75,7 +75,7 @@ bool close_pdf_output_files (void);
 void usage (void)
 {
   fprintf (stderr, "\n");
-  fprintf (stderr, "tumble version " MAKESTR(TUMBLE_VERSION) " - Copyright 2001-2017 Eric Smith <spacewar@gmail.com>\n");
+  fprintf (stderr, "tumble version " MAKESTR(TUMBLE_VERSION) " - Copyright 2001-2022 Eric Smith <spacewar@gmail.com>\n");
   fprintf (stderr, "https://github.com/brouhaha/tumble/\n");
   fprintf (stderr, "\n");
   fprintf (stderr, "usage:\n");
