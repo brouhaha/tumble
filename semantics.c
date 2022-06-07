@@ -67,7 +67,7 @@ typedef struct input_context_t
   char *input_file;
   bool is_blank;
 
-  input_modifiers_t modifiers [INPUT_MODIFIER_TYPE_COUNT];
+  input_modifiers_t modifiers;
 } input_context_t;
 
 
@@ -127,8 +127,6 @@ int bookmark_level;
 input_context_t *first_input_context;
 input_context_t *last_input_context;
 
-input_modifier_type_t current_modifier_context = INPUT_MODIFIER_ALL;
-
 input_image_t *first_input_image;
 input_image_t *last_input_image;
 
@@ -176,22 +174,6 @@ void input_pop_context (void)
   last_input_context = last_input_context->parent;
 };
 
-void input_set_modifier_context (input_modifier_type_t type)
-{
-  current_modifier_context = type;
-#ifdef SEMANTIC_DEBUG
-  SDBG(("modifier type "));
-  switch (type)
-    {
-    case INPUT_MODIFIER_ALL: SDBG(("all")); break;
-    case INPUT_MODIFIER_ODD: SDBG(("odd")); break;
-    case INPUT_MODIFIER_EVEN: SDBG(("even")); break;
-    default: SDBG(("unknown %d", type));
-    }
-  SDBG(("\n"));
-#endif /* SEMANTIC_DEBUG */
-}
-
 static void input_clone (void)
 {
   input_context_t *new_input_context;
@@ -221,22 +203,22 @@ void input_set_file (char *name)
 
 void input_set_rotation (int rotation)
 {
-  last_input_context->modifiers [current_modifier_context].has_rotation = 1;
-  last_input_context->modifiers [current_modifier_context].rotation = rotation;
+  last_input_context->modifiers.has_rotation = 1;
+  last_input_context->modifiers.rotation = rotation;
   SDBG(("rotation %d\n", rotation));
 }
 
 void input_set_page_size (page_size_t size)
 {
-  last_input_context->modifiers [current_modifier_context].has_page_size = 1;
-  last_input_context->modifiers [current_modifier_context].page_size = size;
+  last_input_context->modifiers.has_page_size = 1;
+  last_input_context->modifiers.page_size = size;
   SDBG(("page size %f, %f\n", size.width, size.height));
 }
 
 void input_set_transparency (rgb_range_t rgb_range)
 {
-  last_input_context->modifiers [current_modifier_context].has_transparency = 1;
-  last_input_context->modifiers [current_modifier_context].transparency = rgb_range;
+  last_input_context->modifiers.has_transparency = 1;
+  last_input_context->modifiers.transparency = rgb_range;
 }
 
 static void increment_input_image_count (int count)
@@ -502,56 +484,39 @@ static char *get_input_filename (input_context_t *context)
 }
 
 static bool get_input_rotation (input_context_t *context,
-				input_modifier_type_t type,
 				int *rotation)
 {
   for (; context; context = context->parent)
     {
-      if (context->modifiers [type].has_rotation)
+      if (context->modifiers.has_rotation)
 	{
-	  * rotation = context->modifiers [type].rotation;
-	  return true;
-	}
-      if (context->modifiers [INPUT_MODIFIER_ALL].has_rotation)
-	{
-	  * rotation = context->modifiers [INPUT_MODIFIER_ALL].rotation;
+	  * rotation = context->modifiers.rotation;
 	  return true;
 	}
     }
   return false;  /* default */
 }
 
-static rgb_range_t *get_input_transparency (input_context_t *context,
-					    input_modifier_type_t type)
+static rgb_range_t *get_input_transparency (input_context_t *context)
 {
   for (; context; context = context->parent)
     {
-      if (context->modifiers [type].has_transparency)
+      if (context->modifiers.has_transparency)
 	{
-	  return & (context->modifiers [type].transparency);
-	}
-      if (context->modifiers [INPUT_MODIFIER_ALL].has_transparency)
-	{
-	  return & (context->modifiers [INPUT_MODIFIER_ALL].transparency);
+	  return & (context->modifiers.transparency);
 	}
     }
   return NULL;  /* default */
 }
 
 static bool get_input_page_size (input_context_t *context,
-				 input_modifier_type_t type,
 				 page_size_t *page_size)
 {
   for (; context; context = context->parent)
     {
-      if (context->modifiers [type].has_page_size)
+      if (context->modifiers.has_page_size)
 	{
-	  * page_size = context->modifiers [type].page_size;
-	  return true;
-	}
-      if (context->modifiers [INPUT_MODIFIER_ALL].has_page_size)
-	{
-	  * page_size = context->modifiers [INPUT_MODIFIER_ALL].page_size;
+	  * page_size = context->modifiers.page_size;
 	  return true;
 	}
     }
@@ -604,19 +569,16 @@ void dump_input_tree (void)
   for (image = first_input_image; image; image = image->next)
     for (i = image->range.first; i <= image->range.last; i++)
       {
-	input_modifier_type_t parity = (i % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
 	bool has_rotation, has_page_size;
 	int rotation;
 	page_size_t page_size;
 	rgb_range_t *transparency;
 
 	has_rotation = get_input_rotation (image->input_context,
-					   parity,
 					   & rotation);
 	has_page_size = get_input_page_size (image->input_context,
-					     parity,
 					     & page_size);
-	transparency = get_input_transparency (image->input_context, parity);
+	transparency = get_input_transparency (image->input_context);
 	fn = get_input_filename (image->input_context);
 	if (fn)
 	  printf ("file '%s' image %d", fn, i);
@@ -752,7 +714,6 @@ bool process_controls (void)
   int p = 0;
   int page_index = 0;
   input_attributes_t input_attributes;
-  input_modifier_type_t parity;
   page_label_t *page_label;
   output_attributes_t output_attributes;
 
@@ -802,20 +763,16 @@ bool process_controls (void)
 	    }
 	}
 
-      parity = ((image->range.first + i) % 2) ? INPUT_MODIFIER_ODD : INPUT_MODIFIER_EVEN;
-
       memset (& input_attributes, 0, sizeof (input_attributes));
 
       input_attributes.rotation = 0;
       input_attributes.has_rotation = get_input_rotation (image->input_context,
-							  parity,
 							  & input_attributes.rotation);
 
       input_attributes.has_page_size = get_input_page_size (image->input_context,
-							    parity,
 							    & input_attributes.page_size);
 
-      input_attributes.transparency = get_input_transparency (image->input_context, parity);
+      input_attributes.transparency = get_input_transparency (image->input_context);
 
       memset (& output_attributes, 0, sizeof (output_attributes));
       output_attributes.colormap = get_output_colormap (page->output_context);

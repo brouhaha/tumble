@@ -59,10 +59,6 @@
 %token CM
 %token INCH
 
-%token EVEN
-%token ODD
-%token ALL
-
 %token PORTRAIT
 %token LANDSCAPE
 
@@ -203,17 +199,6 @@ modifier_clauses:
         modifier_clause
 	| modifier_clauses modifier_clause ;
 
-modifier_clause_list:
-	'{' modifier_clauses '}' ;
-
-part_clause:
-	ODD { input_set_modifier_context (INPUT_MODIFIER_ODD); }
-          modifier_clause_list
-          { input_set_modifier_context (INPUT_MODIFIER_ALL); }
-	| EVEN { input_set_modifier_context (INPUT_MODIFIER_EVEN); }
-	  modifier_clause_list
-          { input_set_modifier_context (INPUT_MODIFIER_ALL); } ;
-
 blank_page_clause:
 	BLANK { input_set_file (NULL); } size_clause;
 
@@ -221,7 +206,6 @@ input_clause:
 	input_file_clause ';'
 	| image_clause ';'
 	| images_clause ';'
-	| part_clause ';'
 	| modifier_clauses ';'
 	| blank_page_clause ';'
 	| input_clause_list ;

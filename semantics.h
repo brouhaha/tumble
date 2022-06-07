@@ -96,15 +96,6 @@ typedef struct
   int count;
 } page_label_t;
 
-typedef enum
-{
-  INPUT_MODIFIER_ALL,
-  INPUT_MODIFIER_ODD,
-  INPUT_MODIFIER_EVEN,
-  INPUT_MODIFIER_TYPE_COUNT  /* must be last */
-} input_modifier_type_t;
-
-
 typedef struct bookmark_t
 {
   struct bookmark_t *next;
@@ -124,7 +115,6 @@ void yyerror (const char *s);
 /* semantic routines for input statements */
 void input_push_context (void);
 void input_pop_context (void);
-void input_set_modifier_context (input_modifier_type_t type);
 void input_set_file (char *name);
 void input_set_rotation (int rotation);
 void input_set_transparency (rgb_range_t rgb_range);

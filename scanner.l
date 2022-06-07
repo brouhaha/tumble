@@ -78,7 +78,6 @@ e		{ yylval.size.width = 34.0;
                    yylval.size.height = 44.0;
                   return PAGE_SIZE; }
 
-all		{ return ALL; }
 author		{ return AUTHOR; }
 blank		{ return BLANK; }
 bookmark	{ return BOOKMARK; }
@@ -86,7 +85,6 @@ cm		{ return CM; }
 colormap	{ return COLORMAP; }
 creator		{ return CREATOR; }
 crop		{ return CROP; }
-even		{ return EVEN; }
 file		{ return FILE_KEYWORD; }
 imagemask       { return IMAGEMASK; }
 image		{ return IMAGE; }
@@ -96,7 +94,6 @@ input		{ return INPUT; }
 keywords	{ return KEYWORDS; }
 label		{ return LABEL; }
 landscape	{ return LANDSCAPE; }
-odd		{ return ODD; }
 output		{ return OUTPUT; }
 overlay		{ return OVERLAY; }
 page		{ return PAGE; }
