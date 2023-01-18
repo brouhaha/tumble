@@ -1,7 +1,7 @@
 tumble: build a PDF file from image files
 Copyright 2003, 2017 Eric Smith <spacewar@gmail.com>
 
-Tumble requires libtiff, which in turn requires libjpeg and zlib:
+Tumble requires libnetpbm10-dev and libtiff, which in turn requires libjpeg and zlib:
 
     http://www.libtiff.org/
     https://www.zlib.net/
