@@ -10,3 +10,7 @@ parser.tab.[ch]
 scanner.c
 tumble
 CHANGELOG.html
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+Makefile
